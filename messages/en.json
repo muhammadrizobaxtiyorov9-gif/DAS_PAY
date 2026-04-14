@@ -1,0 +1,261 @@
+{
+  "common": {
+    "brand": "DasPay",
+    "tagline": "International Logistics Solution",
+    "contact": "Contact",
+    "learnMore": "Learn More",
+    "getStarted": "Get Started",
+    "submit": "Submit",
+    "loading": "Loading...",
+    "success": "Success!",
+    "error": "An error occurred",
+    "phone": "Phone",
+    "email": "Email",
+    "address": "Address",
+    "trackShipment": "Track Shipment",
+    "requestQuote": "Request Quote"
+  },
+  "nav": {
+    "home": "Home",
+    "services": "Services",
+    "tracking": "Tracking",
+    "about": "About",
+    "blog": "Blog",
+    "contract": "Contract",
+    "contact": "Contact"
+  },
+  "hero": {
+    "title": "Global Freight Transportation Services",
+    "subtitle": "Reliable and fast delivery from Uzbekistan to CIS countries and China",
+    "cta1": "Place Order",
+    "cta2": "Track Shipment",
+    "stats": {
+      "deliveries": "Deliveries Made",
+      "countries": "Countries",
+      "onTime": "On Time",
+      "experience": "Years Experience"
+    }
+  },
+  "tracking": {
+    "title": "Track Your Shipment",
+    "subtitle": "Enter your tracking number to find out where your cargo is",
+    "placeholder": "Tracking number (e.g., DP123456789)",
+    "button": "Track",
+    "status": {
+      "pending": "Pending",
+      "inTransit": "In Transit",
+      "delivered": "Delivered",
+      "processing": "Processing"
+    },
+    "notFound": "Shipment not found",
+    "lastUpdate": "Last update",
+    "origin": "Origin",
+    "destination": "Destination"
+  },
+  "services": {
+    "title": "Our Services",
+    "subtitle": "Comprehensive solutions for all your logistics needs",
+    "items": {
+      "road": {
+        "title": "Road Transport",
+        "description": "Freight transportation by road to China, Iran, Afghanistan, Pakistan, and CIS countries"
+      },
+      "warehouse": {
+        "title": "Warehouse Services",
+        "description": "Storage and cargo management in modern warehouses"
+      },
+      "international": {
+        "title": "International Freight",
+        "description": "Import and export services worldwide"
+      },
+      "air": {
+        "title": "Air Transport",
+        "description": "Fast and reliable air freight delivery"
+      },
+      "rail": {
+        "title": "Rail Transport",
+        "description": "Railway freight to China and Europe"
+      },
+      "customs": {
+        "title": "Customs Clearance",
+        "description": "Customs documentation and consulting services"
+      }
+    }
+  },
+  "stats": {
+    "deliveries": {
+      "value": "10,000+",
+      "label": "Deliveries Made"
+    },
+    "countries": {
+      "value": "10+",
+      "label": "Countries"
+    },
+    "onTime": {
+      "value": "98.7%",
+      "label": "On-Time Delivery"
+    },
+    "experience": {
+      "value": "10",
+      "label": "Years Experience"
+    }
+  },
+  "about": {
+    "title": "About Us",
+    "subtitle": "DasPay — Uzbekistan's leading international logistics company",
+    "story": "Since 2024, we have been helping our clients reliably and efficiently deliver cargo worldwide. Our experience and professional team are ready to solve any logistics challenge.",
+    "usps": {
+      "reliable": {
+        "title": "Reliability",
+        "description": "Every shipment is insured and delivered safely"
+      },
+      "fast": {
+        "title": "Speed",
+        "description": "Guaranteed delivery in the shortest time"
+      },
+      "support": {
+        "title": "24/7 Support",
+        "description": "Always available for our clients"
+      }
+    }
+  },
+  "partners": {
+    "title": "Our Partners",
+    "subtitle": "Working with trusted partners worldwide"
+  },
+  "testimonials": {
+    "title": "Client Testimonials",
+    "subtitle": "What some of our satisfied customers say"
+  },
+  "faq": {
+    "title": "Frequently Asked Questions",
+    "subtitle": "We help you find answers to your questions",
+    "items": [
+      {
+        "question": "How long does delivery take?",
+        "answer": "Delivery time depends on the route and transport type. Road transport 5-15 days, rail 15-25 days."
+      },
+      {
+        "question": "How can I track my shipment?",
+        "answer": "Each shipment is assigned a unique tracking number. Enter it on our website or app to track in real-time."
+      },
+      {
+        "question": "Are shipments insured?",
+        "answer": "Yes, all shipments are automatically insured. Additional insurance is available."
+      },
+      {
+        "question": "Do you help with customs clearance?",
+        "answer": "Yes, we offer complete customs clearance and consulting services."
+      },
+      {
+        "question": "Do you transport dangerous goods?",
+        "answer": "Yes, with special permits. Please inform us in advance."
+      },
+      {
+        "question": "How is pricing calculated?",
+        "answer": "Price depends on weight, volume, destination, and transport type."
+      }
+    ]
+  },
+  "cta": {
+    "title": "We deliver your cargo worldwide",
+    "subtitle": "Submit a request for free consultation and quote",
+    "button": "Submit Request"
+  },
+  "contact": {
+    "title": "Contact Us",
+    "subtitle": "Have questions? We are ready to help",
+    "form": {
+      "name": "Your Name",
+      "namePlaceholder": "Full name",
+      "phone": "Phone Number",
+      "phonePlaceholder": "+998 90 123 45 67",
+      "email": "Email Address",
+      "emailPlaceholder": "email@example.com",
+      "service": "Service Type",
+      "servicePlaceholder": "Select a service",
+      "message": "Message",
+      "messagePlaceholder": "Describe your cargo in detail...",
+      "submit": "Submit",
+      "success": "Request received! We will contact you soon.",
+      "error": "An error occurred. Please try again."
+    },
+    "info": {
+      "title": "Contact Information",
+      "address": "Tashkent, Yashnabad district, Sadik Azimov street, 68",
+      "phone": "+998 99 866 16 56",
+      "email": "info@das-pay.uz",
+      "workHours": "Monday - Saturday: 09:00 - 18:00"
+    }
+  },
+  "notFound": {
+    "title": "Page Not Found",
+    "description": "Sorry, the page you are looking for does not exist or has been moved.",
+    "home": "Home",
+    "back": "Go Back"
+  },
+  "privacy": {
+    "title": "Privacy Policy",
+    "subtitle": "DasPay Privacy Policy",
+    "lastUpdated": "Last updated: January 1, 2026",
+    "sections": [
+      {
+        "title": "Information Collection",
+        "content": "We collect the following information from users: name, phone number, email address, and shipping-related data. This information is used solely for service delivery purposes."
+      },
+      {
+        "title": "Use of Information",
+        "content": "Collected data is used for the following purposes: processing orders, providing shipment tracking services, contacting customers, and improving service quality."
+      },
+      {
+        "title": "Data Security",
+        "content": "We employ modern security measures to protect users' personal information. Data is stored in encrypted form and is not shared with third parties without authorization."
+      },
+      {
+        "title": "Cookies",
+        "content": "Our website uses cookies. Cookies are used to improve the browsing experience. You can disable cookies in your browser settings."
+      },
+      {
+        "title": "Contact Us",
+        "content": "If you have questions about our privacy policy, please contact us at info@das-pay.uz or call +998 99 866 16 56."
+      }
+    ]
+  },
+  "terms": {
+    "title": "Terms of Use",
+    "subtitle": "Terms and conditions for using DasPay services",
+    "lastUpdated": "Last updated: January 1, 2026",
+    "sections": [
+      {
+        "title": "General Terms",
+        "content": "By using the DasPay website, you agree to these terms. If you do not agree, please do not use the site."
+      },
+      {
+        "title": "Services",
+        "content": "DasPay provides international freight transportation, warehouse services, customs clearance, and logistics consulting services. Service prices and terms are agreed upon individually."
+      },
+      {
+        "title": "User Obligations",
+        "content": "Users must provide accurate and correct information. DasPay is not responsible for issues arising from incorrect information."
+      },
+      {
+        "title": "Limitation of Liability",
+        "content": "DasPay is not liable for delays or damages caused by events beyond its control (force majeure). All shipments are insured."
+      },
+      {
+        "title": "Dispute Resolution",
+        "content": "All disputes are resolved through negotiation. If no agreement is reached, disputes are resolved in accordance with the laws of the Republic of Uzbekistan."
+      }
+    ]
+  },
+  "footer": {
+    "description": "DasPay — Uzbekistan's leading international logistics company. Since 2024, providing reliable freight services worldwide.",
+    "quickLinks": "Quick Links",
+    "services": "Services",
+    "contact": "Contact",
+    "followUs": "Follow Us",
+    "copyright": "All rights reserved.",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Use"
+  }
+}

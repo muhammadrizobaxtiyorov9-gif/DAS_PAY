@@ -1,0 +1,59 @@
+# ========================================
+# DasPay Enterprise .gitignore
+# ========================================
+
+# === Dependencies ===
+node_modules/
+.pnp/
+.pnp.js
+
+# === Build & Output ===
+.next/
+out/
+build/
+dist/
+
+# === Environment & Secrets ===
+.env
+.env.*
+!.env.example
+
+# === Database ===
+*.db
+*.sqlite
+*.sqlite3
+prisma/migrations/
+
+# === IDE & System ===
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# === Logs ===
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# === Vercel ===
+.vercel/
+
+# === v0 sandbox files ===
+__v0_runtime_loader.js
+__v0_devtools.tsx
+__v0_jsx-dev-runtime.ts
+.snowflake/
+.v0-trash/
+next.user-config.*
+
+# === Testing ===
+coverage/
+.nyc_output/
+
+# === OS Files ===
+*.DS_Store
+desktop.ini

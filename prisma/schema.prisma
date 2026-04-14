@@ -1,0 +1,138 @@
+// Prisma schema for DasPay logistics platform
+// Database: PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Lead/contact form submissions
+model Lead {
+  id        Int      @id @default(autoincrement())
+  name      String
+  phone     String
+  email     String?
+  service   String?
+  message   String
+  ip        String?
+  status    String   @default("new")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+/// Tracking queries for analytics
+model TrackingQuery {
+  id           Int      @id @default(autoincrement())
+  trackingCode String
+  ip           String?
+  found        Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  @@index([trackingCode])
+  @@index([createdAt])
+}
+
+/// Blog posts for content management
+model BlogPost {
+  id          Int       @id @default(autoincrement())
+  slug        String    @unique
+  titleUz     String
+  titleRu     String
+  titleEn     String
+  contentUz   String
+  contentRu   String
+  contentEn   String
+  excerptUz   String?
+  excerptRu   String?
+  excerptEn   String?
+  image       String?
+  published   Boolean   @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([slug])
+  @@index([published])
+  @@index([publishedAt])
+}
+
+/// Shipment tracking data (mock data for demo)
+model Shipment {
+  id           Int      @id @default(autoincrement())
+  trackingCode String   @unique
+  senderName   String
+  receiverName String
+  origin       String
+  destination  String
+  status       String   @default("pending")
+  weight       Float?
+  description  String?
+  events       Json     @default("[]")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([trackingCode])
+  @@index([status])
+}
+
+/// Rate limiting for forms
+model RateLimit {
+  id        Int      @id @default(autoincrement())
+  ip        String
+  endpoint  String
+  count     Int      @default(1)
+  windowStart DateTime @default(now())
+
+  @@unique([ip, endpoint])
+  @@index([windowStart])
+}
+
+/// Contract agreements with client companies
+model Contract {
+  id              Int      @id @default(autoincrement())
+  /// Auto-incrementing contract number (e.g. 1, 2, 3...)
+  contractNumber  Int      @unique @default(autoincrement())
+  /// Date the contract was signed (e.g. "14 апрель 2026г")
+  contractDate    String
+  /// Client company name
+  companyName     String
+  /// Company director full name
+  companyDirector String
+  /// Company address
+  companyAddress  String
+  /// Company INN (9-digit, xxx xxx xxx)
+  companyInn      String
+  /// Serving bank name
+  companyBank     String
+  /// Bank MFO (5-digit)
+  bankMfo         String
+  /// Bank INN (9-digit)
+  bankInn         String
+  /// Bank account number
+  bankNum         String
+  /// Currency: UZS or USD
+  bankCurrency    String   @default("UZS")
+  /// Whether correspondent bank exists
+  hasCorrespondent Boolean  @default(false)
+  /// Correspondent bank name (optional)
+  bankCorrName    String?
+  /// Correspondent bank address (optional)
+  bankCorrAddress String?
+  /// Correspondent bank SWIFT code (optional)
+  bankCorrSwift   String?
+  /// Contract status
+  status          String   @default("active")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([contractNumber])
+  @@index([status])
+  @@index([createdAt])
+}

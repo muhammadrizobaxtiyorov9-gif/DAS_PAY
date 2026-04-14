@@ -1,0 +1,261 @@
+{
+  "common": {
+    "brand": "DasPay",
+    "tagline": "Xalqaro logistika yechimi",
+    "contact": "Bog'lanish",
+    "learnMore": "Batafsil",
+    "getStarted": "Boshlash",
+    "submit": "Yuborish",
+    "loading": "Yuklanmoqda...",
+    "success": "Muvaffaqiyatli!",
+    "error": "Xatolik yuz berdi",
+    "phone": "Telefon",
+    "email": "Email",
+    "address": "Manzil",
+    "trackShipment": "Yukni kuzatish",
+    "requestQuote": "Narx so'rash"
+  },
+  "nav": {
+    "home": "Bosh sahifa",
+    "services": "Xizmatlar",
+    "tracking": "Kuzatish",
+    "about": "Biz haqimizda",
+    "blog": "Blog",
+    "contract": "Shartnoma",
+    "contact": "Bog'lanish"
+  },
+  "hero": {
+    "title": "Dunyo bo'ylab yuk tashish xizmatlari",
+    "subtitle": "O'zbekistondan MDH, Xitoy davlatlariga ishonchli va tezkor yetkazib berish",
+    "cta1": "Buyurtma berish",
+    "cta2": "Yukni kuzatish",
+    "stats": {
+      "deliveries": "Yetkazilgan yuklar",
+      "countries": "Mamlakatlar",
+      "onTime": "O'z vaqtida",
+      "experience": "Yillik tajriba"
+    }
+  },
+  "tracking": {
+    "title": "Yukingizni kuzating",
+    "subtitle": "Kuzatish raqamini kiriting va yukingiz qayerdaligini bilib oling",
+    "placeholder": "Kuzatish raqami (masalan: DP123456789)",
+    "button": "Kuzatish",
+    "status": {
+      "pending": "Kutilmoqda",
+      "inTransit": "Yo'lda",
+      "delivered": "Yetkazildi",
+      "processing": "Qayta ishlanmoqda"
+    },
+    "notFound": "Yuk topilmadi",
+    "lastUpdate": "So'nggi yangilanish",
+    "origin": "Kelib chiqish",
+    "destination": "Manzil"
+  },
+  "services": {
+    "title": "Bizning xizmatlarimiz",
+    "subtitle": "Barcha logistika ehtiyojlaringiz uchun kompleks yechimlar",
+    "items": {
+      "road": {
+        "title": "Avtomobil tashish",
+        "description": "Xitoy, Eron, Afg'oniston, Pokiston,MDH davlatlariga avtotransport orqali yuk tashish"
+      },
+      "warehouse": {
+        "title": "Ombor xizmati",
+        "description": "Zamonaviy omborlarda yuklarni saqlash va boshqarish"
+      },
+      "international": {
+        "title": "Xalqaro yuk tashish",
+        "description": "Dunyo bo'ylab import va eksport xizmatlari"
+      },
+      "air": {
+        "title": "Avia transport",
+        "description": "Tezkor va ishonchli havo yo'li orqali yetkazib berish"
+      },
+      "rail": {
+        "title": "Temir yo'l tashish",
+        "description": "Xitoy va Yevropa yo'nalishlarida temir yo'l transporti"
+      },
+      "customs": {
+        "title": "Bojxona rasmiylashtiruvi",
+        "description": "Bojxona hujjatlarini rasmiylashtirish va maslahat xizmatlari"
+      }
+    }
+  },
+  "stats": {
+    "deliveries": {
+      "value": "10,000+",
+      "label": "Yetkazilgan yuklar"
+    },
+    "countries": {
+      "value": "10+",
+      "label": "Mamlakatlar"
+    },
+    "onTime": {
+      "value": "98.7%",
+      "label": "O'z vaqtida yetkazish"
+    },
+    "experience": {
+      "value": "10",
+      "label": "Yillik tajriba"
+    }
+  },
+  "about": {
+    "title": "Biz haqimizda",
+    "subtitle": "DasPay — O'zbekistonning yetakchi xalqaro logistika kompaniyasi",
+    "story": "2024-yildan buyon biz mijozlarimizga dunyo bo'ylab yuklarni ishonchli va samarali yetkazib berishda yordam berib kelmoqdamiz. Bizning tajribamiz va professional jamoamiz har qanday logistika muammosini hal qilishga tayyor.",
+    "usps": {
+      "reliable": {
+        "title": "Ishonchlilik",
+        "description": "Har bir yuk sug'urtalangan va xavfsiz yetkaziladi"
+      },
+      "fast": {
+        "title": "Tezkorlik",
+        "description": "Eng qisqa muddatlarda yetkazib berish kafolati"
+      },
+      "support": {
+        "title": "24/7 qo'llab-quvvatlash",
+        "description": "Mijozlarimiz uchun doimo aloqadamiz"
+      }
+    }
+  },
+  "partners": {
+    "title": "Bizning hamkorlarimiz",
+    "subtitle": "Dunyo bo'ylab ishonchli hamkorlar bilan ishlaymiz"
+  },
+  "testimonials": {
+    "title": "Mijozlarimiz fikri",
+    "subtitle": "Minglab mamnun mijozlarimizdan ba'zilari"
+  },
+  "faq": {
+    "title": "Ko'p so'raladigan savollar",
+    "subtitle": "Savollaringizga javob topishda yordam beramiz",
+    "items": [
+      {
+        "question": "Yuk tashish qancha vaqt oladi?",
+        "answer": "Yetkazib berish muddati yo'nalish va transport turiga bog'liq. Avtotransport bilan 5-15 kun, temir yo'l bilan 15-25 kun."
+      },
+      {
+        "question": "Yukni qanday kuzatish mumkin?",
+        "answer": "Har bir yukka alohida kuzatish raqami beriladi. Bu raqamni saytimizda yoki ilovamizda kiritib, yukingiz qayerdaligini real vaqtda kuzatishingiz mumkin."
+      },
+      {
+        "question": "Yuklar sug'urtalanganmi?",
+        "answer": "Ha, barcha yuklar avtomatik ravishda sug'urtalanadi. Qo'shimcha sug'urta xizmati ham mavjud."
+      },
+      {
+        "question": "Bojxona rasmiylashtiruvi bilan yordam berasizlarmi?",
+        "answer": "Ha, bojxona hujjatlarini to'liq rasmiylashtirish va maslahat xizmatlarini taklif qilamiz."
+      },
+      {
+        "question": "Xavfli yuklarni tashiy olasizmi?",
+        "answer": "Ha, maxsus ruxsatnoma bilan xavfli yuklarni ham tashiymiz. Bu haqda oldindan ma'lumot berishingiz kerak."
+      },
+      {
+        "question": "Narxlar qanday hisoblanadi?",
+        "answer": "Narx yuk og'irligi, hajmi, yo'nalishi va transport turiga qarab hisoblanadi."
+      }
+    ]
+  },
+  "cta": {
+    "title": "Yukingizni dunyo bo'ylab yetkazamiz",
+    "subtitle": "Bepul maslahat va narx olish uchun ariza qoldiring",
+    "button": "Ariza qoldirish"
+  },
+  "contact": {
+    "title": "Biz bilan bog'laning",
+    "subtitle": "Savollaringiz bormi? Biz yordam berishga tayyormiz",
+    "form": {
+      "name": "Ismingiz",
+      "namePlaceholder": "To'liq ismingiz",
+      "phone": "Telefon raqamingiz",
+      "phonePlaceholder": "+998 90 123 45 67",
+      "email": "Email manzilingiz",
+      "emailPlaceholder": "email@example.com",
+      "service": "Xizmat turi",
+      "servicePlaceholder": "Xizmatni tanlang",
+      "message": "Xabaringiz",
+      "messagePlaceholder": "Yukingiz haqida batafsil yozing...",
+      "submit": "Yuborish",
+      "success": "Arizangiz qabul qilindi! Tez orada siz bilan bog'lanamiz.",
+      "error": "Xatolik yuz berdi. Iltimos, qaytadan urinib ko'ring."
+    },
+    "info": {
+      "title": "Bog'lanish ma'lumotlari",
+      "address": "Toshkent sh., Yashnabod tumani, Sodiq Azimov ko'chasi, 68-uy",
+      "phone": "+998 99 866 16 56",
+      "email": "info@das-pay.uz",
+      "workHours": "Dushanba - Shanba: 09:00 - 18:00"
+    }
+  },
+  "notFound": {
+    "title": "Sahifa topilmadi",
+    "description": "Kechirasiz, siz qidirayotgan sahifa mavjud emas yoki ko'chirilgan.",
+    "home": "Bosh sahifa",
+    "back": "Orqaga"
+  },
+  "privacy": {
+    "title": "Maxfiylik siyosati",
+    "subtitle": "DasPay maxfiylik siyosati",
+    "lastUpdated": "So'nggi yangilanish: 2026-yil 1-yanvar",
+    "sections": [
+      {
+        "title": "Ma'lumotlarni yig'ish",
+        "content": "Biz foydalanuvchilardan quyidagi ma'lumotlarni yig'amiz: ism, telefon raqami, email manzili va yuk tashish bilan bog'liq ma'lumotlar. Bu ma'lumotlar faqat xizmat ko'rsatish maqsadida ishlatiladi."
+      },
+      {
+        "title": "Ma'lumotlardan foydalanish",
+        "content": "Yig'ilgan ma'lumotlar quyidagi maqsadlarda ishlatiladi: buyurtmalarni qayta ishlash, yuk kuzatish xizmatini ta'minlash, mijozlar bilan bog'lanish va xizmat sifatini yaxshilash."
+      },
+      {
+        "title": "Ma'lumotlar xavfsizligi",
+        "content": "Biz foydalanuvchilarning shaxsiy ma'lumotlarini himoya qilish uchun zamonaviy xavfsizlik choralarini qo'llaymiz. Ma'lumotlar shifrlangan holda saqlanadi va uchinchi shaxslarga ruxsatsiz uzatilmaydi."
+      },
+      {
+        "title": "Cookie fayllari",
+        "content": "Saytimiz cookie fayllaridan foydalanadi. Cookie fayllar saytdan foydalanish tajribasini yaxshilash uchun ishlatiladi. Siz brauzer sozlamalarida cookie fayllarni o'chirib qo'yishingiz mumkin."
+      },
+      {
+        "title": "Bog'lanish",
+        "content": "Maxfiylik siyosati bo'yicha savollaringiz bo'lsa, info@daspay.uz manziliga yoki +998 99 866 16 56 raqamiga murojaat qiling."
+      }
+    ]
+  },
+  "terms": {
+    "title": "Foydalanish shartlari",
+    "subtitle": "DasPay xizmatlaridan foydalanish qoidalari",
+    "lastUpdated": "So'nggi yangilanish: 2026-yil 1-yanvar",
+    "sections": [
+      {
+        "title": "Umumiy qoidalar",
+        "content": "DasPay veb-saytidan foydalanish orqali siz ushbu shartlarni qabul qilasiz. Agar siz ushbu shartlarni qabul qilmasangiz, saytdan foydalanmang."
+      },
+      {
+        "title": "Xizmatlar",
+        "content": "DasPay xalqaro yuk tashish, ombor xizmatlari, bojxona rasmiylashtiruvi va logistika maslahat xizmatlarini taqdim etadi. Xizmatlar narxi va shartlari alohida kelishiladi."
+      },
+      {
+        "title": "Foydalanuvchi majburiyatlari",
+        "content": "Foydalanuvchi to'g'ri va aniq ma'lumotlar taqdim etishi shart. Noto'g'ri ma'lumotlar tufayli yuzaga keladigan muammolar uchun DasPay javobgar emas."
+      },
+      {
+        "title": "Javobgarlik chegaralari",
+        "content": "DasPay o'z nazoratidan tashqari hodisalar (fors-major) tufayli yetkazib berishdagi kechikishlar yoki zararlar uchun javobgar emas. Barcha yuklar sug'urta qilinadi."
+      },
+      {
+        "title": "Nizolarni hal qilish",
+        "content": "Barcha nizolar muzokara yo'li bilan hal qilinadi. Kelishuv erishilmagan taqdirda, nizolar O'zbekiston Respublikasi qonunchiligiga muvofiq ko'rib chiqiladi."
+      }
+    ]
+  },
+  "footer": {
+    "description": "DasPay — O'zbekistonning yetakchi xalqaro logistika kompaniyasi. 2012-yildan buyon dunyo bo'ylab ishonchli yuk tashish xizmatlari.",
+    "quickLinks": "Tezkor havolalar",
+    "services": "Xizmatlar",
+    "contact": "Bog'lanish",
+    "followUs": "Bizni kuzating",
+    "copyright": "Barcha huquqlar himoyalangan.",
+    "privacy": "Maxfiylik siyosati",
+    "terms": "Foydalanish shartlari"
+  }
+}
