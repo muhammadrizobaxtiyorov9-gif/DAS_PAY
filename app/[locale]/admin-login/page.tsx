@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Shield, LogIn, Eye, EyeOff } from 'lucide-react';
 
 export default function AdminLoginPage() {
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -19,7 +20,7 @@ export default function AdminLoginPage() {
       const res = await fetch('/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ username, password }),
       });
 
       if (res.ok) {
@@ -74,6 +75,20 @@ export default function AdminLoginPage() {
 
           {/* Form */}
           <form onSubmit={handleLogin} className="px-8 py-8">
+            <div className="mb-4">
+              <label className="mb-2 block text-sm font-medium text-gray-700">
+                Login
+              </label>
+              <input
+                type="text"
+                required
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="block w-full rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 text-gray-900 transition-all duration-200 placeholder:text-gray-400 focus:border-[#185FA5] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#185FA5]/20"
+                placeholder="Loginingizni kiriting"
+              />
+            </div>
+
             <div>
               <label className="mb-2 block text-sm font-medium text-gray-700">
                 Maxfiy parol

@@ -36,9 +36,9 @@ export type ContactFormData = z.infer<typeof contactFormSchema>;
 export const trackingFormSchema = z.object({
   trackingCode: z
     .string()
-    .min(6, 'Tracking code must be at least 6 characters')
+    .min(5, 'Tracking code must be at least 5 characters')
     .max(30, 'Tracking code must be less than 30 characters')
-    .regex(/^[A-Za-z0-9]+$/, 'Tracking code can only contain letters and numbers'),
+    .regex(/^[A-Za-z0-9\-\s]+$/, 'Tracking code can only contain letters, numbers, spaces, and hyphens'),
 });
 
 export type TrackingFormData = z.infer<typeof trackingFormSchema>;

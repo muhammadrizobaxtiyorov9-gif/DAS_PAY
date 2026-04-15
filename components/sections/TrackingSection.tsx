@@ -9,7 +9,7 @@ import { useLocale, useTranslations } from '@/components/providers/LocaleProvide
 
 interface TrackingResult {
   trackingCode: string;
-  status: 'pending' | 'processing' | 'inTransit' | 'delivered';
+  status: string;
   origin: string;
   destination: string;
   lastUpdate: string;
@@ -20,17 +20,21 @@ interface TrackingResult {
   }>;
 }
 
-const statusIcons = {
+const statusIcons: Record<string, typeof Package> = {
   pending: Clock,
   processing: Package,
+  in_transit: Truck,
   inTransit: Truck,
+  customs: Package,
   delivered: CheckCircle2,
 };
 
-const statusColors = {
+const statusColors: Record<string, string> = {
   pending: 'text-yellow-500 bg-yellow-500/10',
   processing: 'text-blue-500 bg-blue-500/10',
+  in_transit: 'text-[#185FA5] bg-[#185FA5]/10',
   inTransit: 'text-[#185FA5] bg-[#185FA5]/10',
+  customs: 'text-orange-500 bg-orange-500/10',
   delivered: 'text-green-500 bg-green-500/10',
 };
 
@@ -74,7 +78,7 @@ export function TrackingSection() {
     }
   };
 
-  const StatusIcon = result ? statusIcons[result.status] : Package;
+  const StatusIcon = result ? (statusIcons[result.status] || Package) : Package;
 
   return (
     <section className="bg-secondary py-16 lg:py-24">
@@ -151,11 +155,11 @@ export function TrackingSection() {
                     <div className="mt-2 flex items-center gap-2">
                       <div
                         className={`flex items-center gap-2 rounded-full px-3 py-1 text-sm font-medium ${
-                          statusColors[result.status]
+                          statusColors[result.status] || 'text-gray-500 bg-gray-500/10'
                         }`}
                       >
                         <StatusIcon className="h-4 w-4" />
-                        {t(`tracking.status.${result.status}`)}
+                        {t(`tracking.status.${result.status}`) || result.status}
                       </div>
                     </div>
                   </div>

@@ -19,10 +19,12 @@ import {
 
 const navigation = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard, description: 'Umumiy ko\'rish' },
+  { name: 'Xodimlar (KPI)', href: '/admin/kpi', icon: Users, description: 'KPI reytingi' },
   { name: 'Yuklar', href: '/admin/shipments', icon: PackageSearch, description: 'Tracking boshqaruvi' },
   { name: 'Maqolalar', href: '/admin/blog', icon: Newspaper, description: 'Blog & yangiliklar' },
   { name: 'Arizalar', href: '/admin/leads', icon: Users, description: 'Mijoz so\'rovlari' },
   { name: 'Shartnomalar', href: '/admin/contracts', icon: FileSignature, description: 'Kontrakt arxivi' },
+  { name: 'Adminlar', href: '/admin/users', icon: Shield, description: 'Xodimlar boshqaruvi' },
 ];
 
 export default function AdminLayout({

@@ -136,3 +136,34 @@ model Contract {
   @@index([status])
   @@index([createdAt])
 }
+
+/// Admin/Employee users
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  password  String
+  name      String?
+  role      String   @default("ADMIN") // SUPERADMIN or ADMIN
+  status    String   @default("ACTIVE")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  actions   UserAction[]
+
+  @@index([username])
+}
+
+/// KPI and Activity tracking for Employees
+model UserAction {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  actionType  String   // e.g., 'CREATE_SHIPMENT', 'UPDATE_SHIPMENT'
+  description String?
+  points      Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([createdAt])
+}

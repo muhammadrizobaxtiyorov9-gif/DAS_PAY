@@ -44,6 +44,8 @@
     "status": {
       "pending": "Pending",
       "inTransit": "In Transit",
+      "in_transit": "In Transit",
+      "customs": "At Customs",
       "delivered": "Delivered",
       "processing": "Processing"
     },

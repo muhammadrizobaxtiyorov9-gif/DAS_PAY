@@ -44,6 +44,8 @@
     "status": {
       "pending": "Kutilmoqda",
       "inTransit": "Yo'lda",
+      "in_transit": "Yo'lda",
+      "customs": "Bojxonada",
       "delivered": "Yetkazildi",
       "processing": "Qayta ishlanmoqda"
     },

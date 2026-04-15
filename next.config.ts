@@ -1,5 +1,15 @@
 import type { NextConfig } from 'next';
 
+// Prevent Next.js from fully crashing and exiting on unhandled exceptions in development
+if (process.env.NODE_ENV !== 'production') {
+  process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  });
+  process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception thrown:', err);
+  });
+}
+
 const nextConfig: NextConfig = {
   // Enable React strict mode
   reactStrictMode: true,

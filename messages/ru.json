@@ -44,6 +44,8 @@
     "status": {
       "pending": "Ожидается",
       "inTransit": "В пути",
+      "in_transit": "В пути",
+      "customs": "На таможне",
       "delivered": "Доставлен",
       "processing": "Обрабатывается"
     },

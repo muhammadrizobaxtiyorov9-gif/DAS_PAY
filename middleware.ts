@@ -38,7 +38,7 @@ export async function middleware(request: NextRequest) {
     try {
       const secret = new TextEncoder().encode(process.env.ADMIN_TOKEN_SECRET || 'daspay_secure_key_2026');
       const { payload } = await jwtVerify(adminToken, secret);
-      if (payload.role !== 'admin') throw new Error('Invalid Role');
+      if (payload.role !== 'ADMIN' && payload.role !== 'SUPERADMIN' && payload.role !== 'admin') throw new Error('Invalid Role');
     } catch (err) {
       // Invalid/Expired Token
       const response = NextResponse.redirect(loginUrl);
