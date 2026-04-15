@@ -112,6 +112,21 @@ export function Header() {
                 </Link>
               </Button>
 
+              <Button
+                asChild
+                variant="outline"
+                className={cn(
+                  'hidden md:inline-flex border-2',
+                  isScrolled
+                    ? 'border-[#042C53] bg-transparent text-[#042C53] hover:bg-blue-50'
+                    : 'border-white bg-[#042C53] text-white hover:bg-white/10'
+                )}
+              >
+                <Link href={`/${locale}/login`}>
+                   Kabinetga kirish
+                </Link>
+              </Button>
+
               {/* Mobile menu button */}
               <Button
                 variant="ghost"

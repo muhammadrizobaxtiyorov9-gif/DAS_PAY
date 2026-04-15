@@ -80,6 +80,17 @@ export function MobileNav({ onClose }: MobileNavProps) {
             ))}
           </ul>
 
+          {/* Cabinet Button */}
+          <div className="mt-6 px-4">
+            <Link
+              href={`/${locale}/login`}
+              onClick={onClose}
+              className="flex items-center justify-center gap-2 w-full bg-white text-[#042C53] font-bold py-3 rounded-lg text-lg hover:bg-gray-100 transition-colors"
+            >
+              Kabinetga kirish
+            </Link>
+          </div>
+
           {/* Language Switcher */}
           <div className="mt-8 border-t border-white/10 pt-8">
             <p className="mb-4 px-4 text-sm text-white/60">

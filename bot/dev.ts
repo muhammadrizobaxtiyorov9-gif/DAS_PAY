@@ -1,6 +1,6 @@
 import 'dotenv/config'; 
-import { Bot } from 'grammy';
-import { setupMessageHandlers } from './handlers/message';
+import { Bot, session } from 'grammy';
+import { setupMessageHandlers, MyContext } from './handlers/message';
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 
@@ -9,7 +9,9 @@ if (!TELEGRAM_BOT_TOKEN) {
   process.exit(1);
 }
 
-const bot = new Bot(TELEGRAM_BOT_TOKEN);
+const bot = new Bot<MyContext>(TELEGRAM_BOT_TOKEN);
+
+bot.use(session({ initial: () => ({ step: 'idle', calcData: {} }) }));
 
 setupMessageHandlers(bot);
 

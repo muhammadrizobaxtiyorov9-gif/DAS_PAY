@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { contactFormSchema } from '@/lib/validations';
 import { sendContactNotification } from '@/lib/telegram';
 import { sendContactEmail } from '@/lib/email';
+import prisma from '@/lib/prisma';
 
 /**
  * Rate limiting configuration
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { name, phone, email, service, message, honeypot } = result.data;
+    const { name, phone, email, service, message, honeypot, fromStation, toStation, transportType } = result.data;
 
     // Check honeypot (spam protection)
     if (honeypot) {
@@ -101,10 +102,10 @@ export async function POST(request: NextRequest) {
       console.warn('[Contact API] Email notification failed');
     }
 
-    // In production, also save to database using Prisma:
-    // await prisma.lead.create({
-    //   data: { name, phone, email, service, message, ip },
-    // });
+    // Save to database using Prisma
+    await prisma.lead.create({
+      data: { name, phone, email, service, message, ip, status: "new", fromStation, toStation, transportType },
+    });
 
     return NextResponse.json({ 
       success: true,

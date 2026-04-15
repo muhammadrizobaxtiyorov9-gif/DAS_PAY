@@ -22,9 +22,16 @@ model Lead {
   status    String   @default("new")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  transportType String?
+  fromStation   String?
+  toStation     String?
+  documents     Json?    @default("[]")
+  assignedToId  Int?
+  assignee      User?    @relation("UserLeads", fields: [assignedToId], references: [id])
 
   @@index([status])
   @@index([createdAt])
+  @@index([assignedToId])
 }
 
 /// Tracking queries for analytics
@@ -77,9 +84,12 @@ model Shipment {
   events       Json     @default("[]")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  clientPhone  String?
+  client       Client?  @relation(fields: [clientPhone], references: [phone])
 
   @@index([trackingCode])
   @@index([status])
+  @@index([clientPhone])
 }
 
 /// Rate limiting for forms
@@ -149,8 +159,26 @@ model User {
   updatedAt DateTime @updatedAt
   
   actions   UserAction[]
+  leads     Lead[]       @relation("UserLeads")
 
   @@index([username])
+}
+
+/// Registered clients
+model Client {
+  id         Int        @id @default(autoincrement())
+  phone      String     @unique
+  telegramId String?    @unique
+  name       String?
+  otpCode    String?
+  otpExpiry  DateTime?
+  password   String?
+  createdAt  DateTime   @default(now())
+  
+  shipments  Shipment[]
+
+  @@index([phone])
+  @@index([telegramId])
 }
 
 /// KPI and Activity tracking for Employees

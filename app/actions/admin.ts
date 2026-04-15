@@ -5,11 +5,11 @@ import { revalidatePath } from 'next/cache';
 
 // --- LEADS ---
 
-export async function updateLeadStatus(id: number, status: string) {
+export async function updateLeadStatus(id: number, status: string, assignedToId?: number) {
   try {
     await prisma.lead.update({
       where: { id },
-      data: { status }
+      data: { status, assignedToId }
     });
     revalidatePath('/[locale]/admin/leads', 'page');
     return { success: true };
@@ -55,6 +55,7 @@ export async function createShipment(data: {
   status: string;
   weight?: number;
   description?: string;
+  clientPhone?: string;
 }) {
   try {
     await prisma.shipment.create({
@@ -76,6 +77,7 @@ export async function updateShipment(id: number, data: {
   status: string;
   weight?: number;
   description?: string;
+  clientPhone?: string;
 }) {
   try {
     await prisma.shipment.update({

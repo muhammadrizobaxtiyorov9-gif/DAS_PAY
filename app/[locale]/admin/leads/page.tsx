@@ -6,7 +6,12 @@ export const revalidate = 0;
 
 export default async function LeadsAdminPage() {
   const leads = await prisma.lead.findMany({
-    orderBy: { createdAt: 'desc' }
+    orderBy: { createdAt: 'desc' },
+    include: { assignee: true }
+  });
+
+  const staff = await prisma.user.findMany({
+     select: { id: true, name: true, username: true }
   });
 
   return (
@@ -26,6 +31,7 @@ export default async function LeadsAdminPage() {
                 <th className="px-6 py-4 font-semibold text-gray-900">Raqam</th>
                 <th className="px-6 py-4 font-semibold text-gray-900">Xizmat turi</th>
                 <th className="px-6 py-4 font-semibold text-gray-900">Holat</th>
+                <th className="px-6 py-4 font-semibold text-gray-900">Mas'ul (Assignee)</th>
                 <th className="px-6 py-4 font-semibold text-gray-900">Sana</th>
                 <th className="px-6 py-4 font-semibold text-gray-900 text-right">O'chirish</th>
               </tr>
@@ -38,7 +44,7 @@ export default async function LeadsAdminPage() {
                    </td>
                 </tr>
               ) : leads.map(lead => (
-                <LeadRow key={lead.id} lead={lead} />
+                <LeadRow key={lead.id} lead={lead} staff={staff} />
               ))}
             </tbody>
           </table>
