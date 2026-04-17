@@ -15,10 +15,14 @@ import {
   X,
   ChevronRight,
   Shield,
+  ClipboardList,
+  CalendarDays,
 } from 'lucide-react';
 
 const navigation = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard, description: 'Umumiy ko\'rish' },
+  { name: 'Topshiriqlar', href: '/admin/tasks', icon: ClipboardList, description: 'Hodimlar vazifalari' },
+  { name: 'Kalendar', href: '/admin/calendar', icon: CalendarDays, description: 'Kunlik rejalar' },
   { name: 'Xodimlar (KPI)', href: '/admin/kpi', icon: Users, description: 'KPI reytingi' },
   { name: 'Yuklar', href: '/admin/shipments', icon: PackageSearch, description: 'Tracking boshqaruvi' },
   { name: 'Maqolalar', href: '/admin/blog', icon: Newspaper, description: 'Blog & yangiliklar' },

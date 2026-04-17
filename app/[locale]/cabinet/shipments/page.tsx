@@ -32,7 +32,7 @@ export default async function CabinetShipmentsPage({ params, searchParams }: Cab
       ) : (
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           {client.shipments.map(shipment => (
-            <Link href={`/${locale}/tracking/${shipment.trackingCode}`} key={shipment.id}>
+            <Link href={`/${locale}/cabinet/shipments/${shipment.id}`} key={shipment.id}>
               <div className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm hover:shadow-lg transition-all duration-300 group cursor-pointer relative overflow-hidden h-full flex flex-col">
                 <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:scale-110 group-hover:opacity-[0.05] transition-all">
                   <Package className="w-32 h-32" />

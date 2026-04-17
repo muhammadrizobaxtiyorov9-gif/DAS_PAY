@@ -2,13 +2,26 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
+import { Loader2, MapPin } from 'lucide-react';
 import { createShipment, updateShipment } from '@/app/actions/admin';
+import dynamic from 'next/dynamic';
+
+const DynamicLocationPicker = dynamic(() => import('./LocationPickerMap'), { 
+  ssr: false, 
+  loading: () => <div className="h-[400px] w-full bg-gray-100 animate-pulse flex items-center justify-center rounded-xl border border-gray-200"><MapPin className="text-gray-400 w-8 h-8" /></div> 
+});
 
 export function ShipmentForm({ initialData }: { initialData: any }) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  // Extract initial segments if saved, else empty
+  const initialSegments = typeof initialData?.routeSegments === 'string' 
+      ? JSON.parse(initialData.routeSegments) 
+      : (Array.isArray(initialData?.routeSegments) ? initialData.routeSegments : []);
+
+  const [segments, setSegments] = useState<any[]>(initialSegments);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -26,6 +39,7 @@ export function ShipmentForm({ initialData }: { initialData: any }) {
       clientPhone: formData.get('clientPhone') as string || undefined,
       weight: parseFloat(formData.get('weight') as string) || undefined,
       description: formData.get('description') as string,
+      routeSegments: JSON.parse(formData.get('routeSegments') as string || '[]')
     };
 
     let result;
@@ -139,6 +153,18 @@ export function ShipmentForm({ initialData }: { initialData: any }) {
           />
           <p className="text-xs text-gray-500 mt-2">Mijoz kabinetiga avtomatik ulanadi</p>
         </div>
+      </div>
+
+      <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+        <h4 className="font-bold text-lg text-[#042C53] flex items-center gap-2">Xarita bo'ylab marshrut (Vizual)</h4>
+        
+        {/* Hidden inputs to pass state to FormData */}
+        <input type="hidden" name="routeSegments" value={JSON.stringify(segments)} />
+
+        <DynamicLocationPicker 
+           segments={segments} 
+           setSegments={setSegments}
+        />
       </div>
 
       <div>

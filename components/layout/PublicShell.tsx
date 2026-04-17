@@ -11,8 +11,9 @@ import { Footer } from '@/components/layout/Footer';
 export function PublicShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isAdminRoute = pathname.includes('/admin');
+  const isCabinetRoute = pathname.includes('/cabinet');
 
-  if (isAdminRoute) {
+  if (isAdminRoute || isCabinetRoute) {
     return <>{children}</>;
   }
 

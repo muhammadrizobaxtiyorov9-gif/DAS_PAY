@@ -184,7 +184,7 @@ export default function LoginPage() {
                 </Button>
 
                 <div className="text-center mt-6">
-                  <a href="https://t.me/DasPayLogistic_bot" target="_blank" rel="noreferrer" className="text-sm font-semibold text-[#185FA5] hover:underline">
+                  <a href="https://t.me/daspay_info_bot" target="_blank" rel="noreferrer" className="text-sm font-semibold text-[#185FA5] hover:underline">
                     Bot orqali ro'yxatdan o'tish →
                   </a>
                 </div>

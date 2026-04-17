@@ -28,6 +28,7 @@ model Lead {
   documents     Json?    @default("[]")
   assignedToId  Int?
   assignee      User?    @relation("UserLeads", fields: [assignedToId], references: [id])
+  tasks         Task[]
 
   @@index([status])
   @@index([createdAt])
@@ -86,9 +87,20 @@ model Shipment {
   updatedAt    DateTime @updatedAt
   clientPhone  String?
   client       Client?  @relation(fields: [clientPhone], references: [phone])
+  
+  originLat       Float?
+  originLng       Float?
+  destinationLat  Float?
+  destinationLng  Float?
+  currentLat      Float?
+  currentLng      Float?
+  routeSegments   Json     @default("[]")
+  createdById     Int?
+  createdBy       User?    @relation("ShipmentsCreated", fields: [createdById], references: [id])
 
   @@index([trackingCode])
   @@index([status])
+  @@index([createdById])
   @@index([clientPhone])
 }
 
@@ -160,8 +172,32 @@ model User {
   
   actions   UserAction[]
   leads     Lead[]       @relation("UserLeads")
+  tasksCreated  Task[] @relation("TasksCreated")
+  tasksAssigned Task[] @relation("TasksAssigned")
+  shipmentsCreated Shipment[] @relation("ShipmentsCreated")
 
   @@index([username])
+}
+
+/// Task management for Employees
+model Task {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  leadId      Int?
+  lead        Lead?    @relation(fields: [leadId], references: [id])
+  assignedById Int
+  assignedBy   User    @relation("TasksCreated", fields: [assignedById], references: [id])
+  assignedToId Int
+  assignedTo   User    @relation("TasksAssigned", fields: [assignedToId], references: [id])
+  deadline     DateTime
+  status       String  @default("pending")  // pending, in_progress, completed, overdue
+  priority     String  @default("medium")   // low, medium, high, urgent
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([assignedToId])
+  @@index([deadline])
 }
 
 /// Registered clients

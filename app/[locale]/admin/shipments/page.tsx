@@ -3,10 +3,20 @@ import { Package, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { ShipmentRow } from './ShipmentRow';
 
+import { getAdminSession } from '@/lib/adminAuth';
+
 export const revalidate = 0;
 
 export default async function ShipmentsAdminPage() {
+  const session = await getAdminSession();
+  
+  // Filtering logic: SUPERADMIN sees all, ADMIN sees only their own shipments
+  const queryFilter = (session?.role === 'SUPERADMIN' || session?.role === 'admin') 
+    ? {} 
+    : { createdById: session?.userId || -1 };
+
   const shipments = await prisma.shipment.findMany({
+    where: queryFilter,
     orderBy: { createdAt: 'desc' }
   });
 
