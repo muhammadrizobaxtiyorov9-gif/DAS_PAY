@@ -13,13 +13,16 @@ import {
   X,
   ChevronRight,
   ShieldCheck,
-  LogOut
+  FileText,
+  BookUser,
 } from 'lucide-react';
 import { LogoutButton } from './components/LogoutButton';
 
 const navigation = [
   { name: 'Dashboard', href: '/cabinet', icon: LayoutDashboard },
   { name: 'Mening Yuklarim', href: '/cabinet/shipments', icon: Package },
+  { name: 'Invoyslarim', href: '/cabinet/invoices', icon: FileText },
+  { name: 'Manzillar kitobi', href: '/cabinet/addresses', icon: BookUser },
   { name: 'Arizalarim', href: '/cabinet/leads', icon: ListChecks },
   { name: 'Sozlamalar', href: '/cabinet/settings', icon: Settings },
 ];

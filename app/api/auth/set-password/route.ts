@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     await prisma.$executeRaw`UPDATE "Client" SET "password" = ${hashed} WHERE "id" = ${client.id}`;
 
     // Issue JWT
-    const token = await new SignJWT({ sub: client.telegramId, phone: client.phone, role: 'client' })
+    const token = await new SignJWT({ sub: client.telegramId ?? undefined, phone: client.phone, role: 'client' })
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt()
       .setExpirationTime('30d')

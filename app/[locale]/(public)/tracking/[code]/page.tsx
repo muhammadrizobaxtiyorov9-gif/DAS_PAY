@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
-import { Package, Truck, Clock, CheckCircle2, MapPin, Calendar, Weight } from 'lucide-react';
+import { Package, Truck, Clock, CheckCircle2, MapPin, Calendar, Weight, Ruler } from 'lucide-react';
+import { computeEta, formatEtaDate, formatEtaRelative, type RouteSegment } from '@/lib/map-utils';
 
 interface TrackingDetailsPageProps {
   params: Promise<{
@@ -47,10 +48,23 @@ export default async function TrackingDetailsPage({ params }: TrackingDetailsPag
 
   const events = eventsArray.map((event: any) => ({
     ...event,
-    status: event.status?.[locale] || event.status?.uz || event.status, 
+    status: event.status?.[locale] || event.status?.uz || event.status,
   }));
 
   const StatusIcon = statusIcons[shipment.status] || Package;
+
+  const rawSegments = typeof shipment.routeSegments === 'string'
+    ? (() => { try { return JSON.parse(shipment.routeSegments as unknown as string); } catch { return []; } })()
+    : Array.isArray(shipment.routeSegments) ? shipment.routeSegments : [];
+  const segments: RouteSegment[] = (rawSegments as unknown[]).map((s) => s as RouteSegment);
+  const eta = computeEta(segments, shipment.status, shipment.currentLat, shipment.currentLng);
+  const localeCode: 'uz' | 'ru' | 'en' = locale === 'ru' || locale === 'en' ? locale : 'uz';
+  const etaTitle =
+    localeCode === 'ru' ? 'Ожидаемая доставка' : localeCode === 'en' ? 'Estimated delivery' : 'Taxminiy yetkazib berish';
+  const remainingTitle =
+    localeCode === 'ru' ? 'Осталось' : localeCode === 'en' ? 'Remaining' : 'Qolgan masofa';
+  const progressTitle =
+    localeCode === 'ru' ? 'Прогресс' : localeCode === 'en' ? 'Progress' : 'Progress';
 
   return (
     <div className="min-h-screen bg-secondary py-12">
@@ -111,6 +125,43 @@ export default async function TrackingDetailsPage({ params }: TrackingDetailsPag
             </div>
           </div>
           
+          {eta.etaDate && shipment.status !== 'delivered' && segments.length >= 2 && (
+            <div className="border-b p-8">
+              <div className="rounded-2xl bg-gradient-to-br from-emerald-50 via-white to-emerald-50 p-5 ring-1 ring-emerald-200">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-lg shadow-emerald-500/30">
+                      <Clock className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">{etaTitle}</div>
+                      <div className="text-xl font-bold text-slate-900">{formatEtaRelative(eta.etaDate, localeCode)}</div>
+                      <div className="text-xs text-slate-600">{formatEtaDate(eta.etaDate, localeCode)}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-6 text-sm">
+                    <div>
+                      <div className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        <Ruler className="h-3 w-3" /> {remainingTitle}
+                      </div>
+                      <div className="mt-0.5 text-lg font-bold text-slate-800">{eta.remainingKm.toFixed(0)} km</div>
+                    </div>
+                    <div>
+                      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">{progressTitle}</div>
+                      <div className="mt-0.5 text-lg font-bold text-slate-800">{Math.round(eta.progress * 100)}%</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-emerald-100">
+                  <div
+                    className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all"
+                    style={{ width: `${Math.round(eta.progress * 100)}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="grid gap-6 border-b p-8 md:grid-cols-3 bg-muted/10">
               <div>
                   <p className="text-sm font-medium text-muted-foreground mb-1 flex items-center gap-2"><Weight className="w-4 h-4"/> Og'irligi</p>

@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+import { getMessages, isValidLocale, type Locale } from '@/lib/i18n';
 import { ServicesSection } from '@/components/sections/ServicesSection';
 import { CtaSection } from '@/components/sections/CtaSection';
 import { PageHeader } from '@/components/shared/PageHeader';
@@ -28,18 +30,18 @@ export async function generateMetadata({ params }: ServicesPageProps): Promise<M
   };
 }
 
-/**
- * Services listing page
- */
-export default function ServicesPage() {
+export default async function ServicesPage({ params }: ServicesPageProps) {
+  const { locale } = await params;
+  if (!isValidLocale(locale)) notFound();
+
+  const typedLocale = locale as Locale;
+  const messages = await getMessages(typedLocale);
+
   return (
     <>
-      <PageHeader
-        titleKey="services.title"
-        subtitleKey="services.subtitle"
-      />
-      <ServicesSection />
-      <CtaSection />
+      <PageHeader titleKey="services.title" subtitleKey="services.subtitle" />
+      <ServicesSection locale={typedLocale} messages={messages} />
+      <CtaSection locale={typedLocale} messages={messages} />
     </>
   );
 }

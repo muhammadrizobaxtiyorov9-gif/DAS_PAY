@@ -17,18 +17,29 @@ import {
   Shield,
   ClipboardList,
   CalendarDays,
+  ScrollText,
+  Banknote,
+  BarChart3,
+  UserCircle,
+  Star,
 } from 'lucide-react';
 
 const navigation = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard, description: 'Umumiy ko\'rish' },
+  { name: 'Analitika', href: '/admin/analytics', icon: BarChart3, description: 'KPI va tendensiyalar' },
   { name: 'Topshiriqlar', href: '/admin/tasks', icon: ClipboardList, description: 'Hodimlar vazifalari' },
   { name: 'Kalendar', href: '/admin/calendar', icon: CalendarDays, description: 'Kunlik rejalar' },
   { name: 'Xodimlar (KPI)', href: '/admin/kpi', icon: Users, description: 'KPI reytingi' },
+  { name: 'Mijozlar', href: '/admin/clients', icon: UserCircle, description: "Mijoz 360° profili" },
   { name: 'Yuklar', href: '/admin/shipments', icon: PackageSearch, description: 'Tracking boshqaruvi' },
+  { name: 'Tariflar', href: '/admin/tariffs', icon: Banknote, description: 'Narx katalogi' },
+  { name: 'Invoyslar', href: '/admin/invoices', icon: FileSignature, description: 'Hisob-fakturalar' },
   { name: 'Maqolalar', href: '/admin/blog', icon: Newspaper, description: 'Blog & yangiliklar' },
   { name: 'Arizalar', href: '/admin/leads', icon: Users, description: 'Mijoz so\'rovlari' },
+  { name: 'NPS fikrlar', href: '/admin/feedback', icon: Star, description: "Yetkazib berilgandan keyin baholash" },
   { name: 'Shartnomalar', href: '/admin/contracts', icon: FileSignature, description: 'Kontrakt arxivi' },
   { name: 'Adminlar', href: '/admin/users', icon: Shield, description: 'Xodimlar boshqaruvi' },
+  { name: 'Audit Log', href: '/admin/audit', icon: ScrollText, description: 'Tizim harakatlari tarixi' },
 ];
 
 export default function AdminLayout({
@@ -156,9 +167,9 @@ export default function AdminLayout({
         <div className="border-t border-gray-100 px-4 py-4">
           <button
             onClick={handleLogout}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-500 transition-all duration-200 hover:bg-red-50 hover:text-red-600"
+            className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-500 transition-all duration-200 hover:bg-red-50 hover:text-red-600"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gray-100 transition-colors group-hover:bg-red-100">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gray-100 text-gray-500 transition-colors group-hover:bg-red-100 group-hover:text-red-600">
               <LogOut className="h-[18px] w-[18px]" />
             </div>
             <span>Tizimdan chiqish</span>

@@ -3,40 +3,8 @@ import { contactFormSchema } from '@/lib/validations';
 import { sendContactNotification } from '@/lib/telegram';
 import { sendContactEmail } from '@/lib/email';
 import prisma from '@/lib/prisma';
-
-/**
- * Rate limiting configuration
- */
-const RATE_LIMIT = 3; // max submissions per window
-const RATE_LIMIT_WINDOW = 60 * 60 * 1000; // 1 hour in ms
-
-const rateLimitMap = new Map<string, { count: number; windowStart: number }>();
-
-/**
- * Check rate limit for an IP
- */
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const record = rateLimitMap.get(ip);
-
-  if (!record) {
-    rateLimitMap.set(ip, { count: 1, windowStart: now });
-    return true;
-  }
-
-  if (now - record.windowStart > RATE_LIMIT_WINDOW) {
-    // Window expired, reset
-    rateLimitMap.set(ip, { count: 1, windowStart: now });
-    return true;
-  }
-
-  if (record.count >= RATE_LIMIT) {
-    return false;
-  }
-
-  record.count++;
-  return true;
-}
+import { pickNextAssignee } from '@/lib/lead-assign';
+import { rateLimit, getClientIp, rateLimitHeaders } from '@/lib/rate-limit';
 
 /**
  * POST /api/contact
@@ -44,16 +12,12 @@ function checkRateLimit(ip: string): boolean {
  */
 export async function POST(request: NextRequest) {
   try {
-    // Get client IP
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 
-               request.headers.get('x-real-ip') || 
-               'unknown';
-
-    // Check rate limit
-    if (!checkRateLimit(ip)) {
+    const ip = getClientIp(request);
+    const rl = rateLimit(ip, { key: 'contact', limit: 3, windowMs: 60 * 60 * 1000 });
+    if (!rl.ok) {
       return NextResponse.json(
         { error: 'Too many requests. Please try again later.' },
-        { status: 429 }
+        { status: 429, headers: rateLimitHeaders(rl) }
       );
     }
 
@@ -102,9 +66,22 @@ export async function POST(request: NextRequest) {
       console.warn('[Contact API] Email notification failed');
     }
 
-    // Save to database using Prisma
+    // Save to database using Prisma (auto-assign to staff in round-robin)
+    const assignedToId = await pickNextAssignee();
     await prisma.lead.create({
-      data: { name, phone, email, service, message, ip, status: "new", fromStation, toStation, transportType },
+      data: {
+        name,
+        phone,
+        email,
+        service,
+        message,
+        ip,
+        status: 'new',
+        fromStation,
+        toStation,
+        transportType,
+        assignedToId: assignedToId ?? undefined,
+      },
     });
 
     return NextResponse.json({ 

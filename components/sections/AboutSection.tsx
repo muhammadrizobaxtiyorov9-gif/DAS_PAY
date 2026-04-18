@@ -1,51 +1,40 @@
-'use client';
-
-import { motion } from 'framer-motion';
 import { Shield, Zap, Headphones } from 'lucide-react';
-import { useTranslations } from '@/components/providers/LocaleProvider';
+import { getTranslator, type Locale } from '@/lib/i18n-translator';
+import { Reveal } from '@/components/shared/motion-primitives';
 
 const usps = [
   { key: 'reliable', icon: Shield },
   { key: 'fast', icon: Zap },
   { key: 'support', icon: Headphones },
-];
+] as const;
 
-/**
- * About section with company story and USP blocks
- */
-export function AboutSection() {
-  const t = useTranslations();
+interface AboutSectionProps {
+  locale: Locale;
+  messages: Record<string, unknown>;
+}
+
+export function AboutSection({ locale: _locale, messages }: AboutSectionProps) {
+  const t = getTranslator(messages);
 
   return (
     <section className="bg-background py-16 lg:py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid items-center gap-12 lg:grid-cols-2">
-          {/* Content */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-          >
+          <Reveal direction="right">
             <h2 className="text-3xl font-bold text-foreground sm:text-4xl">
               {t('about.title')}
             </h2>
-            <p className="mt-2 text-lg text-[#185FA5]">
-              {t('about.subtitle')}
-            </p>
+            <p className="mt-2 text-lg text-[#185FA5]">{t('about.subtitle')}</p>
             <p className="mt-6 text-muted-foreground leading-relaxed">
               {t('about.story')}
             </p>
 
-            {/* USP Cards */}
             <div className="mt-10 grid gap-6 sm:grid-cols-3">
               {usps.map((usp, index) => (
-                <motion.div
+                <Reveal
                   key={usp.key}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  direction="up"
+                  delay={index * 0.1}
                   className="rounded-xl border bg-card p-4 text-center"
                 >
                   <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-[#042C53]/5">
@@ -57,19 +46,12 @@ export function AboutSection() {
                   <p className="mt-1 text-sm text-muted-foreground">
                     {t(`about.usps.${usp.key}.description`)}
                   </p>
-                </motion.div>
+                </Reveal>
               ))}
             </div>
-          </motion.div>
+          </Reveal>
 
-          {/* Image placeholder / Visual element */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="relative"
-          >
+          <Reveal direction="left" delay={0.2} className="relative">
             <div className="aspect-square overflow-hidden rounded-2xl bg-gradient-to-br from-[#042C53] to-[#185FA5]">
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="grid grid-cols-2 gap-4 p-8">
@@ -99,11 +81,10 @@ export function AboutSection() {
                   </div>
                 </div>
               </div>
-              {/* Decorative elements */}
               <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-[#378ADD]/30 blur-2xl" />
               <div className="absolute -bottom-4 -left-4 h-32 w-32 rounded-full bg-[#185FA5]/30 blur-2xl" />
             </div>
-          </motion.div>
+          </Reveal>
         </div>
       </div>
     </section>

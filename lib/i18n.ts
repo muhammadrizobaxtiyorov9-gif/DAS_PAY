@@ -1,7 +1,4 @@
-/**
- * i18n configuration for DasPay
- * Supports Uzbek (uz), Russian (ru), and English (en)
- */
+import { cache } from 'react';
 
 export const locales = ['uz', 'ru', 'en'] as const;
 export type Locale = (typeof locales)[number];
@@ -20,36 +17,22 @@ export const localeFlags: Record<Locale, string> = {
   en: '🇬🇧',
 };
 
-/**
- * Get messages for a specific locale
- */
-export async function getMessages(locale: Locale) {
+export const getMessages = cache(async (locale: Locale) => {
+  const targetLocale = isValidLocale(locale) ? locale : defaultLocale;
   try {
-    const messages = await import(`@/messages/${locale}.json`);
+    const messages = await import(`@/messages/${targetLocale}.json`);
     return messages.default;
   } catch {
     const messages = await import(`@/messages/${defaultLocale}.json`);
     return messages.default;
   }
-}
+});
 
-/**
- * Validate and return a valid locale
- */
 export function isValidLocale(locale: string): locale is Locale {
-  return locales.includes(locale as Locale);
+  return (locales as readonly string[]).includes(locale);
 }
 
-/**
- * Get locale from pathname
- */
 export function getLocaleFromPathname(pathname: string): Locale {
-  const segments = pathname.split('/').filter(Boolean);
-  const potentialLocale = segments[0];
-  
-  if (potentialLocale && isValidLocale(potentialLocale)) {
-    return potentialLocale;
-  }
-  
-  return defaultLocale;
+  const segment = pathname.split('/', 2)[1];
+  return segment && isValidLocale(segment) ? segment : defaultLocale;
 }

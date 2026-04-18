@@ -1,17 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Bot } from 'grammy';
+import { rateLimit, getClientIp, rateLimitHeaders } from '@/lib/rate-limit';
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request);
+  const ipRl = rateLimit(ip, { key: 'otp:send:ip', limit: 5, windowMs: 10 * 60 * 1000 });
+  if (!ipRl.ok) {
+    return NextResponse.json(
+      { success: false, error: 'Juda ko\'p so\'rov. Keyinroq qayta urining.' },
+      { status: 429, headers: rateLimitHeaders(ipRl) }
+    );
+  }
+
   try {
-    const { phone } = await request.json();
-    if (!phone) {
+    const body = await request.json().catch(() => null);
+    const phone = typeof body?.phone === 'string' ? body.phone : '';
+    if (!phone || phone.length > 32) {
       return NextResponse.json({ success: false, error: 'Telefon raqam kiritilmadi' }, { status: 400 });
     }
 
     const cleanPhone = phone.replace(/\D/g, '');
+
+    // Per-phone limit: 3 OTPs per 15 min regardless of IP
+    const phoneRl = rateLimit(cleanPhone, { key: 'otp:send:phone', limit: 3, windowMs: 15 * 60 * 1000 });
+    if (!phoneRl.ok) {
+      return NextResponse.json(
+        { success: false, error: 'Ushbu raqamga juda ko\'p kod yuborildi. Keyinroq qayta urining.' },
+        { status: 429, headers: rateLimitHeaders(phoneRl) }
+      );
+    }
 
     const client = await prisma.client.findFirst({
       where: { phone: { endsWith: cleanPhone.slice(-9) } }

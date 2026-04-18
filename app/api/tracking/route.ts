@@ -16,18 +16,25 @@ export async function POST(request: NextRequest) {
 
     const { trackingCode } = result.data;
     const locale = (body.locale as string) || 'uz';
-    const formattedCode = trackingCode.replace(/[\s-]/g, '').toUpperCase();
+    const trimmedCode = trackingCode.trim().toUpperCase();
+    const strippedCode = trimmedCode.replace(/[\s-]/g, '');
 
-    // Look up tracking data from Prisma
-    const trackingData = await prisma.shipment.findUnique({
-      where: { trackingCode: formattedCode }
+    // Try exact match first, then stripped version (handles codes with or without dashes)
+    const trackingData = await prisma.shipment.findFirst({
+      where: {
+        OR: [
+          { trackingCode: trimmedCode },
+          { trackingCode: strippedCode },
+          { trackingCode: { equals: trimmedCode, mode: 'insensitive' } },
+        ],
+      },
     });
 
     // Write a tracking event for analytics (fire and forget)
     // Avoid await to prevent blocking the response
     prisma.trackingQuery.create({
       data: {
-        trackingCode: formattedCode,
+        trackingCode: trimmedCode,
         ip: request.headers.get('x-forwarded-for') || '127.0.0.1',
         found: !!trackingData,
       }

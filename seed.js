@@ -4,8 +4,8 @@ const bcrypt = require('bcryptjs');
 const prisma = new PrismaClient();
 
 async function main() {
-  const adminUsername = 'daspay01';
-  const plainPassword = 'paydas01';
+  const adminUsername = 'daspayadmin';
+  const plainPassword = 'paydasadmin';
 
   const existingAdmin = await prisma.user.findUnique({
     where: { username: adminUsername }

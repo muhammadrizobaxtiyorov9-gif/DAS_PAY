@@ -30,5 +30,5 @@ export async function generateMetadata({ params }: PrivacyPageProps): Promise<Me
  * Privacy Policy page
  */
 export default function PrivacyPage() {
-  return <PrivacyPageContent type="privacy" />;
+  return <PrivacyPageContent />;
 }

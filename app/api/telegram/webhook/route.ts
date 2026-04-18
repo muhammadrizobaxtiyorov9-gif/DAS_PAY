@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Bot, session } from 'grammy';
-import { setupMessageHandlers, MyContext } from '@/bot/handlers/message';
+import { setupMessageHandlers, MyContext, initial } from '@/bot/handlers/message';
 
 // Tokenni tekshiramiz
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 const bot = new Bot<MyContext>(TELEGRAM_BOT_TOKEN);
 
-bot.use(session({ initial: () => ({ step: 'idle', calcData: {} }) }));
+bot.use(session({ initial }));
 
 // Barcha handlerlarni yuklash (start, help, AI)
 setupMessageHandlers(bot);

@@ -1,13 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { SignJWT } from 'jose';
+import { rateLimit, getClientIp, rateLimitHeaders } from '@/lib/rate-limit';
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'super-secret-key-for-daspay-client-2026');
 
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request);
+  const rl = rateLimit(ip, { key: 'otp:verify', limit: 10, windowMs: 10 * 60 * 1000 });
+  if (!rl.ok) {
+    return NextResponse.json(
+      { success: false, error: 'Juda ko\'p urinish. Keyinroq qayta urining.' },
+      { status: 429, headers: rateLimitHeaders(rl) }
+    );
+  }
+
   try {
-    const { phone, otp } = await request.json();
-    if (!phone || !otp) {
+    const body = await request.json().catch(() => null);
+    const phone = typeof body?.phone === 'string' ? body.phone : '';
+    const otp = typeof body?.otp === 'string' ? body.otp : '';
+    if (!phone || !otp || otp.length !== 4 || !/^\d{4}$/.test(otp)) {
       return NextResponse.json({ success: false, error: "Raqam yoki kod kiritilmadi" }, { status: 400 });
     }
 
@@ -47,7 +59,7 @@ export async function POST(request: NextRequest) {
     } catch(e) {}
 
     // Generate JWT
-    const token = await new SignJWT({ sub: client.telegramId, phone: client.phone, role: 'client' })
+    const token = await new SignJWT({ sub: client.telegramId ?? undefined, phone: client.phone, role: 'client' })
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt()
       .setExpirationTime('30d')

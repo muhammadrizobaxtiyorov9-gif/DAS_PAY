@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Shield, Plus, SimpleUser, UserPlus, StopCircle, CheckCircle } from 'lucide-react';
+import { Shield, Plus, UserPlus, StopCircle, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function UsersAdminPage() {

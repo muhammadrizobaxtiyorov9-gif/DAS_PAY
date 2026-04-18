@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+import { getMessages, isValidLocale, type Locale } from '@/lib/i18n';
 import { TrackingSection } from '@/components/sections/TrackingSection';
 import { FaqSection } from '@/components/sections/FaqSection';
 import { PageHeader } from '@/components/shared/PageHeader';
@@ -17,7 +19,7 @@ export async function generateMetadata({ params }: TrackingPageProps): Promise<M
   };
 
   const descriptions: Record<string, string> = {
-    uz: "Yukingizni kuzatish raqami orqali real vaqtda kuzating.",
+    uz: 'Yukingizni kuzatish raqami orqali real vaqtda kuzating.',
     ru: 'Отслеживайте ваш груз в реальном времени по номеру отслеживания.',
     en: 'Track your shipment in real-time using your tracking number.',
   };
@@ -28,20 +30,20 @@ export async function generateMetadata({ params }: TrackingPageProps): Promise<M
   };
 }
 
-/**
- * Tracking page
- */
-export default function TrackingPage() {
+export default async function TrackingPage({ params }: TrackingPageProps) {
+  const { locale } = await params;
+  if (!isValidLocale(locale)) notFound();
+
+  const typedLocale = locale as Locale;
+  const messages = await getMessages(typedLocale);
+
   return (
     <>
-      <PageHeader
-        titleKey="tracking.title"
-        subtitleKey="tracking.subtitle"
-      />
+      <PageHeader titleKey="tracking.title" subtitleKey="tracking.subtitle" />
       <div className="-mt-10">
         <TrackingSection />
       </div>
-      <FaqSection />
+      <FaqSection locale={typedLocale} messages={messages} />
     </>
   );
 }

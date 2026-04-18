@@ -39,7 +39,7 @@ export function CabinetLeadForm({ defaultName, defaultPhone }: { defaultName: st
   });
 
   const selectedService = watch('service');
-  const isRailway = selectedService === 'railway_freight';
+  const isRailway = selectedService === 'rail';
 
   const onSubmit = async (data: ContactFormData) => {
     setIsSubmitting(true);
@@ -85,11 +85,12 @@ export function CabinetLeadForm({ defaultName, defaultPhone }: { defaultName: st
           <SelectContent>
             {serviceTypes.map((service) => (
               <SelectItem key={service.value} value={service.value}>
-                {service.value === 'railway_freight' ? 'Temir yo\'l orqali tashish' :
-                 service.value === 'road_freight' ? 'Avto transport orqali tashish' :
-                 service.value === 'air_freight' ? 'Havo yo\'llari orqali tashish' :
-                 service.value === 'customs_clearance' ? 'Bojxona rasmiylashtiruvi' :
-                 service.value === 'warehousing' ? 'Ombor xizmatlari' : 'Boshqa'}
+                {service.value === 'rail' ? 'Temir yo\'l orqali tashish' :
+                 service.value === 'road' ? 'Avto transport orqali tashish' :
+                 service.value === 'air' ? 'Havo yo\'llari orqali tashish' :
+                 service.value === 'customs' ? 'Bojxona rasmiylashtiruvi' :
+                 service.value === 'warehouse' ? 'Ombor xizmatlari' :
+                 service.value === 'international' ? 'Xalqaro tashish' : 'Boshqa'}
               </SelectItem>
             ))}
           </SelectContent>

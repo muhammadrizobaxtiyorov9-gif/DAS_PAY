@@ -1,6 +1,7 @@
 import { getAuthenticatedClient } from '../lib/clientAuth';
-import { Package, MapPin, Truck } from 'lucide-react';
+import { Package, Truck, Plus, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import { shipmentStatusMeta } from '@/lib/shipment-status';
 
 interface CabinetShipmentsPageProps {
   params: Promise<{ locale: string }>;
@@ -12,78 +13,112 @@ export default async function CabinetShipmentsPage({ params, searchParams }: Cab
   const sp = await searchParams;
   const client = await getAuthenticatedClient(locale, sp);
 
+  const shipments = client.shipments;
+  const activeCount = shipments.filter((s) => s.status !== 'delivered' && s.status !== 'cancelled').length;
+  const deliveredCount = shipments.filter((s) => s.status === 'delivered').length;
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-        <h2 className="text-2xl font-bold text-[#042C53] flex items-center gap-2">
-          <Truck className="text-[#185FA5]" /> Mening Yuklarim
-        </h2>
-        <span className="bg-[#185FA5] text-white px-3 py-1 rounded-full text-sm font-bold shadow-sm">
-          {client.shipments.length} yuk
-        </span>
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#185FA5]/10 text-[#185FA5]">
+            <Truck className="h-6 w-6" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-[#042C53] sm:text-2xl">Mening Yuklarim</h1>
+            <p className="text-xs text-gray-500 sm:text-sm">
+              {shipments.length} yuk · {activeCount} faol · {deliveredCount} yetkazilgan
+            </p>
+          </div>
+        </div>
+        <Link
+          href={`/${locale}/cabinet/shipments/new`}
+          className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition-colors hover:bg-emerald-700"
+        >
+          <Plus className="h-4 w-4" /> Yangi so'rov
+        </Link>
       </div>
 
-      {client.shipments.length === 0 ? (
-        <div className="bg-white rounded-3xl border border-gray-100 p-16 text-center shadow-sm">
-          <Truck className="h-16 w-16 text-gray-200 mx-auto mb-4" />
+      {shipments.length === 0 ? (
+        <div className="rounded-3xl border border-gray-100 bg-white p-16 text-center shadow-sm">
+          <Truck className="mx-auto mb-4 h-16 w-16 text-gray-200" />
           <p className="text-xl font-medium text-gray-600">Hozircha faol yuklaringiz yo'q</p>
-          <p className="text-sm text-gray-400 mt-2">Yangi yuklar tizimga kiritilganda shu yerda xabardor bo'lasiz.</p>
+          <p className="mt-2 text-sm text-gray-400">
+            Yangi yuklar tizimga kiritilganda shu yerda xabardor bo'lasiz.
+          </p>
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {client.shipments.map(shipment => (
-            <Link href={`/${locale}/cabinet/shipments/${shipment.id}`} key={shipment.id}>
-              <div className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm hover:shadow-lg transition-all duration-300 group cursor-pointer relative overflow-hidden h-full flex flex-col">
-                <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:scale-110 group-hover:opacity-[0.05] transition-all">
-                  <Package className="w-32 h-32" />
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {shipments.map((shipment) => {
+            const status = shipmentStatusMeta(shipment.status);
+            return (
+              <Link
+                href={`/${locale}/cabinet/shipments/${shipment.id}`}
+                key={shipment.id}
+                className="group relative flex h-full flex-col overflow-hidden rounded-3xl border border-gray-100 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-[#185FA5]/30 hover:shadow-lg"
+              >
+                <div className="pointer-events-none absolute top-0 right-0 p-4 opacity-[0.04] transition-transform duration-500 group-hover:scale-110 group-hover:opacity-[0.06]">
+                  <Package className="h-32 w-32" />
                 </div>
-                
-                <div className="flex justify-between items-start mb-6">
+
+                <div className="mb-6 flex items-start justify-between">
                   <div className="space-y-1">
-                     <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Tracking Kod</p>
-                     <span className="font-mono font-black text-lg text-[#042C53] bg-gray-50 px-3 py-1 rounded-lg border group-hover:bg-blue-50 group-hover:text-[#185FA5] transition-colors">
-                       {shipment.trackingCode}
-                     </span>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                      Tracking Kod
+                    </p>
+                    <span className="inline-block rounded-lg border bg-gray-50 px-3 py-1 font-mono text-base font-black text-[#042C53] transition-colors group-hover:border-[#185FA5]/30 group-hover:bg-blue-50 group-hover:text-[#185FA5]">
+                      {shipment.trackingCode}
+                    </span>
                   </div>
-                  <span className={`text-[10px] font-black uppercase px-3 py-1.5 rounded-full tracking-wider ${
-                    shipment.status === 'delivered' ? 'bg-green-100 text-green-700' :
-                    shipment.status === 'in_transit' ? 'bg-blue-100 text-[#185FA5] animate-pulse' : 'bg-orange-100 text-orange-700'
-                  }`}>
-                    {shipment.status}
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${status.pill}`}
+                  >
+                    <span className={`h-1.5 w-1.5 rounded-full ${status.dot}`} />
+                    {status.label}
                   </span>
                 </div>
 
-                <div className="flex-1 space-y-4">
-                  <div className="flex bg-gray-50 rounded-2xl p-4 border border-gray-100 gap-4 relative isolate overflow-hidden">
-                     <div className="absolute left-6 top-8 bottom-8 w-0.5 bg-dashed border-l-2 border-dashed border-gray-300 -z-10" />
-                     <div className="space-y-6 flex-1">
-                        <div className="flex items-center gap-3">
-                           <div className="h-4 w-4 rounded-full bg-white border-4 border-gray-300 flex-shrink-0" />
-                           <div>
-                              <p className="text-[10px] font-bold text-gray-400 uppercase">Qayerdan</p>
-                              <p className="text-sm font-semibold text-gray-800 line-clamp-1">{shipment.origin}</p>
-                           </div>
+                <div className="flex-1">
+                  <div className="relative rounded-2xl border border-gray-100 bg-gray-50/70 p-4">
+                    <span
+                      className="absolute left-[1.375rem] top-6 bottom-6 w-px border-l border-dashed border-gray-300"
+                      aria-hidden="true"
+                    />
+                    <div className="space-y-5">
+                      <div className="flex items-start gap-3">
+                        <div className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 rounded-full border-[3px] border-emerald-500 bg-white" />
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold uppercase text-gray-400">Qayerdan</p>
+                          <p className="truncate text-sm font-semibold text-gray-800">
+                            {shipment.origin || '—'}
+                          </p>
                         </div>
-                        <div className="flex items-center gap-3">
-                           <div className="h-4 w-4 rounded-full bg-white border-4 border-[#185FA5] flex-shrink-0" />
-                           <div>
-                              <p className="text-[10px] font-bold text-gray-400 uppercase">Qayerga</p>
-                              <p className="text-sm font-semibold text-[#042C53] line-clamp-1">{shipment.destination}</p>
-                           </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 rounded-full border-[3px] border-[#185FA5] bg-white" />
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold uppercase text-gray-400">Qayerga</p>
+                          <p className="truncate text-sm font-semibold text-[#042C53]">
+                            {shipment.destination || '—'}
+                          </p>
                         </div>
-                     </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="mt-6 pt-4 border-t flex items-center justify-between text-xs text-gray-500 font-medium">
-                  <div className="flex items-center gap-1">
-                     <Truck className="w-3.5 h-3.5" /> Vazni: {shipment.weight}
+                <div className="mt-5 flex items-center justify-between border-t pt-4 text-xs font-medium text-gray-500">
+                  <div className="flex items-center gap-1.5">
+                    <Truck className="h-3.5 w-3.5" />
+                    {shipment.weight || '—'}
                   </div>
-                  <span>Yangilangan: {shipment.updatedAt.toISOString().slice(0, 10)}</span>
+                  <span className="flex items-center gap-1 text-[#185FA5] opacity-0 transition-opacity group-hover:opacity-100">
+                    Batafsil <ArrowRight className="h-3 w-3" />
+                  </span>
                 </div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>

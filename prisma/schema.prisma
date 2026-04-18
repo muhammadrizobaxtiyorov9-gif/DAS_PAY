@@ -95,8 +95,23 @@ model Shipment {
   currentLat      Float?
   currentLng      Float?
   routeSegments   Json     @default("[]")
+
+  /// 'road' | 'rail' | 'air' | 'sea' — affects ETA avg speed
+  transportMode   String?
+  /// Total route distance in km (from OSRM or manual)
+  distanceKm      Float?
+  /// Projected delivery date/time
+  etaAt           DateTime?
+  /// Revenue captured on the shipment (from invoices or manual)
+  revenue         Float    @default(0)
+  /// Internal cost (carriers, fuel, customs) for margin calc
+  cost            Float    @default(0)
+  currency        String   @default("USD")
+
   createdById     Int?
   createdBy       User?    @relation("ShipmentsCreated", fields: [createdById], references: [id])
+  invoices        Invoice[]
+  feedback        Feedback?
 
   @@index([trackingCode])
   @@index([status])
@@ -154,9 +169,88 @@ model Contract {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
+  invoices        Invoice[]
+
   @@index([contractNumber])
   @@index([status])
   @@index([createdAt])
+}
+
+/// Freight tariff catalog — used by calculator and quick quotes
+model Tariff {
+  id             Int      @id @default(autoincrement())
+  /// Human label e.g. "Xitoy → Toshkent (Avto)"
+  name           String
+  originCountry  String
+  originCity     String?
+  destCountry    String
+  destCity       String?
+  /// truck, train, air, sea, multimodal
+  mode           String   @default("truck")
+  /// Price per kg in `currency`
+  pricePerKg     Float    @default(0)
+  /// Fixed baseline fee added to every shipment on this lane
+  baseFee        Float    @default(0)
+  /// Minimum billable weight (kg)
+  minWeight      Float    @default(0)
+  /// USD / UZS / RUB
+  currency       String   @default("USD")
+  /// Estimated transit time in days
+  transitDays    Int?
+  notes          String?
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([originCountry, destCountry])
+  @@index([mode])
+  @@index([active])
+}
+
+/// Invoice for a shipment / client
+model Invoice {
+  id           Int      @id @default(autoincrement())
+  number       String   @unique
+  issueDate    DateTime @default(now())
+  dueDate      DateTime
+
+  shipmentId   Int?
+  shipment     Shipment? @relation(fields: [shipmentId], references: [id])
+
+  clientPhone  String?
+  client       Client?   @relation(fields: [clientPhone], references: [phone])
+
+  contractId   Int?
+  contract     Contract? @relation(fields: [contractId], references: [id])
+
+  /// [{ description, quantity, unitPrice, total }]
+  items        Json     @default("[]")
+  subtotal     Float    @default(0)
+  taxRate      Float    @default(0)
+  tax          Float    @default(0)
+  total        Float    @default(0)
+  paidAmount   Float    @default(0)
+  currency     String   @default("USD")
+
+  /// draft, sent, paid, overdue, cancelled
+  status       String   @default("draft")
+  notes        String?
+
+  sentAt       DateTime?
+  paidAt       DateTime?
+
+  createdById  Int?
+  createdBy    User?    @relation("InvoicesCreated", fields: [createdById], references: [id])
+  payments     Payment[]
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([status])
+  @@index([dueDate])
+  @@index([clientPhone])
+  @@index([shipmentId])
+  @@index([number])
 }
 
 /// Admin/Employee users
@@ -175,6 +269,7 @@ model User {
   tasksCreated  Task[] @relation("TasksCreated")
   tasksAssigned Task[] @relation("TasksAssigned")
   shipmentsCreated Shipment[] @relation("ShipmentsCreated")
+  invoicesCreated Invoice[]  @relation("InvoicesCreated")
 
   @@index([username])
 }
@@ -210,11 +305,90 @@ model Client {
   otpExpiry  DateTime?
   password   String?
   createdAt  DateTime   @default(now())
-  
+
+  /// Notification preferences
+  notifyStatusChange  Boolean @default(true)
+  notifyEta           Boolean @default(true)
+  notifyInvoices      Boolean @default(true)
+  notifyPromo         Boolean @default(false)
+  notifyEmail         String?
+
   shipments  Shipment[]
+  invoices   Invoice[]
+  addresses  ClientAddress[]
 
   @@index([phone])
   @@index([telegramId])
+}
+
+/// Saved sender/receiver addresses for a client (address book)
+model ClientAddress {
+  id          Int      @id @default(autoincrement())
+  clientId    Int
+  client      Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  /// 'sender' or 'receiver'
+  role        String
+  label       String?
+  fullName    String
+  phone       String
+  country     String
+  city        String?
+  address     String?
+  notes       String?
+  isDefault   Boolean  @default(false)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([clientId])
+  @@index([clientId, role])
+}
+
+/// Online payment attempts for invoices (Click, Payme, etc.)
+model Payment {
+  id          Int       @id @default(autoincrement())
+  invoiceId   Int
+  invoice     Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  /// 'click' | 'payme' | 'manual'
+  provider    String
+  /// External transaction id from gateway
+  externalId  String?   @unique
+  amount      Float
+  currency    String    @default("UZS")
+  /// 'pending' | 'paid' | 'cancelled' | 'failed'
+  status      String    @default("pending")
+  /// Payload returned by gateway webhook (for audit)
+  rawPayload  Json?
+
+  paidAt      DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([invoiceId])
+  @@index([status])
+  @@index([provider, externalId])
+}
+
+/// Post-delivery NPS feedback tied to a shipment
+model Feedback {
+  id          Int      @id @default(autoincrement())
+  shipmentId  Int      @unique
+  shipment    Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  /// Net Promoter Score 0-10
+  score       Int
+  comment     String?
+  /// Optional category: speed, communication, price, packaging, other
+  category    String?
+  /// hash token mailed to client so only they can submit
+  token       String   @unique
+  submittedAt DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([score])
+  @@index([createdAt])
 }
 
 /// KPI and Activity tracking for Employees

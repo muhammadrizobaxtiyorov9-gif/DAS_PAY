@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { ServiceDetailContent } from '@/components/services/ServiceDetailContent';
 import { CtaSection } from '@/components/sections/CtaSection';
+import { getMessages, isValidLocale, type Locale } from '@/lib/i18n';
 
 const validSlugs = ['road', 'warehouse', 'international', 'air', 'rail', 'customs'];
 
@@ -42,16 +43,19 @@ export async function generateMetadata({ params }: ServicePageProps): Promise<Me
  * Individual service detail page
  */
 export default async function ServicePage({ params }: ServicePageProps) {
-  const { slug } = await params;
-  
-  if (!validSlugs.includes(slug)) {
+  const { locale, slug } = await params;
+
+  if (!validSlugs.includes(slug) || !isValidLocale(locale)) {
     notFound();
   }
+
+  const typedLocale = locale as Locale;
+  const messages = await getMessages(typedLocale);
 
   return (
     <>
       <ServiceDetailContent slug={slug} />
-      <CtaSection />
+      <CtaSection locale={typedLocale} messages={messages} />
     </>
   );
 }

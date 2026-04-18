@@ -1,15 +1,30 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, MapPin } from 'lucide-react';
 import { createShipment, updateShipment } from '@/app/actions/admin';
-import dynamic from 'next/dynamic';
 
-const DynamicLocationPicker = dynamic(() => import('./LocationPickerMap'), { 
-  ssr: false, 
-  loading: () => <div className="h-[400px] w-full bg-gray-100 animate-pulse flex items-center justify-center rounded-xl border border-gray-200"><MapPin className="text-gray-400 w-8 h-8" /></div> 
-});
+const LazyLocationPicker = lazy(() => import('./LocationPickerMap'));
+
+function MapLoader() {
+  return (
+    <div className="h-[400px] w-full bg-gray-100 animate-pulse flex items-center justify-center rounded-xl border border-gray-200">
+      <MapPin className="text-gray-400 w-8 h-8" />
+    </div>
+  );
+}
+
+function DynamicLocationPicker(props: { segments: any[]; setSegments: (val: any[]) => void }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  if (!mounted) return <MapLoader />;
+  return (
+    <Suspense fallback={<MapLoader />}>
+      <LazyLocationPicker {...props} />
+    </Suspense>
+  );
+}
 
 export function ShipmentForm({ initialData }: { initialData: any }) {
   const router = useRouter();

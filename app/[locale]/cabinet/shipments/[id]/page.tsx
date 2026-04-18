@@ -1,8 +1,11 @@
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedClient } from '../../lib/clientAuth';
-import { Package, Truck, MapPin, Calendar, ArrowLeft } from 'lucide-react';
+import { MapPin, Calendar, ArrowLeft, Clock, Ruler, FileSignature } from 'lucide-react';
 import Link from 'next/link';
 import ShipmentMapWrapper from './ShipmentMapWrapper';
+import { computeEta, formatEtaDate, formatEtaRelative, type RouteSegment } from '@/lib/map-utils';
+import { formatMoney } from '@/lib/money';
+import { shipmentStatusMeta } from '@/lib/shipment-status';
 
 interface CabinetShipmentDetailsPageProps {
   params: Promise<{ locale: string, id: string }>;
@@ -29,21 +32,37 @@ export default async function CabinetShipmentDetailsPage({ params, searchParams 
     );
   }
 
-  const events = typeof shipment.events === 'string' ? JSON.parse(shipment.events) : (shipment.events || []);
+  const invoices = await prisma.invoice.findMany({
+    where: { shipmentId: shipment.id, status: { not: 'draft' } },
+    orderBy: { createdAt: 'desc' },
+  });
 
-  const statusColors: any = {
-    pending: 'bg-yellow-100 text-yellow-700',
-    in_transit: 'bg-blue-100 text-blue-700',
-    customs: 'bg-orange-100 text-orange-700',
-    delivered: 'bg-green-100 text-green-700'
-  };
+  type TimelineEvent = { date?: string; location?: string; description?: string };
+  const events: TimelineEvent[] = (() => {
+    const raw = shipment.events;
+    if (!raw) return [];
+    try {
+      const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      return Array.isArray(parsed) ? (parsed as TimelineEvent[]) : [];
+    } catch {
+      return [];
+    }
+  })();
 
-  const statusLabels: any = {
-    pending: 'Kutilmoqda',
-    in_transit: 'Yo\'lda',
-    customs: 'Bojxonada',
-    delivered: 'Yetkazildi'
-  };
+  const rawSegments = typeof shipment.routeSegments === 'string'
+    ? (() => { try { return JSON.parse(shipment.routeSegments as unknown as string); } catch { return []; } })()
+    : Array.isArray(shipment.routeSegments) ? shipment.routeSegments : [];
+  const segments: RouteSegment[] = (rawSegments as unknown[]).map((s) => s as RouteSegment);
+
+  const eta = computeEta(
+    segments,
+    shipment.status,
+    shipment.currentLat,
+    shipment.currentLng,
+  );
+  const localeCode = (locale === 'ru' || locale === 'en') ? locale : 'uz';
+
+  const statusMeta = shipmentStatusMeta(shipment.status);
 
   return (
     <div className="space-y-6">
@@ -62,8 +81,9 @@ export default async function CabinetShipmentDetailsPage({ params, searchParams 
            <div className="bg-white rounded-3xl p-6 border shadow-sm space-y-4">
               <div className="flex justify-between items-center pb-4 border-b">
                  <span className="text-sm font-bold text-gray-500 uppercase tracking-wider">Holat</span>
-                 <span className={`px-3 py-1 rounded-full text-xs font-bold ${statusColors[shipment.status]}`}>
-                    {statusLabels[shipment.status] || shipment.status}
+                 <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${statusMeta.pill}`}>
+                    <span className={`h-1.5 w-1.5 rounded-full ${statusMeta.dot}`} />
+                    {statusMeta.label}
                  </span>
               </div>
               
@@ -90,6 +110,86 @@ export default async function CabinetShipmentDetailsPage({ params, searchParams 
               </div>
            </div>
 
+           {eta.etaDate && shipment.status !== 'delivered' && segments.length >= 2 && (
+              <div className="rounded-3xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-5 shadow-sm">
+                 <div className="mb-3 flex items-center gap-2">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500 text-white shadow">
+                       <Clock className="h-4 w-4" />
+                    </div>
+                    <div>
+                       <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">Taxminiy yetkazib berish</div>
+                       <div className="text-xs text-slate-500">OSRM marshruti asosida hisoblangan</div>
+                    </div>
+                 </div>
+                 <div className="flex items-end justify-between gap-4">
+                    <div>
+                       <div className="text-xl font-bold text-slate-900">{formatEtaRelative(eta.etaDate, localeCode)}</div>
+                       <div className="text-xs text-slate-600">{formatEtaDate(eta.etaDate, localeCode)}</div>
+                    </div>
+                    <div className="text-right">
+                       <div className="flex items-center justify-end gap-1 text-xs font-semibold text-slate-600">
+                          <Ruler className="h-3 w-3" /> {eta.remainingKm.toFixed(0)} km
+                       </div>
+                       <div className="text-[11px] text-slate-500">{Math.round(eta.progress * 100)}% o&apos;tilgan</div>
+                    </div>
+                 </div>
+              </div>
+           )}
+
+           {shipment.status === 'delivered' && (
+              <div className="rounded-3xl border border-emerald-300 bg-gradient-to-br from-emerald-100 to-white p-5 shadow-sm">
+                 <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 text-white text-xl">
+                       ✅
+                    </div>
+                    <div>
+                       <div className="text-sm font-bold text-emerald-800">Yuk yetkazildi</div>
+                       <div className="text-xs text-slate-600">{shipment.updatedAt.toLocaleString()}</div>
+                    </div>
+                 </div>
+              </div>
+           )}
+
+           {invoices.length > 0 && (
+              <div className="bg-white rounded-3xl p-6 border shadow-sm">
+                 <h3 className="font-bold text-[#042C53] mb-4 flex items-center gap-2">
+                    <FileSignature className="w-4 h-4 text-[#185FA5]" /> Hisob-fakturalar
+                 </h3>
+                 <div className="space-y-2">
+                    {invoices.map((inv) => {
+                       const balance = inv.total - inv.paidAmount;
+                       const statusColor =
+                          inv.status === 'paid' ? 'text-emerald-700 bg-emerald-50' :
+                          inv.status === 'overdue' ? 'text-red-700 bg-red-50' :
+                          'text-blue-700 bg-blue-50';
+                       return (
+                          <Link
+                             key={inv.id}
+                             href={`/${locale}/cabinet/invoices/${inv.id}`}
+                             className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 transition-colors hover:border-[#185FA5] hover:bg-white"
+                          >
+                             <div>
+                                <div className="font-mono text-sm font-bold text-[#185FA5]">{inv.number}</div>
+                                <div className="text-[11px] text-slate-500">
+                                   Muddat: {inv.dueDate.toLocaleDateString('uz-UZ')}
+                                </div>
+                             </div>
+                             <div className="text-right">
+                                <div className="font-semibold text-slate-800">{formatMoney(inv.total, inv.currency)}</div>
+                                {balance > 0 && inv.paidAmount > 0 && (
+                                   <div className="text-[11px] text-red-600">Qoldiq: {formatMoney(balance, inv.currency)}</div>
+                                )}
+                                <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${statusColor}`}>
+                                   {inv.status}
+                                </span>
+                             </div>
+                          </Link>
+                       );
+                    })}
+                 </div>
+              </div>
+           )}
+
            <div className="bg-white rounded-3xl p-6 border shadow-sm">
               <h3 className="font-bold text-[#042C53] mb-4 flex items-center gap-2">
                  <Calendar className="w-4 h-4 text-[#185FA5]" /> Tracking Tarixi
@@ -98,7 +198,7 @@ export default async function CabinetShipmentDetailsPage({ params, searchParams 
               <div className="space-y-4 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-300 before:to-transparent pl-4">
                  {events.length === 0 ? (
                     <p className="text-sm text-gray-500 text-center relative z-10 w-full">Hech qanday tarix mavjud emas</p>
-                 ) : events.map((event: any, index: number) => (
+                 ) : events.map((event, index) => (
                     <div key={index} className="relative flex items-start justify-between gap-4 py-2">
                        <div className="absolute left-[-23px] top-3 h-3 w-3 rounded-full bg-[#185FA5] ring-4 ring-blue-50" />
                        <div className="flex-1 bg-gray-50 border rounded-xl p-3 shadow-sm">

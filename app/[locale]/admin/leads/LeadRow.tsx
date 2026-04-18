@@ -11,7 +11,10 @@ export function LeadRow({ lead, staff = [] }: { lead: any; staff?: any[] }) {
   const statusColors: any = {
     new: 'border-blue-200 text-blue-700 bg-blue-50',
     contacted: 'border-amber-200 text-amber-700 bg-amber-50',
-    finished: 'border-emerald-200 text-emerald-700 bg-emerald-50'
+    quoted: 'border-purple-200 text-purple-700 bg-purple-50',
+    won: 'border-emerald-200 text-emerald-700 bg-emerald-50',
+    lost: 'border-red-200 text-red-700 bg-red-50',
+    finished: 'border-emerald-200 text-emerald-700 bg-emerald-50',
   };
 
   const dt = new Date(lead.createdAt).toLocaleString('ru-RU', {
@@ -69,7 +72,9 @@ export function LeadRow({ lead, staff = [] }: { lead: any; staff?: any[] }) {
           >
             <option value="new">Yangi</option>
             <option value="contacted">Bog'lanildi</option>
-            <option value="finished">Tugatildi</option>
+            <option value="quoted">Narx berildi</option>
+            <option value="won">Yutildi</option>
+            <option value="lost">Yutilmadi</option>
           </select>
         </div>
       </td>

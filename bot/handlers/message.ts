@@ -1,236 +1,556 @@
-import { Bot, Keyboard, InlineKeyboard, Context, SessionFlavor, session } from 'grammy';
+import { Bot, Context, SessionFlavor } from 'grammy';
 import { prisma } from '../../lib/prisma';
+import { pickNextAssignee } from '../../lib/lead-assign';
+import { computeQuote } from '../../lib/quote';
+import { formatMoney } from '../../lib/money';
+import { CONTACTS, getAddress, getWorkHours, type LocaleKey } from '../../lib/contacts';
+import {
+  botMessages,
+  detectLocale,
+  t,
+  type BotLocale,
+  type ShipmentLike,
+} from '../i18n';
+import {
+  mainMenu,
+  servicesMenu,
+  cancelKeyboard,
+  contactShareKeyboard,
+  shipmentInlineMenu,
+  languageMenu,
+  contactInlineMenu,
+  WEB_APP_URL,
+} from '../menus';
 
-const WEB_APP_URL = 'https://das-pay.com'; // O'zgartirishingiz mumkin
+type SessionStep =
+  | 'idle'
+  | 'awaiting_tracking'
+  | 'awaiting_support_message'
+  | 'calc_origin'
+  | 'calc_dest'
+  | 'calc_weight'
+  | 'calc_phone';
 
 interface SessionData {
-  step: 'idle' | 'calc_origin' | 'calc_dest' | 'calc_weight' | 'calc_phone';
+  step: SessionStep;
+  locale: BotLocale;
   calcData: {
     origin?: string;
     destination?: string;
     weight?: string;
     estimate?: number;
+    estimateLabel?: string;
   };
 }
 
 export type MyContext = Context & SessionFlavor<SessionData>;
 
-function initial(): SessionData {
-  return { step: 'idle', calcData: {} };
+export function initial(): SessionData {
+  return { step: 'idle', locale: 'uz', calcData: {} };
 }
 
-function getMainMenu(tgId: string | undefined = undefined) {
-  const kb = new Keyboard()
-    .text('📦 Yukni kuzatish').text('📋 Bizning xizmatlar').row()
-    .text('💰 Kalkulyator').text('📞 Aloqa & Manzil').row()
-    
-  if (tgId) {
-     kb.webApp('👤 Mening Kabinetim', `${WEB_APP_URL}/uz/cabinet?tgId=${tgId}`);
-  } else {
-     kb.webApp('🌐 Web-Ilova (DasPay)', WEB_APP_URL);
+function getLocaleFromSession(ctx: MyContext): BotLocale {
+  return ctx.session.locale || detectLocale(ctx.from?.language_code);
+}
+
+function clientNameFromCtx(ctx: MyContext): string {
+  return ctx.from?.first_name || 'User';
+}
+
+async function findClient(tgId?: string) {
+  if (!tgId) return null;
+  return prisma.client.findFirst({ where: { telegramId: tgId } });
+}
+
+async function logTracking(code: string, found: boolean) {
+  try {
+    await prisma.trackingQuery.create({
+      data: { trackingCode: code, ip: 'telegram', found },
+    });
+  } catch {
+    /* ignore */
   }
-  
-  return kb.resized().persistent();
 }
 
 export function setupMessageHandlers(bot: Bot<MyContext>) {
-
-  // Command: /start
+  // ------------------------ /start ------------------------
   bot.command('start', async (ctx) => {
     ctx.session.step = 'idle';
-    const firstName = ctx.from?.first_name || '';
+    const locale = getLocaleFromSession(ctx);
+    const tr = t(locale);
+    const firstName = clientNameFromCtx(ctx);
     const tgId = ctx.from?.id.toString();
-    
-    // Check if client exists
-    const client = await prisma.client.findFirst({
-      where: { telegramId: tgId }
-    });
+    const client = await findClient(tgId);
 
     if (!client) {
-      const contactBtn = new Keyboard().requestContact("📱 Raqamni tasdiqlash").resized().oneTime();
-      await ctx.reply(`Assalomu alaykum <b>${firstName}</b>!\n\n🚚 <b>DasPay Logistika</b> tizimidan to'liq foydalanish, shaxsiy yuklaringizni kuzatish va kabinetga kirish uchun telefon raqamingizni tasdiqlang:`, {
-        parse_mode: 'HTML',
-        reply_markup: contactBtn
+      await ctx.reply(tr.start.welcome(firstName), { parse_mode: 'HTML' });
+      await ctx.reply(tr.start.askPhone, {
+        reply_markup: contactShareKeyboard(tr.start.askPhone),
       });
     } else {
-      await ctx.reply(`Xush kelibsiz <b>${firstName}</b>!\nQuyidagi menyudan kerakli bo'limni tanlang:`, {
+      await ctx.reply(tr.start.welcomeBack(firstName), {
         parse_mode: 'HTML',
-        reply_markup: getMainMenu(tgId)
+        reply_markup: mainMenu(locale, tgId),
       });
     }
   });
 
-  // Handling shared contact (Registration or Lead)
+  // ------------------------ /help ------------------------
+  bot.command('help', async (ctx) => {
+    const locale = getLocaleFromSession(ctx);
+    await ctx.reply(t(locale).help, { parse_mode: 'HTML' });
+  });
+
+  // ------------------------ /lang ------------------------
+  bot.command('lang', async (ctx) => {
+    const locale = getLocaleFromSession(ctx);
+    await ctx.reply(t(locale).lang.prompt, { reply_markup: languageMenu() });
+  });
+
+  bot.callbackQuery(/^set_lang_(uz|ru|en)$/, async (ctx) => {
+    const code = ctx.match[1] as BotLocale;
+    ctx.session.locale = code;
+    await ctx.answerCallbackQuery();
+    await ctx.reply(t(code).lang.changed, {
+      reply_markup: mainMenu(code, ctx.from?.id.toString()),
+    });
+  });
+
+  // ------------------------ /contact ------------------------
+  bot.command('contact', async (ctx) => sendContact(ctx));
+  bot.command('track', async (ctx) => sendTrackPrompt(ctx));
+  bot.command('services', async (ctx) => sendServices(ctx));
+  bot.command('calc', async (ctx) => startCalculator(ctx));
+  bot.command('shipments', async (ctx) => sendMyShipments(ctx));
+  bot.command('support', async (ctx) => startSupport(ctx));
+  bot.command('pay', async (ctx) => sendPayableInvoices(ctx));
+
+  // ------------------------ Contact shared ------------------------
   bot.on('message:contact', async (ctx) => {
+    const locale = getLocaleFromSession(ctx);
+    const tr = t(locale);
     const session = ctx.session;
     const phone = ctx.message.contact.phone_number.replace('+', '');
     const tgId = ctx.from?.id.toString() || '';
-    const firstName = ctx.from?.first_name || '';
+    const firstName = clientNameFromCtx(ctx);
 
     if (session.step === 'calc_phone') {
       session.step = 'idle';
       try {
+        const assignedToId = await pickNextAssignee();
         await prisma.lead.create({
           data: {
-             name: firstName, phone: phone,
-             service: `Telegram Bot Kalkulyator (Og'irlik: ${session.calcData.weight}kg, Narx: $${session.calcData.estimate})`,
-             message: `Yo'nalish: ${session.calcData.origin} -> ${session.calcData.destination}. Username: @${ctx.from?.username || ''}`,
-             ip: "telegram", status: "new"
-          }
+            name: firstName,
+            phone,
+            service: `Telegram Bot Calculator (${session.calcData.weight}kg, ~${session.calcData.estimateLabel || `$${session.calcData.estimate}`})`,
+            message: `Route: ${session.calcData.origin} -> ${session.calcData.destination}. Username: @${ctx.from?.username || ''}`,
+            ip: 'telegram',
+            status: 'new',
+            assignedToId: assignedToId ?? undefined,
+          },
         });
-        await ctx.reply(`✅ Arizangiz muvaffaqiyatli qabul qilindi! Tez orada mutaxassislarimiz aloqaga chiqishadi.`, { reply_markup: getMainMenu(tgId) });
-      } catch(e) {
-         await ctx.reply(`⚠️ Xatolik yuz berdi.`, { reply_markup: getMainMenu(tgId) });
+        await ctx.reply(tr.calc.submitted, {
+          parse_mode: 'HTML',
+          reply_markup: mainMenu(locale, tgId),
+        });
+      } catch {
+        await ctx.reply(tr.start.error, { reply_markup: mainMenu(locale, tgId) });
       }
-    } else {
-      // Registration Flow
-      try {
-        await prisma.client.upsert({
-           where: { phone },
-           update: { telegramId: tgId, name: firstName },
-           create: { phone, telegramId: tgId, name: firstName }
-        });
-        await ctx.reply(`✅ Ro'yxatdan muvaffaqiyatli o'tdingiz!\nEndi "Mening Kabinetim" tugmasi orqali shaxsiy yuklaringizni to'g'ridan to'g'ri kuzatishingiz mumkin.`, {
-           reply_markup: getMainMenu(tgId)
-        });
-      } catch(e) {
-         console.error(e);
-         await ctx.reply(`⚠️ Xatolik yuz berdi. Iltimos keyinroq urinib ko'ring.`);
-      }
+      return;
     }
-  });
 
-  // Event: Yukni kuzatish
-  bot.hears('📦 Yukni kuzatish', async (ctx) => {
-    ctx.session.step = 'idle';
-    await ctx.reply(`📦 <b>Yukingizni kuzatish (Tracking)</b>\n\nYuk holatini bilish uchun quyidagi qutiga o'zingizning Treking raqamingizni yozib yuboring (Masalan: <code>DP-123456</code>).`, { parse_mode: 'HTML' });
-  });
-
-  // Event: Bizning xizmatlar 
-  bot.hears('📋 Bizning xizmatlar', async (ctx) => {
-    ctx.session.step = 'idle';
-    const servicesMenu = new InlineKeyboard()
-      .text('🌍 Xalqaro tashuvlar', 'service_international').row()
-      .text('🗓 Ekspeditsiya', 'service_expedition').row()
-      .text('📦 Omborxona xizmati', 'service_warehouse').row()
-      .text('🛠 Vagonlarni ta\'mirlash', 'service_repair').row()
-      .text('🚄 Vagon ijarasi', 'service_rent');
-
-    await ctx.reply(`📋 Batafsil ma'lumot olish uchun tugmani tanlang:`, { reply_markup: servicesMenu });
-  });
-
-  // Event: Aloqa 
-  bot.hears('📞 Aloqa & Manzil', async (ctx) => {
-    ctx.session.step = 'idle';
-    await ctx.reply(`📍 <b>Bosh ofisimiz:</b>\nг. Ташкент, Яшнабадский р-н, ул. Садыка Азимова, дом 68\n\n📞 <b>Aloqa uchun bo'lim:</b>\n+998 99 866 15 66`, { parse_mode: 'HTML' });
-  });
-
-  // Event: Kalkulyator (Start Lead Flow)
-  bot.hears('💰 Kalkulyator', async (ctx) => {
-    ctx.session.step = 'calc_origin';
-    ctx.session.calcData = {};
-    const inlineWait = new Keyboard().text('❌ Bekor qilish').resized();
-    await ctx.reply(`💰 <b>Kalkulyator (Ariza qoldirish)</b>\n\nYuk qayerdan jo'natiladi? (Masalan: Xitoy, Pekin)`, { parse_mode: 'HTML', reply_markup: inlineWait });
-  });
-
-  bot.hears('❌ Bekor qilish', async (ctx) => {
-    ctx.session.step = 'idle';
-    await ctx.reply("Amaliyot bekor qilindi.", { reply_markup: getMainMenu(ctx.from?.id.toString()) });
-  });
-
-  // Native Tracking Logic
-  bot.hears(/dp-\d+/i, async (ctx) => {
-    ctx.session.step = 'idle';
-    const code = ctx.match[0].toUpperCase();
-    await ctx.replyWithChatAction('typing');
     try {
-      const trackingData = await prisma.shipment.findUnique({ where: { trackingCode: code } });
-      if (!trackingData) {
-        await ctx.reply(`❌ Kechirasiz, <b>${code}</b> raqamli yuk topilmadi.`, { parse_mode: 'HTML' });
-        return;
-      }
-      let eventsMsg = '';
-      try {
-        const events = typeof trackingData.events === 'string' ? JSON.parse(trackingData.events) : trackingData.events;
-        if (Array.isArray(events) && events.length > 0) {
-           eventsMsg = `\n\n<b>So'nggi holatlar:</b>\n`;
-           events.slice(-3).forEach((e: any) => {
-              const statusStr = e.status?.uz || e.status?.en || e.status || "Noma'lum";
-              eventsMsg += `🔹 <b>${statusStr}</b> (${e.location || ''})\n   🕒 ${e.date || ''}\n`;
-           });
-        }
-      } catch (e) {}
-
-      let statusIcon = trackingData.status === 'in_transit' ? '🚚' : trackingData.status === 'delivered' ? '✅' : '📦';
-      const msg = `${statusIcon} <b>Yuk ma'lumotlari: ${trackingData.trackingCode}</b>\n\n` +
-                  `📍 <b>Qayerdan:</b> ${trackingData.origin}\n` +
-                  `🏁 <b>Qayerga:</b> ${trackingData.destination}\n` +
-                  `⚖️ <b>Og'irligi:</b> ${trackingData.weight || 'Noma\'lum'} kg\n` +
-                  `📊 <b>Joriy Holat:</b> <b>${trackingData.status.toUpperCase()}</b>\n` +
-                  `\n📅 <i>So'nggi yangilanish: ${trackingData.updatedAt.toISOString().slice(0, 16).replace('T', ' ')}</i>` + eventsMsg;
-
-      const detailsBtn = new InlineKeyboard().webApp("Batafsil ko'rish", `${WEB_APP_URL}/uz/tracking/${trackingData.trackingCode}`);
-      await ctx.reply(msg, { parse_mode: 'HTML', reply_markup: detailsBtn });
-    } catch (err) {
-      await ctx.reply("Xatolik yuz berdi.");
+      await prisma.client.upsert({
+        where: { phone },
+        update: { telegramId: tgId, name: firstName },
+        create: { phone, telegramId: tgId, name: firstName },
+      });
+      await ctx.reply(tr.start.registered, {
+        parse_mode: 'HTML',
+        reply_markup: mainMenu(locale, tgId),
+      });
+    } catch (e) {
+      console.error(e);
+      await ctx.reply(tr.start.error);
     }
   });
 
-  // Conversation Fallback Catch-All
+  // ------------------------ Menu matching (multi-locale) ------------------------
   bot.on('message:text', async (ctx) => {
-    const text = ctx.message.text;
+    const text = ctx.message.text.trim();
+    const locale = getLocaleFromSession(ctx);
     const session = ctx.session;
 
+    if (matchesMenu(text, 'cancel')) {
+      session.step = 'idle';
+      await ctx.reply(t(locale).calc.cancelled, {
+        reply_markup: mainMenu(locale, ctx.from?.id.toString()),
+      });
+      return;
+    }
+
+    if (matchesMenu(text, 'language')) {
+      await ctx.reply(t(locale).lang.prompt, { reply_markup: languageMenu() });
+      return;
+    }
+
+    if (matchesMenu(text, 'track')) return sendTrackPrompt(ctx);
+    if (matchesMenu(text, 'services')) return sendServices(ctx);
+    if (matchesMenu(text, 'calculator')) return startCalculator(ctx);
+    if (matchesMenu(text, 'myShipments')) return sendMyShipments(ctx);
+    if (matchesMenu(text, 'support')) return startSupport(ctx);
+    if (matchesMenu(text, 'contact')) return sendContact(ctx);
+    if (matchesMenu(text, 'profile')) return sendProfile(ctx);
+
+    // Tracking pattern — auto recognize
+    if (/dp[-\s]?\d+/i.test(text)) {
+      const code = text.toUpperCase().replace(/\s/g, '').replace(/^DP(\d)/, 'DP-$1');
+      return doTrack(ctx, code);
+    }
+
+    // Conversation states
+    if (session.step === 'awaiting_tracking') {
+      session.step = 'idle';
+      return doTrack(ctx, text.toUpperCase());
+    }
+
+    if (session.step === 'awaiting_support_message') {
+      session.step = 'idle';
+      try {
+        const assignedToId = await pickNextAssignee();
+        await prisma.lead.create({
+          data: {
+            name: ctx.from?.first_name || 'Telegram User',
+            phone: 'telegram_support',
+            service: 'Telegram Bot Support',
+            message: `From @${ctx.from?.username || ''} (tgId: ${ctx.from?.id}):\n\n${text}`,
+            ip: 'telegram',
+            status: 'new',
+            assignedToId: assignedToId ?? undefined,
+          },
+        });
+        await ctx.reply(t(locale).support.submitted, {
+          reply_markup: mainMenu(locale, ctx.from?.id.toString()),
+        });
+      } catch {
+        await ctx.reply(t(locale).start.error);
+      }
+      return;
+    }
+
     if (session.step === 'calc_origin') {
-      session.calcData.origin = text; session.step = 'calc_dest';
-      await ctx.reply("Yaxshi! Yuk qayerga yetkazilishi kerak?");
+      session.calcData.origin = text;
+      session.step = 'calc_dest';
+      await ctx.reply(t(locale).calc.askDest, {
+        parse_mode: 'HTML',
+        reply_markup: cancelKeyboard(locale),
+      });
       return;
     }
+
     if (session.step === 'calc_dest') {
-      session.calcData.destination = text; session.step = 'calc_weight';
-      await ctx.reply("Yukning taxminiy og'irligini kiriting (kg):");
+      session.calcData.destination = text;
+      session.step = 'calc_weight';
+      await ctx.reply(t(locale).calc.askWeight, {
+        parse_mode: 'HTML',
+        reply_markup: cancelKeyboard(locale),
+      });
       return;
     }
+
     if (session.step === 'calc_weight') {
       const w = parseFloat(text);
-      if (isNaN(w) || w <= 0) { await ctx.reply("To'g'ri raqam kiriting:"); return; }
-      session.calcData.weight = text; session.step = 'calc_phone';
-      const est = Math.round(w * 2.5);
+      if (isNaN(w) || w <= 0) {
+        await ctx.reply(t(locale).calc.invalidWeight, {
+          reply_markup: cancelKeyboard(locale),
+        });
+        return;
+      }
+      session.calcData.weight = text;
+      session.step = 'calc_phone';
+      let est = Math.round(w * 2.5);
+      let estLabel = `$${est}`;
+      try {
+        const quote = await computeQuote({
+          originCountry: session.calcData.origin || '',
+          destCountry: session.calcData.destination || '',
+          weightKg: w,
+        });
+        est = Math.round(quote.price);
+        estLabel = formatMoney(quote.price, quote.currency);
+      } catch {
+        // fall back to heuristic
+      }
       session.calcData.estimate = est;
-      const contactBtn = new Keyboard().requestContact("📱 Raqamni yuborish").resized().oneTime();
-      await ctx.reply(`Sizning yukingiz uchun taxminiy narx: <b>$${est} dan boshlanadi.</b>\n\nArizani tasdiqlash uchun telefon raqamingizni yuboring:`, { parse_mode: 'HTML', reply_markup: contactBtn });
+      session.calcData.estimateLabel = estLabel;
+      await ctx.reply(
+        t(locale).calc.askPhone(
+          session.calcData.origin || '',
+          session.calcData.destination || '',
+          text,
+          est,
+        ),
+        {
+          parse_mode: 'HTML',
+          reply_markup: contactShareKeyboard('📱 ' + text),
+        },
+      );
       return;
     }
+
     if (session.step === 'calc_phone') {
-       // Just in case they type it instead of sharing contact
-       session.step = 'idle';
-       const phone = text.replace('+', '');
-       const tgId = ctx.from?.id.toString() || '';
-       try {
-         await prisma.lead.create({
-           data: {
-             name: ctx.from?.first_name || 'Telegram User', phone,
-             service: `Telegram Bot Kalkulyator (Og'irlik: ${session.calcData.weight}kg, Narx: $${session.calcData.estimate})`,
-             message: `Yo'nalish: ${session.calcData.origin} -> ${session.calcData.destination}. Username: @${ctx.from?.username || ''}`,
-             ip: "telegram", status: "new"
-           }
-         });
-         await ctx.reply(`✅ Arizangiz qabul qilindi.`, { reply_markup: getMainMenu(tgId) });
-       } catch (err) {
-         await ctx.reply(`⚠️ Xatolik yuz berdi.`, { reply_markup: getMainMenu(tgId) });
-       }
-       return;
+      // Fallback: typed phone
+      session.step = 'idle';
+      const phone = text.replace(/[^\d+]/g, '').replace('+', '');
+      const tgId = ctx.from?.id.toString() || '';
+      try {
+        const assignedToId = await pickNextAssignee();
+        await prisma.lead.create({
+          data: {
+            name: ctx.from?.first_name || 'Telegram User',
+            phone,
+            service: `Telegram Bot Calculator (${session.calcData.weight}kg, ~${session.calcData.estimateLabel || `$${session.calcData.estimate}`})`,
+            message: `Route: ${session.calcData.origin} -> ${session.calcData.destination}. Username: @${ctx.from?.username || ''}`,
+            ip: 'telegram',
+            status: 'new',
+            assignedToId: assignedToId ?? undefined,
+          },
+        });
+        await ctx.reply(t(locale).calc.submitted, {
+          parse_mode: 'HTML',
+          reply_markup: mainMenu(locale, tgId),
+        });
+      } catch {
+        await ctx.reply(t(locale).start.error, {
+          reply_markup: mainMenu(locale, tgId),
+        });
+      }
+      return;
     }
+
+    // Fallback
+    await ctx.reply(t(locale).fallback, {
+      reply_markup: mainMenu(locale, ctx.from?.id.toString()),
+    });
   });
-  
-  const callbacks: Record<string, string> = {
-    'service_international': `🌍 <b>Xalqaro tashuvlar</b>\nBiz asosan Xitoy, Eron, Pokiston bilan ishlaymiz.`,
-    'service_expedition': `🗓 <b>Ekspeditsiya Xizmatlari</b>\nKuzatuv ostida boshqarish.`,
-    'service_warehouse': `📦 <b>Omborxona xizmati</b>\nZamonaviy va himoyalangan omborxonalar o'z xizmatingizda!`,
-    'service_repair': `🛠 <b>Vagonlarni ta'mirlash</b>\nVagonlarni joriy va kapital ta'mirlash.`,
-    'service_rent': `🚄 <b>Vagon ijarasi</b>\nVagon ijara xizmati mavjud.`
-  };
-  for (const [key, msg] of Object.entries(callbacks)) {
-     bot.callbackQuery(key, async (ctx) => { await ctx.answerCallbackQuery(); await ctx.reply(msg, { parse_mode: 'HTML' }); });
+
+  // ------------------------ Services callbacks ------------------------
+  bot.callbackQuery(/^service_(international|expedition|warehouse|repair|rent)$/, async (ctx) => {
+    const key = ctx.match[1] as keyof typeof botMessages.uz.services.items;
+    const locale = getLocaleFromSession(ctx);
+    await ctx.answerCallbackQuery();
+    await ctx.reply(t(locale).services.items[key].body, { parse_mode: 'HTML' });
+  });
+}
+
+// ------------------------ Action helpers ------------------------
+
+async function sendTrackPrompt(ctx: MyContext) {
+  const locale = getLocaleFromSession(ctx);
+  ctx.session.step = 'awaiting_tracking';
+  await ctx.reply(t(locale).track.prompt, {
+    parse_mode: 'HTML',
+    reply_markup: cancelKeyboard(locale),
+  });
+}
+
+async function doTrack(ctx: MyContext, rawCode: string) {
+  const locale = getLocaleFromSession(ctx);
+  const tr = t(locale);
+  const code = rawCode.replace(/\s+/g, '');
+  await ctx.replyWithChatAction('typing');
+  try {
+    const shipment = await prisma.shipment.findUnique({ where: { trackingCode: code } });
+    await logTracking(code, !!shipment);
+    if (!shipment) {
+      await ctx.reply(tr.track.notFound(code), {
+        parse_mode: 'HTML',
+        reply_markup: mainMenu(locale, ctx.from?.id.toString()),
+      });
+      return;
+    }
+
+    const like: ShipmentLike = {
+      trackingCode: shipment.trackingCode,
+      senderName: shipment.senderName,
+      receiverName: shipment.receiverName,
+      origin: shipment.origin,
+      destination: shipment.destination,
+      status: shipment.status,
+      weight: shipment.weight,
+      updatedAt: shipment.updatedAt,
+      events: shipment.events,
+    };
+
+    await ctx.reply(tr.track.card(like), {
+      parse_mode: 'HTML',
+      reply_markup: shipmentInlineMenu(shipment.trackingCode, locale),
+    });
+  } catch {
+    await ctx.reply(tr.start.error);
   }
 }
+
+async function sendServices(ctx: MyContext) {
+  const locale = getLocaleFromSession(ctx);
+  ctx.session.step = 'idle';
+  await ctx.reply(t(locale).services.intro, {
+    reply_markup: servicesMenu(locale),
+  });
+}
+
+async function startCalculator(ctx: MyContext) {
+  const locale = getLocaleFromSession(ctx);
+  ctx.session.step = 'calc_origin';
+  ctx.session.calcData = {};
+  await ctx.reply(t(locale).calc.start, {
+    parse_mode: 'HTML',
+    reply_markup: cancelKeyboard(locale),
+  });
+}
+
+async function sendMyShipments(ctx: MyContext) {
+  const locale = getLocaleFromSession(ctx);
+  const tr = t(locale);
+  const tgId = ctx.from?.id.toString();
+  const client = await findClient(tgId);
+
+  if (!client) {
+    await ctx.reply(tr.profile.notRegistered);
+    return;
+  }
+
+  const shipments = await prisma.shipment.findMany({
+    where: { clientPhone: client.phone },
+    orderBy: { updatedAt: 'desc' },
+    take: 5,
+  });
+
+  if (shipments.length === 0) {
+    await ctx.reply(tr.shipments.empty, { parse_mode: 'HTML' });
+    return;
+  }
+
+  await ctx.reply(tr.shipments.header(shipments.length), { parse_mode: 'HTML' });
+
+  for (const s of shipments) {
+    const like: ShipmentLike = {
+      trackingCode: s.trackingCode,
+      senderName: s.senderName,
+      receiverName: s.receiverName,
+      origin: s.origin,
+      destination: s.destination,
+      status: s.status,
+      weight: s.weight,
+      updatedAt: s.updatedAt,
+      events: s.events,
+    };
+    await ctx.reply(tr.track.card(like), {
+      parse_mode: 'HTML',
+      reply_markup: shipmentInlineMenu(s.trackingCode, locale),
+    });
+  }
+}
+
+async function sendPayableInvoices(ctx: MyContext) {
+  const tgId = ctx.from?.id.toString();
+  const client = await findClient(tgId);
+  if (!client) {
+    await ctx.reply("Avval ro'yxatdan o'ting (telefon raqamingizni /start orqali yuboring).");
+    return;
+  }
+
+  const invoices = await prisma.invoice.findMany({
+    where: {
+      clientPhone: client.phone,
+      status: { in: ['sent', 'overdue'] },
+    },
+    orderBy: { dueDate: 'asc' },
+    take: 5,
+  });
+
+  if (invoices.length === 0) {
+    await ctx.reply("✅ Sizda to'lanishi kerak bo'lgan invoyslar yo'q.");
+    return;
+  }
+
+  await ctx.reply(`💳 <b>To'lanishi kerak invoyslar (${invoices.length})</b>`, { parse_mode: 'HTML' });
+
+  for (const inv of invoices) {
+    const balance = inv.total - inv.paidAmount;
+    const payUrl = `${CONTACTS.web.url}/uz/cabinet/invoices/${inv.id}`;
+    await ctx.reply(
+      `<b>${inv.number}</b>\n` +
+        `💰 ${formatMoney(balance, inv.currency)}\n` +
+        `📅 Muddat: ${inv.dueDate.toLocaleDateString('uz-UZ')}`,
+      {
+        parse_mode: 'HTML',
+        reply_markup: {
+          inline_keyboard: [[{ text: "💳 Onlayn to'lash", url: payUrl }]],
+        },
+      },
+    );
+  }
+}
+
+async function startSupport(ctx: MyContext) {
+  const locale = getLocaleFromSession(ctx);
+  ctx.session.step = 'awaiting_support_message';
+  await ctx.reply(t(locale).support.prompt, {
+    parse_mode: 'HTML',
+    reply_markup: cancelKeyboard(locale),
+  });
+}
+
+async function sendContact(ctx: MyContext) {
+  const locale = getLocaleFromSession(ctx);
+  const localeKey = (['uz', 'ru', 'en'] as const).includes(locale as LocaleKey)
+    ? (locale as LocaleKey)
+    : 'uz';
+  const address = getAddress(localeKey);
+  const hours = getWorkHours(localeKey);
+  await ctx.reply(
+    t(locale).contact.body(address, CONTACTS.phone.display, hours),
+    {
+      parse_mode: 'HTML',
+      reply_markup: contactInlineMenu(
+        locale,
+        CONTACTS.phone.tel,
+        CONTACTS.coords.lat,
+        CONTACTS.coords.lng,
+      ),
+    },
+  );
+}
+
+async function sendProfile(ctx: MyContext) {
+  const locale = getLocaleFromSession(ctx);
+  const tr = t(locale);
+  const tgId = ctx.from?.id.toString();
+  const client = await findClient(tgId);
+
+  if (!client) {
+    await ctx.reply(tr.profile.notRegistered);
+    return;
+  }
+
+  const langNames = { uz: "O'zbekcha", ru: 'Русский', en: 'English' } as const;
+  await ctx.reply(
+    tr.profile.header(client.name || '-', client.phone, langNames[locale]),
+    { parse_mode: 'HTML', reply_markup: languageMenu() },
+  );
+}
+
+// ------------------------ Menu matching ------------------------
+
+function matchesMenu(
+  text: string,
+  key: keyof typeof botMessages.uz.menu,
+): boolean {
+  for (const loc of ['uz', 'ru', 'en'] as BotLocale[]) {
+    if (botMessages[loc].menu[key] === text) return true;
+  }
+  return false;
+}
+
+export { WEB_APP_URL };

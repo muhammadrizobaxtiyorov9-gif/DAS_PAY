@@ -30,5 +30,5 @@ export async function generateMetadata({ params }: TermsPageProps): Promise<Meta
  * Terms of Use page
  */
 export default function TermsPage() {
-  return <TermsPageContent type="terms" />;
+  return <TermsPageContent />;
 }

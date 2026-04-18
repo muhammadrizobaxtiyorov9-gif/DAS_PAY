@@ -127,6 +127,44 @@ Savollar uchun: info@daspay.uz
 }
 
 /**
+ * Send a message to a specific Telegram chat (client notifications)
+ * Supports HTML parse_mode and optional inline keyboard.
+ */
+export async function sendTelegramToChat(
+  chatId: string | number,
+  text: string,
+  options: { replyMarkup?: unknown; disableWebPreview?: boolean } = {},
+): Promise<boolean> {
+  if (!TELEGRAM_BOT_TOKEN) return false;
+
+  try {
+    const res = await fetch(
+      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text,
+          parse_mode: 'HTML',
+          disable_web_page_preview: options.disableWebPreview ?? true,
+          reply_markup: options.replyMarkup,
+        }),
+      },
+    );
+    const data = await res.json();
+    if (!data.ok) {
+      console.warn('[Telegram] sendTelegramToChat failed:', data.description);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('[Telegram] sendTelegramToChat error:', err);
+    return false;
+  }
+}
+
+/**
  * Reply to a Telegram message
  */
 export async function replyToTelegram(chatId: number, text: string): Promise<boolean> {

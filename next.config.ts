@@ -1,6 +1,5 @@
 import type { NextConfig } from 'next';
 
-// Prevent Next.js from fully crashing and exiting on unhandled exceptions in development
 if (process.env.NODE_ENV !== 'production') {
   process.on('unhandledRejection', (reason, promise) => {
     console.error('Unhandled Rejection at:', promise, 'reason:', reason);
@@ -11,14 +10,43 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 const nextConfig: NextConfig = {
-  // Enable React strict mode
   reactStrictMode: true,
+
   devIndicators: {
-    appIsrStatus: false,
-    buildActivity: false,
+    position: 'bottom-right',
   },
 
-  // Image optimization
+  compress: true,
+  poweredByHeader: false,
+  productionBrowserSourceMaps: false,
+
+  experimental: {
+    optimizePackageImports: [
+      'lucide-react',
+      'framer-motion',
+      'date-fns',
+      'recharts',
+      '@radix-ui/react-accordion',
+      '@radix-ui/react-alert-dialog',
+      '@radix-ui/react-avatar',
+      '@radix-ui/react-checkbox',
+      '@radix-ui/react-dialog',
+      '@radix-ui/react-dropdown-menu',
+      '@radix-ui/react-label',
+      '@radix-ui/react-navigation-menu',
+      '@radix-ui/react-popover',
+      '@radix-ui/react-progress',
+      '@radix-ui/react-scroll-area',
+      '@radix-ui/react-select',
+      '@radix-ui/react-separator',
+      '@radix-ui/react-slot',
+      '@radix-ui/react-switch',
+      '@radix-ui/react-tabs',
+      '@radix-ui/react-toast',
+      '@radix-ui/react-tooltip',
+    ],
+  },
+
   images: {
     remotePatterns: [
       {
@@ -26,42 +54,62 @@ const nextConfig: NextConfig = {
         hostname: 'daspay.uz',
       },
     ],
+    formats: ['image/avif', 'image/webp'],
+    minimumCacheTTL: 60 * 60 * 24 * 30,
   },
 
-
-
-  // Headers for security
   async headers() {
+    const isProd = process.env.NODE_ENV === 'production';
+
+    /**
+     * Enterprise security headers. CSP is set in middleware (per-request, nonce-compatible)
+     * but we pin static policies here so even routes that bypass middleware are protected.
+     */
+    const securityHeaders = [
+      { key: 'X-Frame-Options', value: 'DENY' },
+      { key: 'X-Content-Type-Options', value: 'nosniff' },
+      { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+      { key: 'X-DNS-Prefetch-Control', value: 'on' },
+      {
+        key: 'Permissions-Policy',
+        value:
+          'camera=(), microphone=(), geolocation=(self), interest-cohort=(), payment=(self), usb=()',
+      },
+      { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
+      { key: 'Cross-Origin-Resource-Policy', value: 'same-site' },
+      { key: 'X-XSS-Protection', value: '0' },
+      ...(isProd
+        ? [{ key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' }]
+        : []),
+    ];
+
     return [
       {
-        source: '/(.*)',
+        source: '/:path*',
+        headers: securityHeaders,
+      },
+      {
+        source: '/api/:path*',
         headers: [
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY',
-          },
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'Referrer-Policy',
-            value: 'origin-when-cross-origin',
-          },
+          { key: 'X-Robots-Tag', value: 'noindex, nofollow' },
         ],
       },
-    ];
-  },
-
-  // Redirects
-  async redirects() {
-    return [
-      // Redirect root to default locale
-      {
-        source: '/',
-        destination: '/uz',
-        permanent: false,
-      },
+      ...(isProd
+        ? [
+            {
+              source: '/_next/static/:path*',
+              headers: [
+                { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+              ],
+            },
+            {
+              source: '/:all*(svg|jpg|jpeg|png|webp|avif|ico|woff2)',
+              headers: [
+                { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+              ],
+            },
+          ]
+        : []),
     ];
   },
 };

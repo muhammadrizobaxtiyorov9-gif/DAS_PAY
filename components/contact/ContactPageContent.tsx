@@ -4,31 +4,29 @@ import { motion } from 'framer-motion';
 import { Phone, Mail, MapPin, Clock, Send, Instagram, Linkedin } from 'lucide-react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { ContactForm } from '@/components/forms/ContactForm';
-import { useTranslations } from '@/components/providers/LocaleProvider';
+import { useLocale, useTranslations } from '@/components/providers/LocaleProvider';
+import { CONTACTS, getAddress, getWorkHours, type LocaleKey } from '@/lib/contacts';
+import { OfficeMap } from './OfficeMap';
 
 const socialLinks = [
-  { name: 'Telegram', icon: Send, href: 'https://t.me/daspay' },
-  { name: 'Instagram', icon: Instagram, href: 'https://instagram.com/daspay' },
-  { name: 'LinkedIn', icon: Linkedin, href: 'https://linkedin.com/company/daspay' },
+  { name: 'Telegram', icon: Send, href: CONTACTS.social.telegram, accent: 'hover:bg-[#229ED9]' },
+  { name: 'Instagram', icon: Instagram, href: CONTACTS.social.instagram, accent: 'hover:bg-gradient-to-br hover:from-[#f58529] hover:via-[#dd2a7b] hover:to-[#515bd4]' },
+  { name: 'LinkedIn', icon: Linkedin, href: CONTACTS.social.linkedin, accent: 'hover:bg-[#0A66C2]' },
 ];
 
-/**
- * Contact page content with form and info
- */
 export function ContactPageContent() {
   const t = useTranslations();
+  const { locale } = useLocale();
+  const address = getAddress(locale as LocaleKey);
+  const workHours = getWorkHours(locale as LocaleKey);
 
   return (
     <>
-      <PageHeader
-        titleKey="contact.title"
-        subtitleKey="contact.subtitle"
-      />
-      
+      <PageHeader titleKey="contact.title" subtitleKey="contact.subtitle" />
+
       <section className="bg-background py-16 lg:py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid gap-12 lg:grid-cols-2">
-            {/* Contact Form */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -39,7 +37,6 @@ export function ContactPageContent() {
               </div>
             </motion.div>
 
-            {/* Contact Info */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -60,10 +57,10 @@ export function ContactPageContent() {
                         {t('common.phone')}
                       </h3>
                       <a
-                        href="tel:+998712000000"
-                        className="mt-1 text-muted-foreground hover:text-[#185FA5]"
+                        href={`tel:${CONTACTS.phone.tel}`}
+                        className="mt-1 block text-muted-foreground hover:text-[#185FA5]"
                       >
-                        {t('contact.info.phone')}
+                        {CONTACTS.phone.display}
                       </a>
                     </div>
                   </div>
@@ -77,10 +74,10 @@ export function ContactPageContent() {
                         {t('common.email')}
                       </h3>
                       <a
-                        href="mailto:info@daspay.uz"
-                        className="mt-1 text-muted-foreground hover:text-[#185FA5]"
+                        href={`mailto:${CONTACTS.email.mailto}`}
+                        className="mt-1 block text-muted-foreground hover:text-[#185FA5]"
                       >
-                        {t('contact.info.email')}
+                        {CONTACTS.email.display}
                       </a>
                     </div>
                   </div>
@@ -93,9 +90,7 @@ export function ContactPageContent() {
                       <h3 className="font-semibold text-foreground">
                         {t('common.address')}
                       </h3>
-                      <p className="mt-1 text-muted-foreground">
-                        {t('contact.info.address')}
-                      </p>
+                      <p className="mt-1 text-muted-foreground">{address}</p>
                     </div>
                   </div>
 
@@ -105,17 +100,14 @@ export function ContactPageContent() {
                     </div>
                     <div>
                       <h3 className="font-semibold text-foreground">
-                        {t('contact.info.workHours').split(':')[0]}
+                        {t('contact.info.workHours').split(':')[0] || 'Ish vaqti'}
                       </h3>
-                      <p className="mt-1 text-muted-foreground">
-                        {t('contact.info.workHours').split(': ')[1]}
-                      </p>
+                      <p className="mt-1 text-muted-foreground">{workHours}</p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Social Links */}
               <div>
                 <h3 className="font-semibold text-foreground">
                   {t('footer.followUs')}
@@ -127,7 +119,7 @@ export function ContactPageContent() {
                       href={social.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#042C53] text-white transition-colors hover:bg-[#185FA5]"
+                      className={`flex h-12 w-12 items-center justify-center rounded-lg bg-[#042C53] text-white transition-all hover:scale-105 ${social.accent}`}
                       aria-label={social.name}
                     >
                       <social.icon className="h-5 w-5" />
@@ -136,16 +128,13 @@ export function ContactPageContent() {
                 </div>
               </div>
 
-              {/* Map placeholder */}
-              <div className="overflow-hidden rounded-2xl border bg-muted">
-                <div className="aspect-video w-full bg-gradient-to-br from-[#042C53]/10 to-[#185FA5]/10 flex items-center justify-center">
-                  <div className="text-center">
-                    <MapPin className="mx-auto h-12 w-12 text-[#185FA5]/50" />
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      Toshkent, Mirzo Ulug&apos;bek tumani
-                    </p>
-                  </div>
-                </div>
+              <div className="relative overflow-hidden rounded-2xl border shadow-lg" style={{ height: 360 }}>
+                <OfficeMap
+                  lat={CONTACTS.coords.lat}
+                  lng={CONTACTS.coords.lng}
+                  address={address}
+                  label={t('common.brand')}
+                />
               </div>
             </motion.div>
           </div>

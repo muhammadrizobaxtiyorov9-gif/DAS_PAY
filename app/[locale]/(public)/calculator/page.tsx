@@ -2,12 +2,21 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Calculator, Send, ArrowRight, Package, Truck, Plane, MapPin } from 'lucide-react';
+import { Calculator, Send, ArrowRight, Package, Truck, Plane, MapPin, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { getQuote } from '@/app/actions/quote';
+import { formatMoney } from '@/lib/money';
+import type { QuoteResult } from '@/lib/quote';
+
+const METHOD_TO_MODE: Record<string, string> = {
+  auto: 'truck',
+  rail: 'train',
+  air: 'air',
+};
 
 export default function CalculatorPage() {
   const [origin, setOrigin] = useState('');
@@ -15,8 +24,9 @@ export default function CalculatorPage() {
   const [weight, setWeight] = useState('');
   const [method, setMethod] = useState('auto');
   
-  const [estimate, setEstimate] = useState<number | null>(null);
-  
+  const [quote, setQuote] = useState<QuoteResult | null>(null);
+  const [calculating, setCalculating] = useState(false);
+
   const [phone, setPhone] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -24,35 +34,38 @@ export default function CalculatorPage() {
   const [fromStation, setFromStation] = useState('');
   const [toStation, setToStation] = useState('');
 
-  // Simple mock calculation logic
-  const handleCalculate = (e: React.FormEvent) => {
+  const handleCalculate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!origin || !destination || !weight) {
       toast.error('Iltimos barcha maydonlarni to\'ldiring');
       return;
     }
-    
+
     if (method === 'rail' && (!fromStation || !toStation)) {
        toast.error('Temir yo\'l stansiyalarini to\'liq kiriting');
        return;
     }
-    
+
     const w = parseFloat(weight);
     if (isNaN(w) || w <= 0) {
       toast.error('Og\'irlik xato kiritildi');
       return;
     }
 
-    let baseRate = 0;
-    if (method === 'auto') baseRate = 2.5;
-    if (method === 'rail') baseRate = 1.8;
-    if (method === 'air') baseRate = 6.5;
-
-    // Simulate complex distance calculation with random jitter based on text length
-    const distanceFactor = Math.max(1, (origin.length + destination.length) * 0.1);
-    
-    const calculatedPrice = w * baseRate * distanceFactor;
-    setEstimate(Math.round(calculatedPrice));
+    setCalculating(true);
+    try {
+      const result = await getQuote({
+        originCountry: origin,
+        destCountry: destination,
+        mode: METHOD_TO_MODE[method] || 'truck',
+        weightKg: w,
+      });
+      setQuote(result);
+    } catch (err) {
+      toast.error('Narxni hisoblashda xatolik');
+    } finally {
+      setCalculating(false);
+    }
   };
 
   const handleSubmitLead = async () => {
@@ -80,7 +93,7 @@ export default function CalculatorPage() {
       
       toast.success('Arizangiz muvaffaqiyatli yuborildi. Tez orada aloqaga chiqamiz!');
       setPhone('');
-      setEstimate(null); // Reset after success
+      setQuote(null); // Reset after success
     } catch (err) {
       toast.error('Ariza yuborishda xatolik yuz berdi. Iltimos qayta urining.');
     } finally {
@@ -158,7 +171,8 @@ export default function CalculatorPage() {
                 </div>
               </div>
               
-              <Button type="submit" size="lg" className="w-full h-12 bg-[#042C53] hover:bg-[#185FA5] text-lg font-semibold shadow-lg transition-transform active:scale-[0.98]">
+              <Button type="submit" disabled={calculating} size="lg" className="w-full h-12 bg-[#042C53] hover:bg-[#185FA5] text-lg font-semibold shadow-lg transition-transform active:scale-[0.98]">
+                {calculating ? <Loader2 className="mr-2 w-5 h-5 animate-spin" /> : null}
                 Hisoblash <ArrowRight className="ml-2 w-5 h-5"/>
               </Button>
             </form>
@@ -170,14 +184,14 @@ export default function CalculatorPage() {
             animate={{ opacity: 1, x: 0 }}
             className="flex flex-col gap-6"
           >
-            {estimate === null ? (
+            {quote === null ? (
                <div className="bg-muted/30 rounded-2xl border border-dashed flex flex-col items-center justify-center p-12 text-center h-full min-h-[400px]">
                  <Calculator className="w-16 h-16 text-muted-foreground/30 mb-4" />
                  <p className="text-muted-foreground mb-2 font-medium">Natijani ko'rish uchun avval hisoblang</p>
                  <p className="text-sm text-muted-foreground/70">Xizmat va masofa narxga bevosita ra'sir qiladi.</p>
                </div>
             ) : (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="bg-[#042C53] text-white rounded-2xl shadow-2xl p-8 relative overflow-hidden"
@@ -185,27 +199,41 @@ export default function CalculatorPage() {
                 <div className="absolute top-0 right-0 p-16 opacity-5 pointer-events-none">
                   <Calculator className="w-64 h-64" />
                 </div>
-                
-                <h3 className="text-blue-100 font-medium mb-1 uppercase tracking-wider text-sm">Bashoratli narx</h3>
+
+                <h3 className="text-blue-100 font-medium mb-1 uppercase tracking-wider text-sm">
+                  {quote.fallbackUsed ? 'Taxminiy narx' : quote.tariffName || 'Bashoratli narx'}
+                </h3>
                 <div className="flex items-baseline gap-2 mb-6">
-                  <span className="text-6xl font-black">${estimate}</span>
+                  <span className="text-6xl font-black">{formatMoney(quote.price, quote.currency)}</span>
                   <span className="text-xl text-blue-200">dan boshlab</span>
                 </div>
-                
-                <div className="space-y-3 mb-8 text-sm text-blue-100/80">
+
+                <div className="space-y-3 mb-6 text-sm text-blue-100/80">
                   <div className="flex justify-between border-b border-white/10 pb-2">
                     <span>{origin}</span> <ArrowRight className="w-4 h-4 mx-2" /> <span>{destination}</span>
                   </div>
                   <div className="flex justify-between border-b border-white/10 pb-2">
-                    <span>Transport turi</span> 
+                    <span>Transport turi</span>
                     <span className="font-semibold text-white">
                        {method === 'auto' ? 'Fura (Avtomobil)' : method === 'rail' ? "Temir yo'l" : "Avia tashuv"}
                     </span>
                   </div>
-                  <div className="flex justify-between pb-2">
+                  <div className="flex justify-between border-b border-white/10 pb-2">
                     <span>Og'irligi</span>
-                    <span className="font-semibold text-white">{weight} kg</span>
+                    <span className="font-semibold text-white">{weight} kg{quote.breakdown.weightBilled !== parseFloat(weight) ? ` (min ${quote.breakdown.weightBilled} kg)` : ''}</span>
                   </div>
+                  {quote.breakdown.baseFee > 0 && (
+                    <div className="flex justify-between border-b border-white/10 pb-2">
+                      <span>Asosiy haq</span>
+                      <span className="font-semibold text-white">{formatMoney(quote.breakdown.baseFee, quote.currency)}</span>
+                    </div>
+                  )}
+                  {quote.transitDays && (
+                    <div className="flex justify-between pb-2">
+                      <span>Tranzit</span>
+                      <span className="font-semibold text-white">~{quote.transitDays} kun</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="bg-white/10 rounded-xl p-5 backdrop-blur-sm border border-white/10">

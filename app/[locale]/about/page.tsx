@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+import { getMessages, isValidLocale, type Locale } from '@/lib/i18n';
 import { AboutSection } from '@/components/sections/AboutSection';
 import { StatsSection } from '@/components/sections/StatsSection';
 import { PartnersSection } from '@/components/sections/PartnersSection';
@@ -30,20 +32,20 @@ export async function generateMetadata({ params }: AboutPageProps): Promise<Meta
   };
 }
 
-/**
- * About page
- */
-export default function AboutPage() {
+export default async function AboutPage({ params }: AboutPageProps) {
+  const { locale } = await params;
+  if (!isValidLocale(locale)) notFound();
+
+  const typedLocale = locale as Locale;
+  const messages = await getMessages(typedLocale);
+
   return (
     <>
-      <PageHeader
-        titleKey="about.title"
-        subtitleKey="about.subtitle"
-      />
-      <AboutSection />
-      <StatsSection />
-      <PartnersSection />
-      <CtaSection />
+      <PageHeader titleKey="about.title" subtitleKey="about.subtitle" />
+      <AboutSection locale={typedLocale} messages={messages} />
+      <StatsSection locale={typedLocale} messages={messages} />
+      <PartnersSection locale={typedLocale} messages={messages} />
+      <CtaSection locale={typedLocale} messages={messages} />
     </>
   );
 }

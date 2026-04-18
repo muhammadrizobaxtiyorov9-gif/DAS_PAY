@@ -17,7 +17,7 @@ export function useScrollAnimation(options: UseScrollAnimationOptions = {}) {
   const isInView = useInView(ref, {
     once: options.once ?? true,
     amount: options.amount ?? 0.3,
-    margin: options.margin,
+    margin: options.margin as any,
   });
 
   return { ref, isInView };
@@ -36,7 +36,7 @@ export function useParallax(
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: ref,
-    offset,
+    offset: offset as any,
   });
 
   const y = useTransform(scrollYProgress, [0, 1], ['0%', '20%']);

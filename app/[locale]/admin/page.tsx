@@ -1,6 +1,18 @@
 import { prisma } from '@/lib/prisma';
-import { PackageSearch, Newspaper, Users, FileSignature, TrendingUp, Activity } from 'lucide-react';
+import {
+  PackageSearch,
+  Newspaper,
+  Users,
+  FileSignature,
+  TrendingUp,
+  Activity,
+  AlertTriangle,
+  Clock,
+  CheckCircle2,
+  Wallet,
+} from 'lucide-react';
 import Link from 'next/link';
+import { formatMoney } from '@/lib/money';
 
 export const revalidate = 0;
 
@@ -16,13 +28,60 @@ export default async function AdminDashboardPage({
 }) {
   const locale = await getLocale(params);
 
-  const [shipmentsCount, blogCount, leadsCount, contractsCount, newLeadsCount] = await Promise.all([
+  const now = new Date();
+
+  const [
+    shipmentsCount,
+    blogCount,
+    leadsCount,
+    contractsCount,
+    newLeadsCount,
+    invoiceGroups,
+    overdueList,
+  ] = await Promise.all([
     prisma.shipment.count(),
     prisma.blogPost.count(),
     prisma.lead.count(),
     prisma.contract.count(),
     prisma.lead.count({ where: { status: 'new' } }),
-  ]).catch(() => [0, 0, 0, 0, 0]);
+    prisma.invoice.groupBy({
+      by: ['status'],
+      _count: { status: true },
+      _sum: { total: true, paidAmount: true },
+    }),
+    prisma.invoice.findMany({
+      where: {
+        status: { in: ['sent', 'overdue'] },
+        dueDate: { lt: now },
+      },
+      orderBy: { dueDate: 'asc' },
+      take: 5,
+      include: {
+        client: { select: { name: true, phone: true, telegramId: true } },
+        shipment: { select: { trackingCode: true } },
+      },
+    }),
+  ]);
+
+  const arStats = invoiceGroups.reduce(
+    (acc, g) => {
+      const outstanding = (g._sum.total || 0) - (g._sum.paidAmount || 0);
+      if (g.status === 'sent' || g.status === 'overdue') {
+        acc.outstanding += outstanding;
+        acc.outstandingCount += g._count.status;
+      }
+      if (g.status === 'paid') {
+        acc.collected += g._sum.total || 0;
+        acc.paidCount += g._count.status;
+      }
+      if (g.status === 'overdue') acc.overdueCount += g._count.status;
+      if (g.status === 'draft') acc.draftCount += g._count.status;
+      return acc;
+    },
+    { outstanding: 0, outstandingCount: 0, collected: 0, paidCount: 0, overdueCount: 0, draftCount: 0 },
+  );
+
+  const overdueCountEffective = overdueList.length + arStats.overdueCount;
 
   const cards = [
     {
@@ -98,6 +157,100 @@ export default async function AdminDashboardPage({
         ))}
       </div>
 
+      {/* Accounts Receivable */}
+      <div className="grid gap-5 lg:grid-cols-3">
+        <div className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 p-6 shadow-sm lg:col-span-1">
+          <div className="flex items-center gap-2 text-amber-800">
+            <Wallet className="h-5 w-5" />
+            <h3 className="text-sm font-semibold uppercase tracking-wide">Qarz (Receivable)</h3>
+          </div>
+          <div className="mt-3 text-3xl font-black text-amber-900">
+            {formatMoney(arStats.outstanding, 'USD')}
+          </div>
+          <div className="mt-1 text-xs text-amber-700">
+            {arStats.outstandingCount} ta invoys to'lovni kutmoqda
+          </div>
+
+          <div className="mt-6 space-y-2 text-sm">
+            <MiniRow
+              label="Muddati o'tgan"
+              value={arStats.overdueCount + (overdueList.length - arStats.overdueCount)}
+              icon={AlertTriangle}
+              tone="red"
+            />
+            <MiniRow label="Yuborilgan" value={arStats.outstandingCount - arStats.overdueCount} icon={Clock} tone="blue" />
+            <MiniRow label="To'langan" value={arStats.paidCount} icon={CheckCircle2} tone="emerald" />
+            <MiniRow label="Qoralama" value={arStats.draftCount} icon={FileSignature} tone="slate" />
+          </div>
+
+          <Link
+            href={`/${locale}/admin/invoices`}
+            className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-amber-800 hover:underline"
+          >
+            Barcha invoyslarni ko'rish →
+          </Link>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-slate-600">
+                <AlertTriangle className="h-4 w-4 text-red-500" /> Muddati o'tgan invoyslar
+              </h3>
+              <p className="text-xs text-slate-400">Eng yaqin 5 ta — tez ta'sir kerak</p>
+            </div>
+            <Link
+              href={`/${locale}/admin/invoices?status=overdue`}
+              className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+            >
+              Barchasi ({overdueCountEffective})
+            </Link>
+          </div>
+
+          {overdueList.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 py-12 text-center text-sm text-slate-500">
+              Muddati o'tgan invoyslar yo'q — zo'r ish!
+            </div>
+          ) : (
+            <ul className="divide-y divide-slate-100">
+              {overdueList.map((inv) => {
+                const daysOver = Math.max(
+                  0,
+                  Math.floor((now.getTime() - inv.dueDate.getTime()) / (1000 * 60 * 60 * 24)),
+                );
+                const balance = inv.total - inv.paidAmount;
+                const clientLabel =
+                  inv.client?.name || inv.client?.phone || (inv.clientPhone ? `+${inv.clientPhone}` : 'Noma\'lum');
+                return (
+                  <li key={inv.id} className="flex items-center justify-between py-3">
+                    <div className="flex-1">
+                      <Link
+                        href={`/${locale}/admin/invoices/${inv.id}`}
+                        className="font-mono text-sm font-semibold text-[#185FA5] hover:underline"
+                      >
+                        {inv.number}
+                      </Link>
+                      <div className="text-xs text-slate-500">
+                        {clientLabel}
+                        {inv.shipment?.trackingCode && ` · #${inv.shipment.trackingCode}`}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-mono text-sm font-semibold text-red-600">
+                        {formatMoney(balance, inv.currency)}
+                      </div>
+                      <div className="text-[11px] text-red-500">
+                        {daysOver} kun kechikdi
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      </div>
+
       <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
         <div className="border-b border-gray-100 px-6 py-4">
           <h2 className="font-semibold text-gray-900">Tizim Holati</h2>
@@ -135,6 +288,34 @@ export default async function AdminDashboardPage({
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function MiniRow({
+  label,
+  value,
+  icon: Icon,
+  tone,
+}: {
+  label: string;
+  value: number;
+  icon: React.ComponentType<{ className?: string }>;
+  tone: 'red' | 'blue' | 'emerald' | 'slate';
+}) {
+  const toneMap = {
+    red: 'text-red-600',
+    blue: 'text-blue-600',
+    emerald: 'text-emerald-600',
+    slate: 'text-slate-500',
+  } as const;
+  return (
+    <div className="flex items-center justify-between">
+      <span className="flex items-center gap-2 text-slate-600">
+        <Icon className={`h-3.5 w-3.5 ${toneMap[tone]}`} />
+        {label}
+      </span>
+      <span className={`font-mono font-semibold ${toneMap[tone]}`}>{value}</span>
     </div>
   );
 }

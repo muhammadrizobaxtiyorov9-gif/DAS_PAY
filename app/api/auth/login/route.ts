@@ -3,14 +3,26 @@ import { prisma } from '@/lib/prisma';
 import { SignJWT } from 'jose';
 import bcrypt from 'bcryptjs';
 import { Bot } from 'grammy';
+import { rateLimit, getClientIp, rateLimitHeaders } from '@/lib/rate-limit';
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'super-secret-key-for-daspay-client-2026');
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request);
+  const rl = rateLimit(ip, { key: 'client:login', limit: 10, windowMs: 10 * 60 * 1000 });
+  if (!rl.ok) {
+    return NextResponse.json(
+      { success: false, error: "Juda ko'p urinish. Keyinroq qayta urining." },
+      { status: 429, headers: rateLimitHeaders(rl) }
+    );
+  }
+
   try {
-    const { phone, password } = await request.json();
-    if (!phone || !password) {
+    const body = await request.json().catch(() => null);
+    const phone = typeof body?.phone === 'string' ? body.phone : '';
+    const password = typeof body?.password === 'string' ? body.password : '';
+    if (!phone || !password || phone.length > 32 || password.length > 256) {
       return NextResponse.json({ success: false, error: "Raqam va parol kiritilmadi" }, { status: 400 });
     }
 
@@ -59,7 +71,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Issue JWT
-    const token = await new SignJWT({ sub: client.telegramId, phone: client.phone, role: 'client' })
+    const token = await new SignJWT({ sub: client.telegramId ?? undefined, phone: client.phone, role: 'client' })
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt()
       .setExpirationTime('30d')

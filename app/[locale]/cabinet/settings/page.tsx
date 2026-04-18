@@ -1,6 +1,7 @@
 import { getAuthenticatedClient } from '../lib/clientAuth';
 import { PasswordForm } from './PasswordForm';
-import { Settings, ShieldCheck, KeyRound } from 'lucide-react';
+import { NotificationPrefs } from './NotificationPrefs';
+import { Settings, ShieldCheck, KeyRound, Bell } from 'lucide-react';
 
 interface CabinetSettingsPageProps {
   params: Promise<{ locale: string }>;
@@ -45,6 +46,34 @@ export default async function CabinetSettingsPage({ params, searchParams }: Cabi
                </p>
                
                <PasswordForm phone={client.phone} hasPassword={hasPassword} />
+            </div>
+         </div>
+
+         {/* Notification Preferences */}
+         <div className="bg-white rounded-3xl border border-gray-100 p-8 shadow-sm relative overflow-hidden lg:col-span-2">
+            <div className="absolute top-0 right-0 p-6 opacity-[0.03]">
+               <Bell className="w-48 h-48" />
+            </div>
+            <div className="relative z-10">
+               <div className="flex items-center gap-3 mb-2">
+                  <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+                     <Bell className="h-5 w-5" />
+                  </div>
+                  <h3 className="font-bold text-xl text-[#042C53]">Bildirishnomalar</h3>
+               </div>
+               <p className="text-sm text-gray-500 mb-6">
+                  Qaysi hodisalardan xabardor bo'lishni istaysiz? Har bir tur uchun Telegram va email orqali yuboriladi.
+               </p>
+               <NotificationPrefs
+                  initial={{
+                     notifyStatusChange: (client as any).notifyStatusChange ?? true,
+                     notifyEta: (client as any).notifyEta ?? true,
+                     notifyInvoices: (client as any).notifyInvoices ?? true,
+                     notifyPromo: (client as any).notifyPromo ?? false,
+                     notifyEmail: (client as any).notifyEmail ?? null,
+                  }}
+                  hasTelegram={!!client.telegramId}
+               />
             </div>
          </div>
 
