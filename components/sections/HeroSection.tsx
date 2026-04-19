@@ -11,13 +11,14 @@ interface HeroStat {
   value: number;
   suffix: string;
   decimals?: number;
+  minWidth: string;
 }
 
 const stats: HeroStat[] = [
-  { key: 'deliveries', value: 10000, suffix: '+' },
-  { key: 'countries', value: 10, suffix: '+' },
-  { key: 'onTime', value: 98.7, suffix: '%', decimals: 1 },
-  { key: 'experience', value: 10, suffix: '' },
+  { key: 'deliveries', value: 10000, suffix: '+', minWidth: '7ch' },
+  { key: 'countries', value: 10, suffix: '+', minWidth: '3ch' },
+  { key: 'onTime', value: 98.7, suffix: '%', decimals: 1, minWidth: '5ch' },
+  { key: 'experience', value: 10, suffix: '', minWidth: '2ch' },
 ];
 
 interface HeroSectionProps {
@@ -46,17 +47,13 @@ export function HeroSection({ locale, messages }: HeroSectionProps) {
             {t('common.tagline')}
           </Reveal>
 
-          <Reveal delay={0.1}>
-            <h1 className="text-balance text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">
-              {t('hero.title')}
-            </h1>
-          </Reveal>
+          <h1 className="text-balance text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">
+            {t('hero.title')}
+          </h1>
 
-          <Reveal delay={0.2}>
-            <p className="mx-auto mt-6 max-w-2xl text-pretty text-lg text-white/80 sm:text-xl">
-              {t('hero.subtitle')}
-            </p>
-          </Reveal>
+          <p className="mx-auto mt-6 max-w-2xl text-pretty text-lg text-white/80 sm:text-xl">
+            {t('hero.subtitle')}
+          </p>
 
           <Reveal
             delay={0.3}
@@ -86,19 +83,20 @@ export function HeroSection({ locale, messages }: HeroSectionProps) {
         </div>
 
         <div className="mx-auto mt-20 grid max-w-4xl grid-cols-2 gap-8 lg:grid-cols-4">
-          {stats.map((stat, index) => (
-            <Reveal key={stat.key} delay={0.4 + index * 0.1} className="text-center">
+          {stats.map((stat) => (
+            <div key={stat.key} className="text-center">
               <div className="text-3xl font-bold text-white sm:text-4xl lg:text-5xl">
                 <AnimatedCounter
                   value={stat.value}
                   suffix={stat.suffix}
                   decimals={stat.decimals}
+                  minWidth={stat.minWidth}
                 />
               </div>
               <p className="mt-2 text-sm text-white/70 sm:text-base">
                 {t(`hero.stats.${stat.key}`)}
               </p>
-            </Reveal>
+            </div>
           ))}
         </div>
       </div>

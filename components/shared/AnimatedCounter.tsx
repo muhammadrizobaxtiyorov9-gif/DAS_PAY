@@ -9,46 +9,47 @@ interface AnimatedCounterProps {
   prefix?: string;
   decimals?: number;
   duration?: number;
+  minWidth?: string;
 }
 
-/**
- * Animated number counter that counts up when in view
- */
+function format(n: number, decimals: number) {
+  return decimals > 0 ? n.toFixed(decimals) : Math.floor(n).toLocaleString();
+}
+
 export function AnimatedCounter({
   value,
   suffix = '',
   prefix = '',
   decimals = 0,
-  duration = 2,
+  minWidth,
 }: AnimatedCounterProps) {
   const ref = useRef<HTMLSpanElement>(null);
+  const startedRef = useRef(false);
   const isInView = useInView(ref, { once: true, margin: '-100px' });
-  const motionValue = useMotionValue(0);
-  const springValue = useSpring(motionValue, {
-    damping: 50,
-    stiffness: 100,
-  });
-  const [displayValue, setDisplayValue] = useState('0');
+  const motionValue = useMotionValue(value);
+  const springValue = useSpring(motionValue, { damping: 50, stiffness: 100 });
+  const [displayValue, setDisplayValue] = useState(() => format(value, decimals));
 
   useEffect(() => {
-    if (isInView) {
-      motionValue.set(value);
+    if (isInView && !startedRef.current) {
+      startedRef.current = true;
+      motionValue.set(0);
+      requestAnimationFrame(() => motionValue.set(value));
     }
   }, [isInView, motionValue, value]);
 
   useEffect(() => {
-    const unsubscribe = springValue.on('change', (latest) => {
-      const formatted = decimals > 0
-        ? latest.toFixed(decimals)
-        : Math.floor(latest).toLocaleString();
-      setDisplayValue(formatted);
+    return springValue.on('change', (latest) => {
+      setDisplayValue(format(latest, decimals));
     });
-
-    return unsubscribe;
   }, [springValue, decimals]);
 
   return (
-    <span ref={ref}>
+    <span
+      ref={ref}
+      className="inline-block text-center tabular-nums"
+      style={minWidth ? { minWidth } : undefined}
+    >
       {prefix}
       {displayValue}
       {suffix}
