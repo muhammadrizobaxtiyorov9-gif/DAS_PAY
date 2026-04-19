@@ -69,6 +69,18 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_VERIFICATION || 'YJ6i5QxvmEIKEikcrocVdLDwaeXvKfPjdfktZ7Qg4aU',
+    yandex: process.env.NEXT_PUBLIC_YANDEX_VERIFICATION || '16f9215a2e6ec42e',
+    other: {
+      ...(process.env.NEXT_PUBLIC_BING_VERIFICATION
+        ? { 'msvalidate.01': process.env.NEXT_PUBLIC_BING_VERIFICATION }
+        : {}),
+      ...(process.env.NEXT_PUBLIC_FB_DOMAIN_VERIFICATION
+        ? { 'facebook-domain-verification': process.env.NEXT_PUBLIC_FB_DOMAIN_VERIFICATION }
+        : {}),
+    },
+  },
   icons: {
     icon: [
       { url: '/favicon.ico' },
