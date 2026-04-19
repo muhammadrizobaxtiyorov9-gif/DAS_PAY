@@ -112,7 +112,7 @@ Yordam uchun /help buyrug'ini yuboring.
 /help - Yordam ko'rsatish
 /status - Bot holati
 
-Savollar uchun: info@daspay.uz
+Savollar uchun: info@das-pay.com
     `.trim();
   }
 

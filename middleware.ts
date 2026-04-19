@@ -132,7 +132,7 @@ export async function middleware(request: NextRequest) {
 
   const nonce = generateNonce();
   const response = NextResponse.next();
-  response.headers.set('Content-Security-Policy', buildCsp(nonce));
+  // response.headers.set('Content-Security-Policy', buildCsp(nonce));
   response.headers.set('x-nonce', nonce);
 
   return response;

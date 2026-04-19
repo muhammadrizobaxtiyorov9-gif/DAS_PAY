@@ -51,7 +51,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'daspay.uz',
+        hostname: 'das-pay.com',
       },
     ],
     formats: ['image/avif', 'image/webp'],

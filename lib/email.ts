@@ -142,7 +142,7 @@ Yuborilgan vaqt: ${timestamp}
   `.trim();
 
   return sendEmail({
-    to: process.env.SMTP_USER || 'info@daspay.uz',
+    to: process.env.SMTP_USER || 'info@das-pay.com',
     subject: `Yangi so'rov: ${data.name}`,
     html,
     text,

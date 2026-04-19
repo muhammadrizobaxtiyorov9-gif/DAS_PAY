@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next';
 import { locales } from '@/lib/i18n';
 import { prisma } from '@/lib/prisma';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://daspay.uz';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://das-pay.com';
 
 /**
  * Public routes we want indexed. Admin / cabinet / feedback-token routes stay

@@ -1,7 +1,7 @@
 import { Keyboard, InlineKeyboard } from 'grammy';
 import { t, type BotLocale } from './i18n';
 
-const WEB_APP_URL = process.env.BOT_WEB_APP_URL || 'https://daspay.uz';
+const WEB_APP_URL = process.env.BOT_WEB_APP_URL || 'https://das-pay.com';
 
 export function mainMenu(locale: BotLocale, tgId?: string) {
   const m = t(locale).menu;

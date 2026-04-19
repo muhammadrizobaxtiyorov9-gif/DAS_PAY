@@ -15,9 +15,9 @@ export async function generateMetadata({ params }: ContactPageProps): Promise<Me
   };
 
   const descriptions: Record<string, string> = {
-    uz: "DasPay bilan bog'laning. Telefon: +998 71 200 00 00, Email: info@daspay.uz",
-    ru: 'Свяжитесь с DasPay. Телефон: +998 71 200 00 00, Email: info@daspay.uz',
-    en: 'Contact DasPay. Phone: +998 71 200 00 00, Email: info@daspay.uz',
+    uz: "DasPay bilan bog'laning. Telefon: +998 95 558 00 07, Email: info@das-pay.com",
+    ru: 'Свяжитесь с DasPay. Телефон: +998 95 558 00 07, Email: info@das-pay.com',
+    en: 'Contact DasPay. Phone: +998 95 558 00 07, Email: info@das-pay.com',
   };
 
   return {

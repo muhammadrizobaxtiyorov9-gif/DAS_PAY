@@ -15,7 +15,7 @@ export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
 }
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://daspay.uz';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://das-pay.com';
 
 const LOCALE_META: Record<Locale, { title: string; description: string; ogLocale: string }> = {
   uz: {

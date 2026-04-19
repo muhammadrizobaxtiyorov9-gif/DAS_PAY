@@ -122,9 +122,9 @@ export function MobileNav({ onClose }: MobileNavProps) {
               <Phone className="h-4 w-4" />
               +998 71 200 00 00
             </a>
-            <a href="mailto:info@daspay.uz" className="flex items-center gap-3 hover:text-white">
+            <a href="mailto:info@das-pay.com" className="flex items-center gap-3 hover:text-white">
               <Mail className="h-4 w-4" />
-              info@daspay.uz
+              info@das-pay.com
             </a>
             <div className="flex items-start gap-3">
               <MapPin className="h-4 w-4 mt-0.5" />

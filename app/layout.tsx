@@ -10,7 +10,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://daspay.uz'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://das-pay.com'),
   title: {
     default: 'DasPay - Xalqaro Logistika Xizmatlari | International Logistics',
     template: '%s | DasPay',
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'uz_UZ',
     alternateLocale: ['ru_RU', 'en_US'],
-    url: 'https://daspay.uz',
+    url: 'https://das-pay.com',
     siteName: 'DasPay',
     title: 'DasPay - Xalqaro Logistika Xizmatlari',
     description: "O'zbekistondan dunyo bo'ylab ishonchli yuk tashish xizmatlari",
@@ -100,8 +100,8 @@ export default function RootLayout({
               '@context': 'https://schema.org',
               '@type': 'Organization',
               name: 'DasPay',
-              url: 'https://daspay.uz',
-              logo: 'https://daspay.uz/logo.png',
+              url: 'https://das-pay.com',
+              logo: 'https://das-pay.com/logo.png',
               description: "O'zbekistondan dunyo bo'ylab ishonchli yuk tashish xizmatlari",
               address: {
                 '@type': 'PostalAddress',
