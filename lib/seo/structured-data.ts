@@ -54,13 +54,13 @@ const BRAND = {
   },
   contactPoints: [
     {
-      telephone: '+998-71-200-00-00',
+      telephone: '+998-95-558-00-07',
       contactType: 'customer service',
       availableLanguage: ['Uzbek', 'Russian', 'English'],
       areaServed: ['UZ', 'RU', 'KZ', 'CN', 'TR'],
     },
     {
-      telephone: '+998-71-200-00-00',
+      telephone: '+998-95-558-00-07',
       contactType: 'sales',
       availableLanguage: ['Uzbek', 'Russian', 'English'],
       areaServed: ['UZ', 'RU', 'KZ', 'CN', 'TR', 'EU'],
@@ -184,6 +184,45 @@ export function buildBreadcrumb(
       item: item.url.startsWith('http') ? item.url : `${SITE_URL}${item.url}`,
     })),
   };
+}
+
+const BREADCRUMB_LABELS: Record<string, Record<Locale, string>> = {
+  home: { uz: 'Bosh sahifa', ru: 'Главная', en: 'Home' },
+  about: { uz: 'Biz haqimizda', ru: 'О нас', en: 'About' },
+  services: { uz: 'Xizmatlar', ru: 'Услуги', en: 'Services' },
+  contact: { uz: "Bog'lanish", ru: 'Контакты', en: 'Contact' },
+  blog: { uz: 'Blog', ru: 'Блог', en: 'Blog' },
+  tracking: { uz: 'Kuzatuv', ru: 'Отслеживание', en: 'Tracking' },
+  calculator: { uz: 'Kalkulyator', ru: 'Калькулятор', en: 'Calculator' },
+  privacy: { uz: 'Maxfiylik', ru: 'Конфиденциальность', en: 'Privacy' },
+  terms: { uz: 'Shartlar', ru: 'Условия', en: 'Terms' },
+};
+
+/**
+ * Build breadcrumbs from a locale + ordered path segments.
+ *   breadcrumbsFor('uz', ['services', 'road'], 'Avtomobil tashish')
+ *   → Home > Services > Avtomobil tashish
+ * The last argument may be a raw label for dynamic segments (blog slug, service slug).
+ */
+export function breadcrumbsFor(
+  locale: Locale,
+  segments: string[],
+  leafLabel?: string
+) {
+  const crumbs: { name: string; url: string }[] = [
+    { name: BREADCRUMB_LABELS.home[locale], url: `/${locale}` },
+  ];
+  let path = `/${locale}`;
+  segments.forEach((seg, i) => {
+    path += `/${seg}`;
+    const isLeaf = i === segments.length - 1;
+    const label =
+      isLeaf && leafLabel
+        ? leafLabel
+        : BREADCRUMB_LABELS[seg]?.[locale] ?? seg;
+    crumbs.push({ name: label, url: path });
+  });
+  return buildBreadcrumb(crumbs);
 }
 
 /**

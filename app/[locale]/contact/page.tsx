@@ -1,5 +1,8 @@
 import type { Metadata } from 'next';
 import { ContactPageContent } from '@/components/contact/ContactPageContent';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { breadcrumbsFor } from '@/lib/seo/structured-data';
+import { isValidLocale, type Locale } from '@/lib/i18n';
 
 interface ContactPageProps {
   params: Promise<{ locale: string }>;
@@ -29,6 +32,14 @@ export async function generateMetadata({ params }: ContactPageProps): Promise<Me
 /**
  * Contact page with form and info
  */
-export default function ContactPage() {
-  return <ContactPageContent />;
+export default async function ContactPage({ params }: ContactPageProps) {
+  const { locale } = await params;
+  const typedLocale: Locale = isValidLocale(locale) ? (locale as Locale) : 'uz';
+
+  return (
+    <>
+      <JsonLd data={breadcrumbsFor(typedLocale, ['contact'])} />
+      <ContactPageContent />
+    </>
+  );
 }

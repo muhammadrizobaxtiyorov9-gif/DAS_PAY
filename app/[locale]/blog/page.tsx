@@ -1,5 +1,8 @@
 import type { Metadata } from 'next';
 import { BlogPageContent } from '@/components/blog/BlogPageContent';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { breadcrumbsFor } from '@/lib/seo/structured-data';
+import { isValidLocale, type Locale } from '@/lib/i18n';
 
 interface BlogPageProps {
   params: Promise<{ locale: string }>;
@@ -29,6 +32,14 @@ export async function generateMetadata({ params }: BlogPageProps): Promise<Metad
 /**
  * Blog listing page
  */
-export default function BlogPage() {
-  return <BlogPageContent />;
+export default async function BlogPage({ params }: BlogPageProps) {
+  const { locale } = await params;
+  const typedLocale: Locale = isValidLocale(locale) ? (locale as Locale) : 'uz';
+
+  return (
+    <>
+      <JsonLd data={breadcrumbsFor(typedLocale, ['blog'])} />
+      <BlogPageContent />
+    </>
+  );
 }

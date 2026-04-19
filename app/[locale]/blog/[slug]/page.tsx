@@ -1,6 +1,36 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { BlogDetailContent } from '@/components/blog/BlogDetailContent';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { breadcrumbsFor, buildArticle } from '@/lib/seo/structured-data';
+import { isValidLocale, type Locale } from '@/lib/i18n';
+
+const blogMeta: Record<string, { publishedAt: string; description: Record<string, string> }> = {
+  'shipping-from-china-to-uzbekistan': {
+    publishedAt: '2024-09-15',
+    description: {
+      uz: "Xitoydan O'zbekistonga yuk tashish bo'yicha to'liq qo'llanma: marshrutlar, muddatlar, narxlar va hujjatlar.",
+      ru: 'Полное руководство по перевозке грузов из Китая в Узбекистан: маршруты, сроки, цены и документы.',
+      en: 'Complete guide to shipping from China to Uzbekistan: routes, timelines, pricing and documentation.',
+    },
+  },
+  'new-customs-regulations-2024': {
+    publishedAt: '2024-06-20',
+    description: {
+      uz: "2024-yilgi yangi bojxona qoidalari va uning yuk tashishga ta'siri.",
+      ru: 'Новые таможенные правила 2024 года и их влияние на грузоперевозки.',
+      en: 'New 2024 customs regulations and their impact on freight shipping.',
+    },
+  },
+  'multimodal-transport-guide': {
+    publishedAt: '2024-03-10',
+    description: {
+      uz: "Multimodal yuk tashish qachon va nima uchun kerak — amaliy qo'llanma.",
+      ru: 'Когда и зачем нужны мультимодальные перевозки — практическое руководство.',
+      en: 'When and why to use multimodal transport — a practical guide.',
+    },
+  },
+};
 
 // In production, fetch from database
 const blogSlugs = ['shipping-from-china-to-uzbekistan', 'new-customs-regulations-2024', 'multimodal-transport-guide'];
@@ -48,11 +78,31 @@ export async function generateMetadata({ params }: BlogDetailPageProps): Promise
  * Blog detail page
  */
 export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
-  const { slug } = await params;
-  
-  if (!blogSlugs.includes(slug)) {
+  const { locale, slug } = await params;
+
+  if (!blogSlugs.includes(slug) || !isValidLocale(locale)) {
     notFound();
   }
 
-  return <BlogDetailContent slug={slug} />;
+  const typedLocale = locale as Locale;
+  const titles = blogTitles[slug];
+  const meta = blogMeta[slug];
+  const title = titles[typedLocale] || titles.en;
+  const description = meta.description[typedLocale] || meta.description.en;
+
+  return (
+    <>
+      <JsonLd data={breadcrumbsFor(typedLocale, ['blog', slug], title)} />
+      <JsonLd
+        data={buildArticle({
+          title,
+          description,
+          image: '/og-image.jpg',
+          url: `/${typedLocale}/blog/${slug}`,
+          publishedAt: meta.publishedAt,
+        })}
+      />
+      <BlogDetailContent slug={slug} />
+    </>
+  );
 }

@@ -6,6 +6,8 @@ import {
 } from '@/components/ui/accordion';
 import { getTranslator, type Locale, type Messages } from '@/lib/i18n-translator';
 import { Reveal } from '@/components/shared/motion-primitives';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { buildFAQ } from '@/lib/seo/structured-data';
 
 interface FaqSectionProps {
   locale: Locale;
@@ -22,6 +24,7 @@ export function FaqSection({ messages }: FaqSectionProps) {
 
   return (
     <section className="bg-secondary py-16 lg:py-24">
+      {faqItems.length > 0 && <JsonLd data={buildFAQ(faqItems)} />}
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <Reveal className="text-center">
           <h2 className="text-3xl font-bold text-foreground sm:text-4xl">

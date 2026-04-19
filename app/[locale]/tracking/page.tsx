@@ -4,6 +4,8 @@ import { getMessages, isValidLocale, type Locale } from '@/lib/i18n';
 import { TrackingSection } from '@/components/sections/TrackingSection';
 import { FaqSection } from '@/components/sections/FaqSection';
 import { PageHeader } from '@/components/shared/PageHeader';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { breadcrumbsFor } from '@/lib/seo/structured-data';
 
 interface TrackingPageProps {
   params: Promise<{ locale: string }>;
@@ -39,6 +41,7 @@ export default async function TrackingPage({ params }: TrackingPageProps) {
 
   return (
     <>
+      <JsonLd data={breadcrumbsFor(typedLocale, ['tracking'])} />
       <PageHeader titleKey="tracking.title" subtitleKey="tracking.subtitle" />
       <div className="-mt-10">
         <TrackingSection />

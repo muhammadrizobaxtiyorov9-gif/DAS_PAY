@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
 import { Toaster } from 'sonner';
 import { buildOrganizationGraph } from '@/lib/seo/structured-data';
+import { GoogleAnalytics } from '@/components/seo/GoogleAnalytics';
 import './globals.css';
 
 const inter = Inter({
@@ -119,6 +120,7 @@ export default function RootLayout({
         {children}
         <Toaster position="top-right" richColors closeButton />
         {process.env.NODE_ENV === 'production' && <Analytics />}
+        <GoogleAnalytics />
       </body>
     </html>
   );

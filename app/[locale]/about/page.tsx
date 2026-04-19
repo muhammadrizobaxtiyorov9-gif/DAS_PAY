@@ -6,6 +6,8 @@ import { StatsSection } from '@/components/sections/StatsSection';
 import { PartnersSection } from '@/components/sections/PartnersSection';
 import { CtaSection } from '@/components/sections/CtaSection';
 import { PageHeader } from '@/components/shared/PageHeader';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { breadcrumbsFor } from '@/lib/seo/structured-data';
 
 interface AboutPageProps {
   params: Promise<{ locale: string }>;
@@ -41,6 +43,7 @@ export default async function AboutPage({ params }: AboutPageProps) {
 
   return (
     <>
+      <JsonLd data={breadcrumbsFor(typedLocale, ['about'])} />
       <PageHeader titleKey="about.title" subtitleKey="about.subtitle" />
       <AboutSection locale={typedLocale} messages={messages} />
       <StatsSection locale={typedLocale} messages={messages} />

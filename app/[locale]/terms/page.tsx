@@ -1,5 +1,8 @@
 import type { Metadata } from 'next';
 import { TermsPageContent } from '@/components/shared/LegalPageContent';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { breadcrumbsFor } from '@/lib/seo/structured-data';
+import { isValidLocale, type Locale } from '@/lib/i18n';
 
 interface TermsPageProps {
   params: Promise<{ locale: string }>;
@@ -29,6 +32,14 @@ export async function generateMetadata({ params }: TermsPageProps): Promise<Meta
 /**
  * Terms of Use page
  */
-export default function TermsPage() {
-  return <TermsPageContent />;
+export default async function TermsPage({ params }: TermsPageProps) {
+  const { locale } = await params;
+  const typedLocale: Locale = isValidLocale(locale) ? (locale as Locale) : 'uz';
+
+  return (
+    <>
+      <JsonLd data={breadcrumbsFor(typedLocale, ['terms'])} />
+      <TermsPageContent />
+    </>
+  );
 }
