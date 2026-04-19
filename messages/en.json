@@ -13,7 +13,8 @@
     "email": "Email",
     "address": "Address",
     "trackShipment": "Track Shipment",
-    "requestQuote": "Request Quote"
+    "requestQuote": "Request Quote",
+    "cabinet": "Personal Cabinet"
   },
   "nav": {
     "home": "Home",

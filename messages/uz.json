@@ -13,7 +13,8 @@
     "email": "Email",
     "address": "Manzil",
     "trackShipment": "Yukni kuzatish",
-    "requestQuote": "Narx so'rash"
+    "requestQuote": "Narx so'rash",
+    "cabinet": "Kabinetga kirish"
   },
   "nav": {
     "home": "Bosh sahifa",

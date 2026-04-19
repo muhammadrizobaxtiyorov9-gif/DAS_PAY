@@ -13,7 +13,8 @@
     "email": "Email",
     "address": "Адрес",
     "trackShipment": "Отследить груз",
-    "requestQuote": "Запросить цену"
+    "requestQuote": "Запросить цену",
+    "cabinet": "Личный кабинет"
   },
   "nav": {
     "home": "Главная",

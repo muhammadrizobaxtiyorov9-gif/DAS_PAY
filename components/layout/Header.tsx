@@ -126,7 +126,7 @@ export function Header() {
                 )}
               >
                 <Link href={`/${locale}/login`} prefetch>
-                  Kabinetga kirish
+                  {t('common.cabinet')}
                 </Link>
               </Button>
 
