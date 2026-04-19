@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
 import { Toaster } from 'sonner';
+import { buildOrganizationGraph } from '@/lib/seo/structured-data';
 import './globals.css';
 
 const inter = Inter({ 
@@ -108,31 +109,7 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              '@context': 'https://schema.org',
-              '@type': 'Organization',
-              name: 'DasPay',
-              url: 'https://das-pay.com',
-              logo: 'https://das-pay.com/logo.png',
-              description: "O'zbekistondan dunyo bo'ylab ishonchli yuk tashish xizmatlari",
-              address: {
-                '@type': 'PostalAddress',
-                streetAddress: "Buyuk Ipak Yo'li ko'chasi, 15",
-                addressLocality: 'Tashkent',
-                addressCountry: 'UZ',
-              },
-              contactPoint: {
-                '@type': 'ContactPoint',
-                telephone: '+998-71-200-00-00',
-                contactType: 'customer service',
-                availableLanguage: ['Uzbek', 'Russian', 'English'],
-              },
-              sameAs: [
-                'https://t.me/daspay',
-                'https://instagram.com/daspay',
-                'https://linkedin.com/company/daspay',
-              ],
-            }),
+            __html: JSON.stringify(buildOrganizationGraph('uz')),
           }}
         />
       </head>
