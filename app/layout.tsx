@@ -5,9 +5,11 @@ import { Toaster } from 'sonner';
 import { buildOrganizationGraph } from '@/lib/seo/structured-data';
 import './globals.css';
 
-const inter = Inter({ 
+const inter = Inter({
   subsets: ['latin', 'cyrillic'],
   variable: '--font-inter',
+  display: 'swap',
+  weight: ['400', '500', '600', '700'],
 });
 
 export const metadata: Metadata = {
