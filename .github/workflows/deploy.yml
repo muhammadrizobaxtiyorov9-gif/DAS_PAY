@@ -1,0 +1,59 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # manual trigger tugmasi
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: SSH deploy to VPS
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: SSH into server and deploy
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script_stop: true
+          command_timeout: 10m
+          script: |
+            set -euo pipefail
+
+            cd /var/www/daspay
+
+            echo "::group::Git pull"
+            git fetch --all --prune
+            git reset --hard origin/main
+            echo "::endgroup::"
+
+            echo "::group::Install deps"
+            if [ -f pnpm-lock.yaml ]; then
+              pnpm install --frozen-lockfile
+            else
+              npm ci
+            fi
+            echo "::endgroup::"
+
+            echo "::group::Prisma generate"
+            npx prisma generate
+            echo "::endgroup::"
+
+            echo "::group::Next build"
+            npm run build
+            echo "::endgroup::"
+
+            echo "::group::PM2 restart"
+            pm2 restart ecosystem.config.js --update-env
+            pm2 save
+            echo "::endgroup::"
+
+            echo "✅ Deploy finished at $(date)"
