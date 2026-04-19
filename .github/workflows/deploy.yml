@@ -28,7 +28,7 @@ jobs:
           script: |
             set -euo pipefail
 
-            cd /var/www/daspay
+            cd /var/www/DAS_PAY
 
             echo "::group::Git pull"
             git fetch --all --prune

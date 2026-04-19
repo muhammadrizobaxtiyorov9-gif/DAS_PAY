@@ -2,7 +2,7 @@ module.exports = {
   apps: [
     {
       name: 'daspay-web',
-      cwd: '/var/www/daspay',
+      cwd: '/var/www/DAS_PAY',
       script: 'node_modules/.bin/next',
       args: 'start -p 3000',
       env: {
@@ -16,7 +16,7 @@ module.exports = {
     },
     {
       name: 'daspay-bot',
-      cwd: '/var/www/daspay',
+      cwd: '/var/www/DAS_PAY',
       script: 'npx',
       args: 'tsx bot/dev.ts',
       env: {
