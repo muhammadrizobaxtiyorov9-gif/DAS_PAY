@@ -15,8 +15,8 @@ export default async function StationsAdminPage({
 }) {
   const { locale } = await params;
   const sp = await searchParams;
-  const query = sp.q?.trim() || '';
-  const countryFilter = sp.country?.trim() || '';
+  const query = typeof sp.q === 'string' ? sp.q.trim() : Array.isArray(sp.q) ? sp.q[0].trim() : '';
+  const countryFilter = typeof sp.country === 'string' ? sp.country.trim() : Array.isArray(sp.country) ? sp.country[0].trim() : '';
   const onlyActive = sp.active === '1';
 
   const where: any = {};
@@ -55,6 +55,21 @@ export default async function StationsAdminPage({
     select: { country: true },
     orderBy: { country: 'asc' },
   });
+
+  // Strictly serialize to avoid Next.js Server Component prototype/serialization errors
+  const plainStations = stations.map(s => ({
+    id: Number(s.id),
+    code: String(s.code || ''),
+    nameUz: String(s.nameUz || ''),
+    nameRu: String(s.nameRu || ''),
+    nameEn: String(s.nameEn || ''),
+    country: String(s.country || ''),
+    lat: s.lat ? Number(s.lat) : null,
+    lng: s.lng ? Number(s.lng) : null,
+    active: Boolean(s.active),
+  }));
+
+  const plainCountries = allCountries.map(c => ({ country: String(c.country || '') }));
 
   return (
     <div className="space-y-6">
@@ -103,7 +118,7 @@ export default async function StationsAdminPage({
           {countryFilter && <input type="hidden" name="country" value={countryFilter} />}
           {onlyActive && <input type="hidden" name="active" value="1" />}
         </form>
-        <CountryFilter countries={allCountries} currentCountry={countryFilter} />
+        <CountryFilter countries={plainCountries} currentCountry={countryFilter} />
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -120,7 +135,7 @@ export default async function StationsAdminPage({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {stations.length === 0 ? (
+              {plainStations.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-16 text-center text-slate-500">
                     <Train className="mx-auto h-12 w-12 text-gray-200 mb-3" />
@@ -131,7 +146,7 @@ export default async function StationsAdminPage({
                   </td>
                 </tr>
               ) : (
-                stations.map((s) => (
+                plainStations.map((s) => (
                   <StationRow key={s.id} station={s} locale={locale} />
                 ))
               )}

@@ -13,12 +13,12 @@ import { usePathname } from 'next/navigation';
 
 const navItems = [
   { key: 'services', href: '/services' },
-  { key: 'tracking', href: '/tracking' },
-  { key: 'calculator', href: '/calculator' },
   { key: 'about', href: '/about' },
   { key: 'blog', href: '/blog' },
-  { key: 'contract', href: '/contract' },
   { key: 'contact', href: '/contact' },
+  { key: 'contract', href: '/contract' },
+  { key: 'tracking', href: '/tracking' },
+  { key: 'calculator', href: '/calculator' },
 ] as const;
 
 export function Header() {
