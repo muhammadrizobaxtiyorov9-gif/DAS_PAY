@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   FileText,
@@ -13,6 +13,21 @@ import {
   Printer,
 } from 'lucide-react';
 import type { ContractFormData } from './ContractForm';
+import { useLocale } from '@/components/providers/LocaleProvider';
+
+type ContractLocale = 'ru' | 'uz' | 'en';
+
+const CONTRACT_LOCALES: { value: ContractLocale; label: string }[] = [
+  { value: 'ru', label: 'Русский' },
+  { value: 'uz', label: "O'zbekcha" },
+  { value: 'en', label: 'English' },
+];
+
+const FILENAME_PREFIX: Record<ContractLocale, string> = {
+  ru: 'Договор',
+  uz: 'Shartnoma',
+  en: 'Contract',
+};
 
 // ─── Russian month names ──────────────────────────────────────────────────────
 const RU_MONTHS = [
@@ -49,7 +64,11 @@ export function ContractPreview({
   data,
   onNew,
 }: ContractPreviewProps) {
-  const [previewHtml, setPreviewHtml] = React.useState<string>('Генерация предпросмотра...');
+  const { locale: uiLocale } = useLocale();
+  const initialLocale: ContractLocale =
+    uiLocale === 'uz' || uiLocale === 'en' ? uiLocale : 'ru';
+  const [contractLocale, setContractLocale] = useState<ContractLocale>(initialLocale);
+  const [previewHtml, setPreviewHtml] = React.useState<string>('...');
 
   React.useEffect(() => {
     const fetchPreview = async () => {
@@ -57,7 +76,7 @@ export function ContractPreview({
         const res = await fetch('/api/contracts/preview', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contractNumber, contractDate, data }),
+          body: JSON.stringify({ contractNumber, contractDate, data, locale: contractLocale }),
         });
         if (res.ok) {
           const { html } = await res.json();
@@ -70,7 +89,7 @@ export function ContractPreview({
       }
     };
     fetchPreview();
-  }, [contractNumber, contractDate, data]);
+  }, [contractNumber, contractDate, data, contractLocale]);
 
   const handlePrint = () => {
     window.print();
@@ -81,14 +100,14 @@ export function ContractPreview({
       const res = await fetch('/api/contracts/download', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contractNumber, contractDate, data }),
+        body: JSON.stringify({ contractNumber, contractDate, data, locale: contractLocale }),
       });
       if (!res.ok) throw new Error('Ошибка загрузки');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `Договор_№${contractNumber}_DasPay.docx`;
+      a.download = `${FILENAME_PREFIX[contractLocale]}_${contractNumber}_DasPay.docx`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -119,7 +138,23 @@ export function ContractPreview({
       </div>
 
       {/* ── Action buttons ── */}
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
+          {CONTRACT_LOCALES.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => setContractLocale(opt.value)}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                contractLocale === opt.value
+                  ? 'bg-[#042C53] text-white shadow'
+                  : 'text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
         <button
           onClick={handleDownload}
           className="flex items-center gap-2 rounded-xl bg-[#042C53] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#185FA5] transition-all shadow-md hover:shadow-lg active:scale-95"

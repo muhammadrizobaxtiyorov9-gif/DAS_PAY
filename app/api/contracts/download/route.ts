@@ -6,6 +6,8 @@ import * as path from 'path';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+type ContractLocale = 'ru' | 'uz' | 'en';
+
 interface ContractData {
   companyName: string;
   companyDirector: string;
@@ -26,6 +28,30 @@ interface RequestBody {
   contractNumber: number;
   contractDate: string;
   data: ContractData;
+  locale?: ContractLocale;
+}
+
+const TEMPLATE_FILES: Record<ContractLocale, string> = {
+  ru: 'договор.docx',
+  uz: 'shartnoma.docx',
+  en: 'contract.docx',
+};
+
+const FILENAME_PREFIX: Record<ContractLocale, string> = {
+  ru: 'Договор',
+  uz: 'Shartnoma',
+  en: 'Contract',
+};
+
+function resolveTemplate(locale: ContractLocale): { buffer: Buffer; used: ContractLocale } {
+  const order: ContractLocale[] = [locale, 'ru'];
+  for (const l of order) {
+    const p = path.join(process.cwd(), 'templates', TEMPLATE_FILES[l]);
+    if (fs.existsSync(p)) {
+      return { buffer: fs.readFileSync(p), used: l };
+    }
+  }
+  throw new Error('No contract template found');
 }
 
 // ─── POST /api/contracts/download ────────────────────────────────────────────
@@ -33,17 +59,17 @@ interface RequestBody {
 export async function POST(req: NextRequest) {
   try {
     const body: RequestBody = await req.json();
-    const { contractNumber, contractDate, data } = body;
+    const { contractNumber, contractDate, data, locale = 'ru' } = body;
 
-    // Load the template from the templates folder
-    const templatePath = path.join(process.cwd(), 'templates', 'договор.docx');
-    
     let content: Buffer;
+    let usedLocale: ContractLocale;
     try {
-      content = fs.readFileSync(templatePath);
+      const resolved = resolveTemplate(locale);
+      content = resolved.buffer;
+      usedLocale = resolved.used;
     } catch (err) {
       console.error('[contracts/download] Template missing:', err);
-      return NextResponse.json({ message: 'Шаблон договора не найден (template missing)' }, { status: 500 });
+      return NextResponse.json({ message: 'Contract template not found' }, { status: 500 });
     }
 
     const zip = new PizZip(content);
@@ -76,11 +102,13 @@ export async function POST(req: NextRequest) {
       compression: 'DEFLATE',
     });
 
+    const prefix = FILENAME_PREFIX[usedLocale];
+    const filename = `${prefix}_${contractNumber}_DasPay.docx`;
     return new NextResponse(buf, {
       status: 200,
       headers: {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'Content-Disposition': `attachment; filename*=UTF-8''%D0%94%D0%BE%D0%B3%D0%BE%D0%B2%D0%BE%D1%80_%E2%84%96${contractNumber}_DasPay.docx`,
+        'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`,
       },
     });
   } catch (err: any) {

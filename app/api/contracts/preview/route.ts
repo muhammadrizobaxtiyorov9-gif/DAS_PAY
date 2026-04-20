@@ -5,17 +5,33 @@ import * as fs from 'fs';
 import * as path from 'path';
 import mammoth from 'mammoth';
 
+type ContractLocale = 'ru' | 'uz' | 'en';
+
+const TEMPLATE_FILES: Record<ContractLocale, string> = {
+  ru: 'договор.docx',
+  uz: 'shartnoma.docx',
+  en: 'contract.docx',
+};
+
+function resolveTemplateBuffer(locale: ContractLocale): Buffer {
+  const order: ContractLocale[] = [locale, 'ru'];
+  for (const l of order) {
+    const p = path.join(process.cwd(), 'templates', TEMPLATE_FILES[l]);
+    if (fs.existsSync(p)) return fs.readFileSync(p);
+  }
+  throw new Error('No contract template found');
+}
+
 // ─── POST /api/contracts/preview ────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
-    const { contractNumber, contractDate, data } = await req.json();
+    const { contractNumber, contractDate, data, locale = 'ru' } = await req.json();
 
-    const templatePath = path.join(process.cwd(), 'templates', 'договор.docx');
     let content: Buffer;
     try {
-      content = fs.readFileSync(templatePath);
+      content = resolveTemplateBuffer(locale as ContractLocale);
     } catch (err) {
-      return NextResponse.json({ message: 'Шаблон не найден' }, { status: 500 });
+      return NextResponse.json({ message: 'Template not found' }, { status: 500 });
     }
 
     const zip = new PizZip(content);
