@@ -44,7 +44,7 @@ interface PickerProps {
   setSegments: (val: RouteSegment[]) => void;
 }
 
-type LayerKey = 'voyager' | 'light' | 'satellite';
+type LayerKey = 'voyager' | 'light' | 'satellite' | 'railway';
 
 const TILE_LAYERS: Record<LayerKey, { url: string; attribution: string; subdomains?: string[] }> = {
   voyager: {
@@ -61,7 +61,14 @@ const TILE_LAYERS: Record<LayerKey, { url: string; attribution: string; subdomai
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     attribution: 'Tiles &copy; Esri',
   },
+  railway: {
+    url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    attribution: '&copy; OpenStreetMap &copy; CARTO &copy; OpenRailwayMap',
+    subdomains: ['a', 'b', 'c', 'd'],
+  },
 };
+
+const OPENRAILWAYMAP_URL = 'https://tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png';
 
 function uid() {
   return Math.random().toString(36).slice(2, 10);
@@ -354,6 +361,15 @@ export default function LocationPickerMap({ segments, setSegments }: PickerProps
             attribution={TILE_LAYERS[layer].attribution}
             subdomains={TILE_LAYERS[layer].subdomains ?? []}
           />
+          {/* OpenRailwayMap overlay — shows railway tracks when train mode is active */}
+          {(activeMode === 'train' || layer === 'railway') && (
+            <TileLayer
+              url={OPENRAILWAYMAP_URL}
+              attribution="&copy; OpenRailwayMap"
+              opacity={0.85}
+              maxZoom={19}
+            />
+          )}
           <ZoomControl position="bottomright" />
           <MapEvents />
           <FitBounds points={pathAsLatLng} trigger={fitTick} />
@@ -426,7 +442,7 @@ export default function LocationPickerMap({ segments, setSegments }: PickerProps
                 layer === key ? 'bg-[#042C53] text-white' : 'text-slate-600 hover:bg-slate-100'
               }`}
             >
-              {key === 'voyager' ? 'Streets' : key === 'light' ? 'Light' : 'Satellite'}
+              {key === 'voyager' ? 'Streets' : key === 'light' ? 'Light' : key === 'satellite' ? 'Satellite' : '🚂 Railway'}
             </button>
           ))}
         </div>
