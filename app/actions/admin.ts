@@ -565,7 +565,7 @@ function normalizeTariffData(input: TariffInput) {
     originCity: input.originCity?.trim() || null,
     destCountry: input.destCountry.trim(),
     destCity: input.destCity?.trim() || null,
-    mode: input.mode || 'truck',
+    mode: input.mode || 'train',
     pricePerKg: Number(input.pricePerKg) || 0,
     baseFee: Number(input.baseFee) || 0,
     minWeight: Number(input.minWeight) || 0,
@@ -714,7 +714,7 @@ export async function createInvoiceFromShipment(shipmentId: number) {
     const weight = shipment.weight || 1;
     const items: InvoiceItemInput[] = [
       {
-        description: `Yetkazib berish xizmati (${shipment.origin} → ${shipment.destination}, ${weight} kg)`,
+        description: `Yetkazib berish xizmati (${shipment.origin} → ${shipment.destination}, ${weight} tonna)`,
         quantity: 1,
         unitPrice: roundMoney(weight * 2.5),
         total: roundMoney(weight * 2.5),
@@ -858,6 +858,94 @@ export async function sendInvoiceReminder(id: number) {
       'SEND_INVOICE',
       `Eslatma yuborildi: ${invoice.number} (${invoice.client.phone})`,
     );
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+// --- STATIONS ---
+
+export interface StationInput {
+  code: string;
+  nameUz: string;
+  nameRu: string;
+  nameEn: string;
+  country: string;
+  lat?: number | null;
+  lng?: number | null;
+  active: boolean;
+}
+
+function normalizeStationData(input: StationInput) {
+  return {
+    code: input.code.trim(),
+    nameUz: input.nameUz.trim(),
+    nameRu: input.nameRu.trim(),
+    nameEn: input.nameEn.trim(),
+    country: input.country.trim() || "O'zbekiston",
+    lat: typeof input.lat === 'number' && Number.isFinite(input.lat) ? input.lat : null,
+    lng: typeof input.lng === 'number' && Number.isFinite(input.lng) ? input.lng : null,
+    active: !!input.active,
+  };
+}
+
+export async function createStation(input: StationInput) {
+  try {
+    const session = await getAdminSession();
+    const data = normalizeStationData(input);
+    const created = await prisma.station.create({ data });
+    await logAudit(session?.userId, 'CREATE_STATION' as any, `Stansiya qo'shildi: ${created.nameUz} (${created.code})`);
+    revalidatePath('/[locale]/admin/stations', 'page');
+    return { success: true, id: created.id };
+  } catch (err: any) {
+    if (err.code === 'P2002') {
+      return { success: false, error: 'Bu kod allaqachon mavjud' };
+    }
+    return { success: false, error: err.message };
+  }
+}
+
+export async function updateStation(id: number, input: StationInput) {
+  try {
+    const session = await getAdminSession();
+    const data = normalizeStationData(input);
+    const updated = await prisma.station.update({ where: { id }, data });
+    await logAudit(session?.userId, 'UPDATE_STATION' as any, `Stansiya yangilandi: ${updated.nameUz} (${updated.code})`);
+    revalidatePath('/[locale]/admin/stations', 'page');
+    revalidatePath(`/[locale]/admin/stations/${id}`, 'page');
+    return { success: true };
+  } catch (err: any) {
+    if (err.code === 'P2002') {
+      return { success: false, error: 'Bu kod allaqachon mavjud' };
+    }
+    return { success: false, error: err.message };
+  }
+}
+
+export async function deleteStation(id: number) {
+  try {
+    const session = await getAdminSession();
+    const existing = await prisma.station.findUnique({ where: { id }, select: { nameUz: true, code: true } });
+    await prisma.station.delete({ where: { id } });
+    await logAudit(session?.userId, 'DELETE_STATION' as any, `Stansiya o'chirildi: ${existing?.nameUz || id} (${existing?.code})`);
+    revalidatePath('/[locale]/admin/stations', 'page');
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function toggleStationActive(id: number, active: boolean) {
+  try {
+    const session = await getAdminSession();
+    const updated = await prisma.station.update({ where: { id }, data: { active } });
+    await logAudit(
+      session?.userId,
+      'UPDATE_STATION' as any,
+      `${active ? 'Yoqildi' : "O'chirildi"}: ${updated.nameUz} (${updated.code})`,
+    );
+    revalidatePath('/[locale]/admin/stations', 'page');
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message };

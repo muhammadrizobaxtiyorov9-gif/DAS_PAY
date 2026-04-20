@@ -165,7 +165,7 @@ export default async function TrackingDetailsPage({ params }: TrackingDetailsPag
           <div className="grid gap-6 border-b p-8 md:grid-cols-3 bg-muted/10">
               <div>
                   <p className="text-sm font-medium text-muted-foreground mb-1 flex items-center gap-2"><Weight className="w-4 h-4"/> Og'irligi</p>
-                  <p className="font-semibold">{shipment.weight ? `${shipment.weight} kg` : 'Noma\'lum'}</p>
+                  <p className="font-semibold">{shipment.weight ? `${shipment.weight} tonna` : 'Noma\'lum'}</p>
               </div>
               <div>
                   <p className="text-sm font-medium text-muted-foreground mb-1 flex items-center gap-2"><Package className="w-4 h-4"/> Tarkibi</p>

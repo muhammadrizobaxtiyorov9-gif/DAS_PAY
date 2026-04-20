@@ -6,7 +6,8 @@ export interface QuoteInput {
   destCountry: string;
   destCity?: string;
   mode?: string;
-  weightKg: number;
+  /** Weight in tonnes */
+  weightTon: number;
 }
 
 export interface QuoteResult {
@@ -21,6 +22,8 @@ export interface QuoteResult {
   tariffId: number | null;
   tariffName: string | null;
   fallbackUsed: boolean;
+  /** True when no matching tariff was found — managers will calculate manually */
+  noTariffFound: boolean;
 }
 
 function normalize(s: string | undefined | null): string {
@@ -58,7 +61,8 @@ export async function computeQuote(input: QuoteInput): Promise<QuoteResult> {
 
   if (matching.length > 0) {
     const t = matching[0].tariff;
-    const billedWeight = Math.max(input.weightKg, t.minWeight || 0);
+    // pricePerKg field now semantically stores price-per-ton
+    const billedWeight = Math.max(input.weightTon, t.minWeight || 0);
     const weightCost = billedWeight * t.pricePerKg;
     const price = t.baseFee + weightCost;
     return {
@@ -69,19 +73,19 @@ export async function computeQuote(input: QuoteInput): Promise<QuoteResult> {
       tariffId: t.id,
       tariffName: t.name,
       fallbackUsed: false,
+      noTariffFound: false,
     };
   }
 
-  // Fallback — simple rule of thumb
-  const fallbackRate = 2.5;
-  const price = Math.round(input.weightKg * fallbackRate * 100) / 100;
+  // No matching tariff found — managers will calculate manually
   return {
-    price,
+    price: 0,
     currency: 'USD',
     transitDays: null,
-    breakdown: { baseFee: 0, weightCost: price, weightBilled: input.weightKg },
+    breakdown: { baseFee: 0, weightCost: 0, weightBilled: input.weightTon },
     tariffId: null,
     tariffName: null,
     fallbackUsed: true,
+    noTariffFound: true,
   };
 }

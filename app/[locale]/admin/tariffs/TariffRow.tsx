@@ -91,7 +91,7 @@ export function TariffRow({
       <td className="px-6 py-4 text-right font-mono text-sm text-slate-600">
         {baseFeeFormatted}
       </td>
-      <td className="px-6 py-4 text-right text-sm text-slate-600">{tariff.minWeight} kg</td>
+      <td className="px-6 py-4 text-right text-sm text-slate-600">{tariff.minWeight} tonna</td>
       <td className="px-6 py-4 text-center text-sm text-slate-600">
         {tariff.transitDays ? `~${tariff.transitDays} kun` : '—'}
       </td>

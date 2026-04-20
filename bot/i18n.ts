@@ -150,10 +150,10 @@ export const botMessages: Record<BotLocale, BotMessages> = {
         "💰 <b>Narx Kalkulyatori</b>\n\nYuk <b>qayerdan</b> jo'natiladi?\n\n<i>Masalan:</i> Xitoy, Pekin",
       askDest: "✅ Qabul qilindi.\n\nYuk <b>qayerga</b> yetkazilishi kerak?",
       askWeight:
-        "⚖️ Yukning taxminiy <b>og'irligini</b> kiriting (kg):\n\n<i>Masalan:</i> 500",
+        "⚖️ Yukning taxminiy <b>og'irligini</b> kiriting (tonna):\n\n<i>Masalan:</i> 20",
       invalidWeight: "⚠️ To'g'ri raqam kiriting (masalan 500):",
       askPhone: (origin: string, dest: string, weight: string, est: number) =>
-        `💡 <b>Taxminiy hisob</b>\n\n📍 Yo'nalish: ${origin} → ${dest}\n⚖️ Og'irlik: ${weight} kg\n💵 <b>Taxminiy narx: $${est} dan boshlab</b>\n\n<i>Aniq narx mutaxassislarimiz tomonidan sizga telefon orqali aytiladi.</i>\n\nArizani tasdiqlash uchun telefon raqamingizni yuboring 👇`,
+        `💡 <b>Taxminiy hisob</b>\n\n📍 Yo'nalish: ${origin} → ${dest}\n⚖️ Og'irlik: ${weight} tonna\n💵 <b>Taxminiy narx: $${est} dan boshlab</b>\n\n<i>Aniq narx mutaxassislarimiz tomonidan sizga telefon orqali aytiladi.</i>\n\nArizani tasdiqlash uchun telefon raqamingizni yuboring 👇`,
       submitted:
         "✅ Arizangiz muvaffaqiyatli qabul qilindi!\n\nMenejerlarimiz <b>1 soat ichida</b> siz bilan bog'lanadi.",
       cancelled: 'Amaliyot bekor qilindi.',
@@ -260,10 +260,10 @@ export const botMessages: Record<BotLocale, BotMessages> = {
       start:
         '💰 <b>Калькулятор стоимости</b>\n\nОткуда отправляется груз?\n\n<i>Пример:</i> Китай, Пекин',
       askDest: '✅ Принято.\n\nКуда нужно доставить груз?',
-      askWeight: '⚖️ Укажите примерный <b>вес</b> груза (кг):\n\n<i>Пример:</i> 500',
+      askWeight: '⚖️ Укажите примерный <b>вес</b> груза (тонн):\n\n<i>Пример:</i> 20',
       invalidWeight: '⚠️ Введите корректное число (например 500):',
       askPhone: (origin: string, dest: string, weight: string, est: number) =>
-        `💡 <b>Предварительный расчёт</b>\n\n📍 Маршрут: ${origin} → ${dest}\n⚖️ Вес: ${weight} кг\n💵 <b>От $${est}</b>\n\n<i>Точную цену менеджер сообщит по телефону.</i>\n\nОтправьте свой номер телефона для подтверждения 👇`,
+        `💡 <b>Предварительный расчёт</b>\n\n📍 Маршрут: ${origin} → ${dest}\n⚖️ Вес: ${weight} т\n💵 <b>От $${est}</b>\n\n<i>Точную цену менеджер сообщит по телефону.</i>\n\nОтправьте свой номер телефона для подтверждения 👇`,
       submitted:
         '✅ Заявка принята!\n\nМенеджер свяжется с вами <b>в течение часа</b>.',
       cancelled: 'Операция отменена.',
@@ -369,10 +369,10 @@ export const botMessages: Record<BotLocale, BotMessages> = {
         '💰 <b>Price calculator</b>\n\nWhere does the cargo ship <b>from</b>?\n\n<i>Example:</i> China, Beijing',
       askDest: '✅ Noted.\n\nWhere should the cargo be delivered <b>to</b>?',
       askWeight:
-        '⚖️ Please enter the approximate <b>weight</b> (kg):\n\n<i>Example:</i> 500',
+        '⚖️ Please enter the approximate <b>weight</b> (tons):\n\n<i>Example:</i> 20',
       invalidWeight: '⚠️ Please enter a valid number (e.g. 500):',
       askPhone: (origin: string, dest: string, weight: string, est: number) =>
-        `💡 <b>Preliminary estimate</b>\n\n📍 Route: ${origin} → ${dest}\n⚖️ Weight: ${weight} kg\n💵 <b>From $${est}</b>\n\n<i>Exact pricing will be confirmed by our manager over the phone.</i>\n\nShare your phone to submit the request 👇`,
+        `💡 <b>Preliminary estimate</b>\n\n📍 Route: ${origin} → ${dest}\n⚖️ Weight: ${weight} tons\n💵 <b>From $${est}</b>\n\n<i>Exact pricing will be confirmed by our manager over the phone.</i>\n\nShare your phone to submit the request 👇`,
       submitted:
         '✅ Request received!\n\nOur manager will reach out <b>within 1 hour</b>.',
       cancelled: 'Operation cancelled.',
@@ -466,7 +466,7 @@ function renderShipmentCardUz(s: ShipmentLike): string {
     `${icon} <b>${s.trackingCode}</b>\n\n` +
     `📍 <b>Qayerdan:</b> ${s.origin}\n` +
     `🏁 <b>Qayerga:</b> ${s.destination}\n` +
-    (s.weight ? `⚖️ <b>Og'irlik:</b> ${s.weight} kg\n` : '') +
+    (s.weight ? `⚖️ <b>Og'irlik:</b> ${s.weight} tonna\n` : '') +
     `📊 <b>Holat:</b> ${s.status.toUpperCase()}\n` +
     `📅 <i>Yangilangan: ${s.updatedAt.toISOString().slice(0, 16).replace('T', ' ')}</i>` +
     eventsStr
@@ -484,7 +484,7 @@ function renderShipmentCardRu(s: ShipmentLike): string {
     `${icon} <b>${s.trackingCode}</b>\n\n` +
     `📍 <b>Откуда:</b> ${s.origin}\n` +
     `🏁 <b>Куда:</b> ${s.destination}\n` +
-    (s.weight ? `⚖️ <b>Вес:</b> ${s.weight} кг\n` : '') +
+    (s.weight ? `⚖️ <b>Вес:</b> ${s.weight} т\n` : '') +
     `📊 <b>Статус:</b> ${s.status.toUpperCase()}\n` +
     `📅 <i>Обновлено: ${s.updatedAt.toISOString().slice(0, 16).replace('T', ' ')}</i>` +
     eventsStr
@@ -502,7 +502,7 @@ function renderShipmentCardEn(s: ShipmentLike): string {
     `${icon} <b>${s.trackingCode}</b>\n\n` +
     `📍 <b>From:</b> ${s.origin}\n` +
     `🏁 <b>To:</b> ${s.destination}\n` +
-    (s.weight ? `⚖️ <b>Weight:</b> ${s.weight} kg\n` : '') +
+    (s.weight ? `⚖️ <b>Weight:</b> ${s.weight} tons\n` : '') +
     `📊 <b>Status:</b> ${s.status.toUpperCase()}\n` +
     `📅 <i>Updated: ${s.updatedAt.toISOString().slice(0, 16).replace('T', ' ')}</i>` +
     eventsStr

@@ -34,7 +34,7 @@ function buildPrefillRows(s: ShipmentOpt | null): Row[] {
   const price = Math.round(weight * 2.5 * 100) / 100;
   return [
     {
-      description: `Yetkazib berish xizmati (${s.origin} → ${s.destination}, ${weight} kg)`,
+      description: `Yetkazib berish xizmati (${s.origin} → ${s.destination}, ${weight} tonna)`,
       quantity: '1',
       unitPrice: String(price),
     },

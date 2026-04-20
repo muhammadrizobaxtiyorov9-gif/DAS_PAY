@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { Banknote, Plus, Truck, Train, Plane, Ship, Boxes } from 'lucide-react';
+import { Banknote, Plus, Truck, Train } from 'lucide-react';
 import Link from 'next/link';
 import { TariffRow } from './TariffRow';
 import { formatMoney } from '@/lib/money';
@@ -9,9 +9,6 @@ export const dynamic = 'force-dynamic';
 const MODE_ICON: Record<string, typeof Truck> = {
   truck: Truck,
   train: Train,
-  air: Plane,
-  sea: Ship,
-  multimodal: Boxes,
 };
 
 export default async function TariffsAdminPage({
@@ -70,9 +67,9 @@ export default async function TariffsAdminPage({
               <tr>
                 <th className="px-6 py-3 font-semibold">Yo'nalish</th>
                 <th className="px-6 py-3 font-semibold">Turi</th>
-                <th className="px-6 py-3 font-semibold text-right">Kg narxi</th>
+                <th className="px-6 py-3 font-semibold text-right">Tonna narxi</th>
                 <th className="px-6 py-3 font-semibold text-right">Asosiy haq</th>
-                <th className="px-6 py-3 font-semibold text-right">Min kg</th>
+                <th className="px-6 py-3 font-semibold text-right">Min tonna</th>
                 <th className="px-6 py-3 font-semibold text-center">Kun</th>
                 <th className="px-6 py-3 font-semibold text-center">Holat</th>
                 <th className="px-6 py-3 text-right font-semibold">Amallar</th>

@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
         'Receiver',
         'Origin',
         'Destination',
-        'Weight (kg)',
+        'Weight (ton)',
         'Client Phone',
         'Client Name',
         'Created',

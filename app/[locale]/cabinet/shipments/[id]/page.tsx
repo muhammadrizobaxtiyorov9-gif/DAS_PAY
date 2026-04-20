@@ -100,7 +100,7 @@ export default async function CabinetShipmentDetailsPage({ params, searchParams 
                  <div className="pt-4 border-t grid grid-cols-2 gap-4">
                     <div>
                        <span className="text-[10px] text-gray-400 font-bold uppercase">Vazni</span>
-                       <p className="text-sm font-semibold">{shipment.weight ? `${shipment.weight} kg` : 'Noma\'lum'}</p>
+                       <p className="text-sm font-semibold">{shipment.weight ? `${shipment.weight} tonna` : 'Noma\'lum'}</p>
                     </div>
                     <div>
                        <span className="text-[10px] text-gray-400 font-bold uppercase">Sana</span>

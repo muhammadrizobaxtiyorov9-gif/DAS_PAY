@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Calculator, Send, ArrowRight, Package, Truck, Plane, MapPin, Loader2 } from 'lucide-react';
+import { Calculator, Send, ArrowRight, Package, Truck, Train, MapPin, Loader2, Phone, UserCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,18 +11,18 @@ import { toast } from 'sonner';
 import { getQuote } from '@/app/actions/quote';
 import { formatMoney } from '@/lib/money';
 import type { QuoteResult } from '@/lib/quote';
+import { StationAutocomplete } from '@/components/forms/StationAutocomplete';
 
 const METHOD_TO_MODE: Record<string, string> = {
-  auto: 'truck',
   rail: 'train',
-  air: 'air',
+  auto: 'truck',
 };
 
 export default function CalculatorPage() {
   const [origin, setOrigin] = useState('');
   const [destination, setDestination] = useState('');
   const [weight, setWeight] = useState('');
-  const [method, setMethod] = useState('auto');
+  const [method, setMethod] = useState('rail');
   
   const [quote, setQuote] = useState<QuoteResult | null>(null);
   const [calculating, setCalculating] = useState(false);
@@ -33,6 +33,8 @@ export default function CalculatorPage() {
   // Rail Specific
   const [fromStation, setFromStation] = useState('');
   const [toStation, setToStation] = useState('');
+  const [fromStationId, setFromStationId] = useState<number | null>(null);
+  const [toStationId, setToStationId] = useState<number | null>(null);
 
   const handleCalculate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,8 +59,8 @@ export default function CalculatorPage() {
       const result = await getQuote({
         originCountry: origin,
         destCountry: destination,
-        mode: METHOD_TO_MODE[method] || 'truck',
-        weightKg: w,
+        mode: METHOD_TO_MODE[method] || 'train',
+        weightTon: w,
       });
       setQuote(result);
     } catch (err) {
@@ -82,7 +84,7 @@ export default function CalculatorPage() {
           name: 'Kalkulyator Mijozi',
           phone: phone,
           service: `Kalkulyator Arizasi`,
-          message: `Yo'nalish: ${origin} -> ${destination}. Og'irlik: ${weight}kg`,
+          message: `Yo'nalish: ${origin} -> ${destination}. Og'irlik: ${weight} tonna${method === 'rail' ? `. Stansiya: ${fromStation} → ${toStation}` : ''}`,
           transportType: method,
           fromStation: method === 'rail' ? fromStation : undefined,
           toStation: method === 'rail' ? toStation : undefined,
@@ -93,7 +95,7 @@ export default function CalculatorPage() {
       
       toast.success('Arizangiz muvaffaqiyatli yuborildi. Tez orada aloqaga chiqamiz!');
       setPhone('');
-      setQuote(null); // Reset after success
+      setQuote(null);
     } catch (err) {
       toast.error('Ariza yuborishda xatolik yuz berdi. Iltimos qayta urining.');
     } finally {
@@ -110,7 +112,7 @@ export default function CalculatorPage() {
             Yuk narxini hisoblash
           </h1>
           <p className="mt-4 text-lg text-muted-foreground">
-            Barcha turdagi xalqaro tashuvlar uchun taxminiy narxni hisoblang va onlayn ariza qoldiring.
+            Temir yo&apos;l va avtomobil tashuvlari uchun taxminiy narxni hisoblang va onlayn ariza qoldiring.
           </p>
         </div>
 
@@ -144,29 +146,48 @@ export default function CalculatorPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="auto"><div className="flex items-center gap-2"><Truck className="w-4 h-4"/> Fura (Avtomobil)</div></SelectItem>
-                        <SelectItem value="rail"><div className="flex items-center gap-2"><Truck className="w-4 h-4"/> Temir yo'l</div></SelectItem>
-                        <SelectItem value="air"><div className="flex items-center gap-2"><Plane className="w-4 h-4"/> Avia tashuv</div></SelectItem>
+                        <SelectItem value="rail"><div className="flex items-center gap-2"><Train className="w-4 h-4"/> Temir yo&apos;l</div></SelectItem>
+                        <SelectItem value="auto"><div className="flex items-center gap-2"><Truck className="w-4 h-4"/> Avtomobil</div></SelectItem>
                       </SelectContent>
                    </Select>
                 </div>
                 {method === 'rail' && (
                   <motion.div initial={{opacity:0, height:0}} animate={{opacity:1, height:'auto'}} className="grid gap-4 bg-muted/30 p-4 rounded-xl border border-dashed">
-                      <div className="grid gap-2">
-                         <Label>Jo'nash stansiyasi</Label>
-                         <Input required value={fromStation} onChange={e => setFromStation(e.target.value)} placeholder="Stansiya nomi yoki kodi" className="h-10" />
-                      </div>
-                      <div className="grid gap-2">
-                         <Label>Borish stansiyasi</Label>
-                         <Input required value={toStation} onChange={e => setToStation(e.target.value)} placeholder="Stansiya nomi yoki kodi (Masalan: Chuqursoy)" className="h-10" />
-                      </div>
+                      <StationAutocomplete
+                        label="Jo'nash stansiyasi"
+                        placeholder="Stansiya nomi yoki kodi"
+                        value={fromStation}
+                        onSelect={(s) => {
+                          if (s) {
+                            setFromStation(s.nameUz);
+                            setFromStationId(s.id);
+                          } else {
+                            setFromStation('');
+                            setFromStationId(null);
+                          }
+                        }}
+                      />
+                      <StationAutocomplete
+                        label="Borish stansiyasi"
+                        placeholder="Stansiya nomi yoki kodi (Masalan: Chuqursoy)"
+                        value={toStation}
+                        onSelect={(s) => {
+                          if (s) {
+                            setToStation(s.nameUz);
+                            setToStationId(s.id);
+                          } else {
+                            setToStation('');
+                            setToStationId(null);
+                          }
+                        }}
+                      />
                   </motion.div>
                 )}
                  <div className="grid gap-2">
-                   <Label>Yuk og'irligi (kg)</Label>
+                   <Label>Yuk og&apos;irligi (tonna)</Label>
                    <div className="relative">
                      <Package className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                     <Input required type="number" min="0.1" step="0.1" value={weight} onChange={e => setWeight(e.target.value)} placeholder="Masalan: 1500" className="pl-10 h-12" />
+                     <Input required type="number" min="0.1" step="0.1" value={weight} onChange={e => setWeight(e.target.value)} placeholder="Masalan: 20" className="pl-10 h-12" />
                    </div>
                 </div>
               </div>
@@ -187,10 +208,82 @@ export default function CalculatorPage() {
             {quote === null ? (
                <div className="bg-muted/30 rounded-2xl border border-dashed flex flex-col items-center justify-center p-12 text-center h-full min-h-[400px]">
                  <Calculator className="w-16 h-16 text-muted-foreground/30 mb-4" />
-                 <p className="text-muted-foreground mb-2 font-medium">Natijani ko'rish uchun avval hisoblang</p>
-                 <p className="text-sm text-muted-foreground/70">Xizmat va masofa narxga bevosita ra'sir qiladi.</p>
+                 <p className="text-muted-foreground mb-2 font-medium">Natijani ko&apos;rish uchun avval hisoblang</p>
+                 <p className="text-sm text-muted-foreground/70">Xizmat va masofa narxga bevosita ta&apos;sir qiladi.</p>
                </div>
+            ) : quote.noTariffFound ? (
+              /* ── No tariff found — manager will calculate ── */
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-gradient-to-br from-amber-50 via-white to-orange-50 rounded-2xl shadow-xl border border-amber-200 p-8 relative overflow-hidden"
+              >
+                <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
+                  <UserCheck className="w-48 h-48" />
+                </div>
+
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500 text-white shadow-lg">
+                    <Phone className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-amber-900">Menejerlar hisoblab beradi</h3>
+                    <p className="text-sm text-amber-700/80">Ushbu yo&apos;nalish uchun maxsus tarif</p>
+                  </div>
+                </div>
+
+                <div className="rounded-xl bg-amber-100/60 border border-amber-200 p-4 mb-6">
+                  <p className="text-sm text-amber-900 leading-relaxed">
+                    <strong>{origin} → {destination}</strong> yo&apos;nalishi bo&apos;yicha
+                    {method === 'rail' && fromStation && toStation && (
+                      <span> ({fromStation} → {toStation} stansiyalari)</span>
+                    )} {weight} tonna yuk uchun aniq narxni <strong>mutaxassis menejerlarimiz hisoblab, siz bilan aloqaga chiqishadi</strong>.
+                  </p>
+                </div>
+
+                <div className="space-y-3 mb-6 text-sm text-amber-800/70">
+                  <div className="flex justify-between border-b border-amber-200/60 pb-2">
+                    <span>Yo&apos;nalish</span>
+                    <span className="font-semibold text-amber-900">{origin} → {destination}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-amber-200/60 pb-2">
+                    <span>Transport</span>
+                    <span className="font-semibold text-amber-900">{method === 'rail' ? "Temir yo'l" : "Avtomobil"}</span>
+                  </div>
+                  <div className="flex justify-between pb-2">
+                    <span>Og&apos;irlik</span>
+                    <span className="font-semibold text-amber-900">{weight} tonna</span>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl p-5 border border-amber-200 shadow-sm">
+                   <h4 className="font-semibold text-amber-900 mb-3 flex items-center gap-2">
+                     <Send className="w-4 h-4" /> Ariza qoldiring — tez orada aloqaga chiqamiz
+                   </h4>
+                   <p className="text-xs text-amber-700/70 mb-4">
+                     Menejerlarimiz 1 soat ichida aniq narx va shartlarni taqdim etishadi.
+                   </p>
+                   
+                   <div className="flex flex-col sm:flex-row gap-3">
+                     <Input 
+                        placeholder="+998 90 123 45 67" 
+                        value={phone}
+                        onChange={e => setPhone(e.target.value)}
+                        className="h-12 border-amber-200 focus:border-amber-400" 
+                     />
+                     <Button 
+                       disabled={isSubmitting}
+                       onClick={handleSubmitLead}
+                       className="h-12 bg-amber-600 hover:bg-amber-700 text-white font-bold px-8"
+                     >
+                       {isSubmitting ? <Loader2 className="mr-2 w-4 h-4 animate-spin" /> : <Send className="mr-2 w-4 h-4" />}
+                       Jo&apos;natish
+                     </Button>
+                   </div>
+                </div>
+              </motion.div>
             ) : (
+              /* ── Tariff found — show price ── */
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -201,7 +294,7 @@ export default function CalculatorPage() {
                 </div>
 
                 <h3 className="text-blue-100 font-medium mb-1 uppercase tracking-wider text-sm">
-                  {quote.fallbackUsed ? 'Taxminiy narx' : quote.tariffName || 'Bashoratli narx'}
+                  {quote.tariffName || 'Tarif asosida narx'}
                 </h3>
                 <div className="flex items-baseline gap-2 mb-6">
                   <span className="text-6xl font-black">{formatMoney(quote.price, quote.currency)}</span>
@@ -215,12 +308,20 @@ export default function CalculatorPage() {
                   <div className="flex justify-between border-b border-white/10 pb-2">
                     <span>Transport turi</span>
                     <span className="font-semibold text-white">
-                       {method === 'auto' ? 'Fura (Avtomobil)' : method === 'rail' ? "Temir yo'l" : "Avia tashuv"}
+                       {method === 'rail' ? "Temir yo'l" : "Avtomobil"}
                     </span>
                   </div>
+                  {method === 'rail' && fromStation && toStation && (
+                    <div className="flex justify-between border-b border-white/10 pb-2">
+                      <span>Stansiyalar</span>
+                      <span className="font-semibold text-white text-xs">
+                         {fromStation} → {toStation}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex justify-between border-b border-white/10 pb-2">
-                    <span>Og'irligi</span>
-                    <span className="font-semibold text-white">{weight} kg{quote.breakdown.weightBilled !== parseFloat(weight) ? ` (min ${quote.breakdown.weightBilled} kg)` : ''}</span>
+                    <span>Og&apos;irlik</span>
+                    <span className="font-semibold text-white">{weight} tonna{quote.breakdown.weightBilled !== parseFloat(weight) ? ` (min ${quote.breakdown.weightBilled} tonna)` : ''}</span>
                   </div>
                   {quote.breakdown.baseFee > 0 && (
                     <div className="flex justify-between border-b border-white/10 pb-2">
@@ -238,10 +339,10 @@ export default function CalculatorPage() {
 
                 <div className="bg-white/10 rounded-xl p-5 backdrop-blur-sm border border-white/10">
                    <h4 className="font-semibold text-white mb-3 flex items-center gap-2">
-                     <Send className="w-4 h-4" /> Narx bo'yicha buyurtma qoldirish
+                     <Send className="w-4 h-4" /> Narx bo&apos;yicha buyurtma qoldirish
                    </h4>
                    <p className="text-xs text-blue-100/70 mb-4">
-                     Menejerlarimiz aniq narxni hisoblab, siz bilan bog'lanishadi.
+                     Menejerlarimiz aniq narxni hisoblab, siz bilan bog&apos;lanishadi.
                    </p>
                    
                    <div className="flex flex-col sm:flex-row gap-3">
@@ -256,7 +357,7 @@ export default function CalculatorPage() {
                        onClick={handleSubmitLead}
                        className="h-12 bg-white text-[#042C53] hover:bg-gray-100 font-bold px-8 shadow-[0_0_20px_rgba(255,255,255,0.3)]"
                      >
-                       Jo'natish
+                       Jo&apos;natish
                      </Button>
                    </div>
                 </div>

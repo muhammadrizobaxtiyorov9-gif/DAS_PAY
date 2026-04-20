@@ -130,10 +130,9 @@ export function computeProgress(
   return 0.5;
 }
 
-async function fetchOsrmRoute(start: LatLng, end: LatLng, mode: 'truck' | 'train'): Promise<LatLng[] | null> {
+async function fetchOsrmRoute(start: LatLng, end: LatLng): Promise<LatLng[] | null> {
   try {
-    const profile = mode === 'train' ? 'driving' : 'driving';
-    const url = `https://router.project-osrm.org/route/v1/${profile}/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson`;
+    const url = `https://router.project-osrm.org/route/v1/driving/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson`;
     const res = await fetch(url);
     if (!res.ok) return null;
     const data = await res.json();
@@ -145,15 +144,184 @@ async function fetchOsrmRoute(start: LatLng, end: LatLng, mode: 'truck' | 'train
   }
 }
 
+/**
+ * Fetch real railway tracks from OpenStreetMap via Overpass API.
+ * Queries a corridor between two points for railway=rail ways.
+ */
+async function fetchRailwayTracks(start: LatLng, end: LatLng): Promise<LatLng[] | null> {
+  try {
+    const minLat = Math.min(start[0], end[0]) - 0.5;
+    const maxLat = Math.max(start[0], end[0]) + 0.5;
+    const minLng = Math.min(start[1], end[1]) - 0.5;
+    const maxLng = Math.max(start[1], end[1]) + 0.5;
+
+    const query = `[out:json][timeout:15];
+way["railway"="rail"](${minLat},${minLng},${maxLat},${maxLng});
+(._;>;);
+out body;`;
+
+    const res = await fetch('https://overpass-api.de/api/interpreter', {
+      method: 'POST',
+      body: `data=${encodeURIComponent(query)}`,
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    });
+
+    if (!res.ok) return null;
+    const data = await res.json();
+
+    // Build node coordinate map
+    const nodes = new Map<number, LatLng>();
+    for (const el of data.elements) {
+      if (el.type === 'node' && el.lat != null && el.lon != null) {
+        nodes.set(el.id, [el.lat, el.lon]);
+      }
+    }
+
+    // Extract all railway way segments
+    const ways: LatLng[][] = [];
+    for (const el of data.elements) {
+      if (el.type === 'way' && Array.isArray(el.nodes)) {
+        const wayCoords: LatLng[] = [];
+        for (const nodeId of el.nodes) {
+          const coord = nodes.get(nodeId);
+          if (coord) wayCoords.push(coord);
+        }
+        if (wayCoords.length >= 2) ways.push(wayCoords);
+      }
+    }
+
+    if (ways.length === 0) return null;
+
+    // Build a connected path from start to end using nearest-neighbor greedy approach
+    const path = buildConnectedRailPath(ways, start, end);
+    return path.length >= 2 ? path : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Find the nearest point in a set of coordinates */
+function nearestPoint(target: LatLng, points: LatLng[]): { idx: number; dist: number } {
+  let bestIdx = 0;
+  let bestDist = Infinity;
+  for (let i = 0; i < points.length; i++) {
+    const d = haversine(target, points[i]);
+    if (d < bestDist) { bestDist = d; bestIdx = i; }
+  }
+  return { idx: bestIdx, dist: bestDist };
+}
+
+/**
+ * Greedy algorithm to build a connected rail path from start to end.
+ * Selects ways that progressively get closer to the destination.
+ */
+function buildConnectedRailPath(ways: LatLng[][], start: LatLng, end: LatLng): LatLng[] {
+  // Flatten all way endpoints for searching
+  const result: LatLng[] = [start];
+  const usedWays = new Set<number>();
+  let current = start;
+  const maxSteps = ways.length * 2;
+  let steps = 0;
+
+  while (steps++ < maxSteps) {
+    const distToEnd = haversine(current, end);
+    if (distToEnd < 2) break; // Close enough (2km)
+
+    // Find nearest unused way endpoint
+    let bestWayIdx = -1;
+    let bestEndDist = Infinity;
+    let bestWayReversed = false;
+
+    for (let i = 0; i < ways.length; i++) {
+      if (usedWays.has(i)) continue;
+      const way = ways[i];
+      const startDist = haversine(current, way[0]);
+      const endDist = haversine(current, way[way.length - 1]);
+
+      // The way's closest endpoint to current position
+      const closerStart = startDist < endDist;
+      const connectDist = closerStart ? startDist : endDist;
+
+      if (connectDist > 50) continue; // Too far to connect (50km)
+
+      // Score: prefer ways that bring us closer to the destination
+      const wayEnd = closerStart ? way[way.length - 1] : way[0];
+      const progressDist = haversine(wayEnd, end);
+
+      if (progressDist < bestEndDist) {
+        bestEndDist = progressDist;
+        bestWayIdx = i;
+        bestWayReversed = !closerStart;
+      }
+    }
+
+    if (bestWayIdx === -1) break; // No connectable way found
+
+    usedWays.add(bestWayIdx);
+    const selectedWay = bestWayReversed ? [...ways[bestWayIdx]].reverse() : ways[bestWayIdx];
+    result.push(...selectedWay);
+    current = selectedWay[selectedWay.length - 1];
+  }
+
+  result.push(end);
+  return result;
+}
+
+/**
+ * Generate a smooth geodesic arc between two points.
+ * Used as fallback when actual railway data is unavailable.
+ */
+function generateGeodesicArc(start: LatLng, end: LatLng, numPoints: number = 80): LatLng[] {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const toDeg = (r: number) => (r * 180) / Math.PI;
+
+  const lat1 = toRad(start[0]);
+  const lng1 = toRad(start[1]);
+  const lat2 = toRad(end[0]);
+  const lng2 = toRad(end[1]);
+
+  const d = 2 * Math.asin(
+    Math.sqrt(
+      Math.sin((lat2 - lat1) / 2) ** 2 +
+      Math.cos(lat1) * Math.cos(lat2) * Math.sin((lng2 - lng1) / 2) ** 2,
+    ),
+  );
+
+  if (d < 1e-10) return [start, end];
+
+  const points: LatLng[] = [];
+  for (let i = 0; i <= numPoints; i++) {
+    const f = i / numPoints;
+    const A = Math.sin((1 - f) * d) / Math.sin(d);
+    const B = Math.sin(f * d) / Math.sin(d);
+    const x = A * Math.cos(lat1) * Math.cos(lng1) + B * Math.cos(lat2) * Math.cos(lng2);
+    const y = A * Math.cos(lat1) * Math.sin(lng1) + B * Math.cos(lat2) * Math.sin(lng2);
+    const z = A * Math.sin(lat1) + B * Math.sin(lat2);
+    points.push([toDeg(Math.atan2(z, Math.sqrt(x ** 2 + y ** 2))), toDeg(Math.atan2(y, x))]);
+  }
+  return points;
+}
+
 export async function resolveRouteGeometry(
   start: LatLng,
   end: LatLng,
   mode: 'start' | 'truck' | 'train'
 ): Promise<LatLng[]> {
   if (mode === 'start') return [start, end];
-  const route = await fetchOsrmRoute(start, end, mode);
-  if (route && route.length > 0) return route;
-  return [start, end];
+
+  if (mode === 'truck') {
+    // Road routing via OSRM
+    const route = await fetchOsrmRoute(start, end);
+    if (route && route.length > 0) return route;
+    return [start, end];
+  }
+
+  // Railway routing: try Overpass API first, then geodesic arc fallback
+  const railRoute = await fetchRailwayTracks(start, end);
+  if (railRoute && railRoute.length > 2) return railRoute;
+
+  // Fallback: smooth geodesic arc (great circle)
+  return generateGeodesicArc(start, end);
 }
 
 const SPEED_KMH: Record<string, number> = {

@@ -22,6 +22,7 @@ import {
   BarChart3,
   UserCircle,
   Star,
+  Train,
 } from 'lucide-react';
 
 const navigation = [
@@ -33,6 +34,7 @@ const navigation = [
   { name: 'Mijozlar', href: '/admin/clients', icon: UserCircle, description: "Mijoz 360° profili" },
   { name: 'Yuklar', href: '/admin/shipments', icon: PackageSearch, description: 'Tracking boshqaruvi' },
   { name: 'Tariflar', href: '/admin/tariffs', icon: Banknote, description: 'Narx katalogi' },
+  { name: 'Stansiyalar', href: '/admin/stations', icon: Train, description: "Temir yo'l stansiyalari" },
   { name: 'Invoyslar', href: '/admin/invoices', icon: FileSignature, description: 'Hisob-fakturalar' },
   { name: 'Maqolalar', href: '/admin/blog', icon: Newspaper, description: 'Blog & yangiliklar' },
   { name: 'Arizalar', href: '/admin/leads', icon: Users, description: 'Mijoz so\'rovlari' },

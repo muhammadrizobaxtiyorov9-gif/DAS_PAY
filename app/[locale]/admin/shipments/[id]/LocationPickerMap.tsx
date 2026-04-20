@@ -82,7 +82,7 @@ function FitBounds({ points, trigger }: { points: LatLng[]; trigger: number }) {
 }
 
 export default function LocationPickerMap({ segments, setSegments }: PickerProps) {
-  const [activeMode, setActiveMode] = useState<'truck' | 'train'>('truck');
+  const [activeMode, setActiveMode] = useState<'truck' | 'train'>('train');
   const [layer, setLayer] = useState<LayerKey>('voyager');
   const [isFetching, setIsFetching] = useState(false);
   const [search, setSearch] = useState('');

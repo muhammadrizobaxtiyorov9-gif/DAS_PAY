@@ -1,14 +1,13 @@
 import Link from 'next/link';
-import { Truck, Warehouse, Globe, Plane, Train, FileCheck, ArrowRight } from 'lucide-react';
+import { Truck, Warehouse, Globe, Train, FileCheck, ArrowRight } from 'lucide-react';
 import { getTranslator, type Locale, type Messages } from '@/lib/i18n-translator';
 import { Reveal } from '@/components/shared/motion-primitives';
 
 const services = [
+  { key: 'rail', icon: Train, href: '/services/rail' },
   { key: 'road', icon: Truck, href: '/services/road' },
   { key: 'warehouse', icon: Warehouse, href: '/services/warehouse' },
   { key: 'international', icon: Globe, href: '/services/international' },
-  { key: 'air', icon: Plane, href: '/services/air' },
-  { key: 'rail', icon: Train, href: '/services/rail' },
   { key: 'customs', icon: FileCheck, href: '/services/customs' },
 ] as const;
 

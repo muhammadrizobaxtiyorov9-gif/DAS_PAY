@@ -197,7 +197,7 @@ export function ShipmentRequestForm({ locale, senderAddresses, receiverAddresses
       <section>
         <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-slate-600">Yuk haqida</h3>
         <div className="grid gap-3 md:grid-cols-2">
-          <Field label="Vazn (kg)">
+          <Field label="Vazn (tonna)">
             <input
               type="number"
               step="0.1"

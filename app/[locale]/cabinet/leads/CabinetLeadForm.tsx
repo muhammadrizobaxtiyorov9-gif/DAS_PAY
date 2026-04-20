@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, Send } from 'lucide-react';
 import { toast } from 'sonner';
+import { StationAutocomplete } from '@/components/forms/StationAutocomplete';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -87,7 +88,6 @@ export function CabinetLeadForm({ defaultName, defaultPhone }: { defaultName: st
               <SelectItem key={service.value} value={service.value}>
                 {service.value === 'rail' ? 'Temir yo\'l orqali tashish' :
                  service.value === 'road' ? 'Avto transport orqali tashish' :
-                 service.value === 'air' ? 'Havo yo\'llari orqali tashish' :
                  service.value === 'customs' ? 'Bojxona rasmiylashtiruvi' :
                  service.value === 'warehouse' ? 'Ombor xizmatlari' :
                  service.value === 'international' ? 'Xalqaro tashish' : 'Boshqa'}
@@ -101,11 +101,17 @@ export function CabinetLeadForm({ defaultName, defaultPhone }: { defaultName: st
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label className="text-xs font-bold uppercase text-gray-500">Qayerdan (Stansiya)</Label>
-            <Input {...register('fromStation')} className="h-12 bg-gray-50" placeholder="Stansiya nomi" />
+            <StationAutocomplete
+              placeholder="Stansiya nomi yoki kodi"
+              onSelect={(s) => setValue('fromStation', s ? s.nameUz : '')}
+            />
           </div>
           <div className="space-y-2">
             <Label className="text-xs font-bold uppercase text-gray-500">Qayerga (Stansiya)</Label>
-            <Input {...register('toStation')} className="h-12 bg-gray-50" placeholder="Stansiya nomi" />
+            <StationAutocomplete
+              placeholder="Stansiya nomi yoki kodi"
+              onSelect={(s) => setValue('toStation', s ? s.nameUz : '')}
+            />
           </div>
         </div>
       )}

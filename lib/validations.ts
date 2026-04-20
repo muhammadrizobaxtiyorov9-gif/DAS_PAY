@@ -50,11 +50,10 @@ export type TrackingFormData = z.infer<typeof trackingFormSchema>;
  * Service types for contact form dropdown
  */
 export const serviceTypes = [
+  { value: 'rail', labelKey: 'services.items.rail.title' },
   { value: 'road', labelKey: 'services.items.road.title' },
   { value: 'warehouse', labelKey: 'services.items.warehouse.title' },
   { value: 'international', labelKey: 'services.items.international.title' },
-  { value: 'air', labelKey: 'services.items.air.title' },
-  { value: 'rail', labelKey: 'services.items.rail.title' },
   { value: 'customs', labelKey: 'services.items.customs.title' },
 ] as const;
 

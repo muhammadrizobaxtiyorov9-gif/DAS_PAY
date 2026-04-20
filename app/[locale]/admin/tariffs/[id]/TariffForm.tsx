@@ -126,14 +126,11 @@ export function TariffForm({ initialData }: { initialData: TariffModel | null })
           <label className="mb-1 block text-sm font-medium text-gray-700">Transport turi</label>
           <select
             name="mode"
-            defaultValue={initialData?.mode || 'truck'}
+            defaultValue={initialData?.mode || 'train'}
             className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
           >
-            <option value="truck">Avto</option>
             <option value="train">Temir yo'l</option>
-            <option value="air">Havo</option>
-            <option value="sea">Dengiz</option>
-            <option value="multimodal">Multimodal</option>
+            <option value="truck">Avtomobil</option>
           </select>
         </div>
         <div>
@@ -164,7 +161,7 @@ export function TariffForm({ initialData }: { initialData: TariffModel | null })
 
       <div className="grid gap-5 md:grid-cols-3">
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">1 kg narxi</label>
+          <label className="mb-1 block text-sm font-medium text-gray-700">1 tonna narxi</label>
           <input
             required
             type="number"
@@ -187,7 +184,7 @@ export function TariffForm({ initialData }: { initialData: TariffModel | null })
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">Min. og'irlik (kg)</label>
+          <label className="mb-1 block text-sm font-medium text-gray-700">Min. og'irlik (tonna)</label>
           <input
             type="number"
             step="0.1"

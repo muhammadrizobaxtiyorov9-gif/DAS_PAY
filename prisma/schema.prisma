@@ -25,6 +25,10 @@ model Lead {
   transportType String?
   fromStation   String?
   toStation     String?
+  fromStationId Int?
+  fromStationRef Station? @relation("LeadFromStation", fields: [fromStationId], references: [id])
+  toStationId   Int?
+  toStationRef   Station? @relation("LeadToStation", fields: [toStationId], references: [id])
   documents     Json?    @default("[]")
   assignedToId  Int?
   assignee      User?    @relation("UserLeads", fields: [assignedToId], references: [id])
@@ -33,6 +37,8 @@ model Lead {
   @@index([status])
   @@index([createdAt])
   @@index([assignedToId])
+  @@index([fromStationId])
+  @@index([toStationId])
 }
 
 /// Tracking queries for analytics
@@ -185,13 +191,13 @@ model Tariff {
   originCity     String?
   destCountry    String
   destCity       String?
-  /// truck, train, air, sea, multimodal
-  mode           String   @default("truck")
-  /// Price per kg in `currency`
+  /// truck | train
+  mode           String   @default("train")
+  /// Price per ton in `currency`
   pricePerKg     Float    @default(0)
   /// Fixed baseline fee added to every shipment on this lane
   baseFee        Float    @default(0)
-  /// Minimum billable weight (kg)
+  /// Minimum billable weight (ton)
   minWeight      Float    @default(0)
   /// USD / UZS / RUB
   currency       String   @default("USD")
@@ -404,4 +410,37 @@ model UserAction {
 
   @@index([userId])
   @@index([createdAt])
+}
+
+/// Railway stations for route planning and tariff calculation
+model Station {
+  id          Int      @id @default(autoincrement())
+  /// Unique station code (e.g. "01002")
+  code        String   @unique
+  /// Station name in Uzbek
+  nameUz      String
+  /// Station name in Russian
+  nameRu      String
+  /// Station name in English
+  nameEn      String
+  /// Country name
+  country     String   @default("O'zbekiston")
+  /// Latitude
+  lat         Float?
+  /// Longitude
+  lng         Float?
+  /// Whether this is an active station
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  leadsFrom   Lead[]   @relation("LeadFromStation")
+  leadsTo     Lead[]   @relation("LeadToStation")
+
+  @@index([code])
+  @@index([country])
+  @@index([active])
+  @@index([nameUz])
+  @@index([nameRu])
+  @@index([nameEn])
 }

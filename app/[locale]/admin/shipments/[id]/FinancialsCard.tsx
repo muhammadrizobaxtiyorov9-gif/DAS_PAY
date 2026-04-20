@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { DollarSign, Save, TrendingUp, TrendingDown, Truck, Train, Plane, Ship, Loader2 } from 'lucide-react';
+import { DollarSign, Save, TrendingUp, TrendingDown, Truck, Train, Loader2 } from 'lucide-react';
 import { updateShipmentFinancials } from '@/app/actions/admin';
 
-const MODE_ICONS = { road: Truck, rail: Train, air: Plane, sea: Ship };
-const MODE_LABELS: Record<string, string> = { road: 'Avto', rail: "Temir yo'l", air: 'Havo', sea: 'Dengiz' };
+const MODE_ICONS = { road: Truck, rail: Train };
+const MODE_LABELS: Record<string, string> = { road: 'Avto', rail: "Temir yo'l" };
 
 export function FinancialsCard({
   shipmentId,
@@ -24,7 +24,7 @@ export function FinancialsCard({
   const [revenue, setRevenue] = useState(String(initial.revenue || ''));
   const [cost, setCost] = useState(String(initial.cost || ''));
   const [currency, setCurrency] = useState(initial.currency || 'USD');
-  const [mode, setMode] = useState(initial.transportMode || 'road');
+  const [mode, setMode] = useState(initial.transportMode || 'rail');
   const [saving, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
 
@@ -82,8 +82,8 @@ export function FinancialsCard({
         </div>
         <div>
           <label className="mb-1 block text-xs font-semibold text-gray-600">Transport turi</label>
-          <div className="grid grid-cols-4 gap-1 rounded-lg border border-slate-200 bg-slate-50 p-0.5">
-            {(['road', 'rail', 'air', 'sea'] as const).map((m) => {
+          <div className="grid grid-cols-2 gap-1 rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+            {(['rail', 'road'] as const).map((m) => {
               const Icon = MODE_ICONS[m];
               return (
                 <button

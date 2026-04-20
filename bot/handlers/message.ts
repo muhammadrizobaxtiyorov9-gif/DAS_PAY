@@ -142,7 +142,7 @@ export function setupMessageHandlers(bot: Bot<MyContext>) {
           data: {
             name: firstName,
             phone,
-            service: `Telegram Bot Calculator (${session.calcData.weight}kg, ~${session.calcData.estimateLabel || `$${session.calcData.estimate}`})`,
+            service: `Telegram Bot Calculator (${session.calcData.weight} tonna, ~${session.calcData.estimateLabel || `$${session.calcData.estimate}`})`,
             message: `Route: ${session.calcData.origin} -> ${session.calcData.destination}. Username: @${ctx.from?.username || ''}`,
             ip: 'telegram',
             status: 'new',
@@ -268,33 +268,52 @@ export function setupMessageHandlers(bot: Bot<MyContext>) {
       }
       session.calcData.weight = text;
       session.step = 'calc_phone';
-      let est = Math.round(w * 2.5);
-      let estLabel = `$${est}`;
+      let est = 0;
+      let estLabel = '';
+      let noTariff = false;
       try {
         const quote = await computeQuote({
           originCountry: session.calcData.origin || '',
           destCountry: session.calcData.destination || '',
-          weightKg: w,
+          weightTon: w,
         });
-        est = Math.round(quote.price);
-        estLabel = formatMoney(quote.price, quote.currency);
+        if (quote.noTariffFound) {
+          noTariff = true;
+        } else {
+          est = Math.round(quote.price);
+          estLabel = formatMoney(quote.price, quote.currency);
+        }
       } catch {
-        // fall back to heuristic
+        noTariff = true;
       }
       session.calcData.estimate = est;
       session.calcData.estimateLabel = estLabel;
-      await ctx.reply(
-        t(locale).calc.askPhone(
-          session.calcData.origin || '',
-          session.calcData.destination || '',
-          text,
-          est,
-        ),
-        {
+
+      if (noTariff) {
+        // No tariff — managers will calculate
+        const noTariffMsg = locale === 'ru'
+          ? `📋 <b>Заявка на расчёт</b>\n\n📍 Маршрут: ${session.calcData.origin} → ${session.calcData.destination}\n⚖️ Вес: ${text} т\n\nТариф для данного направления пока не установлен. <b>Наши менеджеры рассчитают стоимость и свяжутся с вами в течение 1 часа.</b>\n\nОтправьте номер телефона для подтверждения 👇`
+          : locale === 'en'
+          ? `📋 <b>Quote request</b>\n\n📍 Route: ${session.calcData.origin} → ${session.calcData.destination}\n⚖️ Weight: ${text} tons\n\nNo tariff found for this route. <b>Our managers will calculate the price and contact you within 1 hour.</b>\n\nShare your phone number to confirm 👇`
+          : `📋 <b>Narx so'rovi</b>\n\n📍 Yo'nalish: ${session.calcData.origin} → ${session.calcData.destination}\n⚖️ Og'irlik: ${text} tonna\n\nUshbu yo'nalish uchun tarif hozircha mavjud emas. <b>Menejerlarimiz narxni hisoblab, 1 soat ichida siz bilan aloqaga chiqishadi.</b>\n\nTasdiqlash uchun telefon raqamingizni yuboring 👇`;
+        await ctx.reply(noTariffMsg, {
           parse_mode: 'HTML',
           reply_markup: contactShareKeyboard('📱 ' + text),
-        },
-      );
+        });
+      } else {
+        await ctx.reply(
+          t(locale).calc.askPhone(
+            session.calcData.origin || '',
+            session.calcData.destination || '',
+            text,
+            est,
+          ),
+          {
+            parse_mode: 'HTML',
+            reply_markup: contactShareKeyboard('📱 ' + text),
+          },
+        );
+      }
       return;
     }
 
@@ -309,7 +328,7 @@ export function setupMessageHandlers(bot: Bot<MyContext>) {
           data: {
             name: ctx.from?.first_name || 'Telegram User',
             phone,
-            service: `Telegram Bot Calculator (${session.calcData.weight}kg, ~${session.calcData.estimateLabel || `$${session.calcData.estimate}`})`,
+            service: `Telegram Bot Calculator (${session.calcData.weight} tonna, ~${session.calcData.estimateLabel || `$${session.calcData.estimate}`})`,
             message: `Route: ${session.calcData.origin} -> ${session.calcData.destination}. Username: @${ctx.from?.username || ''}`,
             ip: 'telegram',
             status: 'new',
