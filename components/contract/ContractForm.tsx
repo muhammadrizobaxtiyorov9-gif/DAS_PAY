@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -19,72 +19,61 @@ import {
   ArrowLeft,
   Loader2,
   Eye,
-  Download,
   AlertCircle,
 } from 'lucide-react';
 import { ContractPreview } from './ContractPreview';
+import { useTranslations } from '@/components/providers/LocaleProvider';
+import type { TranslateFn } from '@/lib/i18n-translator';
 
 // ─── Validation Schema ────────────────────────────────────────────────────────
 
 const innRegex = /^\d{3}\s\d{3}\s\d{3}$/;
 
-const contractSchema = z
-  .object({
-    companyName: z.string().min(2, 'Минимум 2 символа').max(200),
-    companyDirector: z.string().min(2, 'Минимум 2 символа').max(200),
-    companyAddress: z.string().min(5, 'Укажите полный адрес').max(300),
-    companyInn: z
-      .string()
-      .regex(innRegex, 'Формат: xxx xxx xxx (9 цифр)'),
-    companyBank: z.string().min(2, 'Укажите название банка').max(200),
-    bankMfo: z
-      .string()
-      .regex(/^\d{5}$/, 'МФО должен содержать ровно 5 цифр'),
-    bankInn: z
-      .string()
-      .regex(innRegex, 'Формат: xxx xxx xxx (9 цифр)'),
-    bankNum: z.string().min(16, 'Неверный номер счёта').max(30),
-    bankCurrency: z.enum(['UZS', 'USD']),
-    hasCorrespondent: z.boolean(),
-    bankCorrName: z.string().optional(),
-    bankCorrAddress: z.string().optional(),
-    bankCorrSwift: z.string().optional(),
-  })
-  .superRefine((data, ctx) => {
-    if (data.hasCorrespondent) {
-      if (!data.bankCorrName || data.bankCorrName.length < 2) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Укажите название банка-корреспондента',
-          path: ['bankCorrName'],
-        });
+function buildSchema(t: TranslateFn) {
+  return z
+    .object({
+      companyName: z.string().min(2, t('contractPage.errors.min2')).max(200),
+      companyDirector: z.string().min(2, t('contractPage.errors.min2')).max(200),
+      companyAddress: z.string().min(5, t('contractPage.errors.minAddress')).max(300),
+      companyInn: z.string().regex(innRegex, t('contractPage.errors.innFormat')),
+      companyBank: z.string().min(2, t('contractPage.errors.min2')).max(200),
+      bankMfo: z.string().regex(/^\d{5}$/, t('contractPage.errors.mfoFormat')),
+      bankInn: z.string().regex(innRegex, t('contractPage.errors.innFormat')),
+      bankNum: z.string().min(16, t('contractPage.errors.accountInvalid')).max(30),
+      bankCurrency: z.enum(['UZS', 'USD']),
+      hasCorrespondent: z.boolean(),
+      bankCorrName: z.string().optional(),
+      bankCorrAddress: z.string().optional(),
+      bankCorrSwift: z.string().optional(),
+    })
+    .superRefine((data, ctx) => {
+      if (data.hasCorrespondent) {
+        if (!data.bankCorrName || data.bankCorrName.length < 2) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: t('contractPage.errors.corrName'),
+            path: ['bankCorrName'],
+          });
+        }
+        if (!data.bankCorrAddress || data.bankCorrAddress.length < 5) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: t('contractPage.errors.corrAddress'),
+            path: ['bankCorrAddress'],
+          });
+        }
+        if (!data.bankCorrSwift || data.bankCorrSwift.length < 8) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: t('contractPage.errors.swiftMin'),
+            path: ['bankCorrSwift'],
+          });
+        }
       }
-      if (!data.bankCorrAddress || data.bankCorrAddress.length < 5) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Укажите адрес банка-корреспондента',
-          path: ['bankCorrAddress'],
-        });
-      }
-      if (!data.bankCorrSwift || data.bankCorrSwift.length < 8) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'SWIFT код должен содержать минимум 8 символов',
-          path: ['bankCorrSwift'],
-        });
-      }
-    }
-  });
+    });
+}
 
-export type ContractFormData = z.infer<typeof contractSchema>;
-
-// ─── Step configuration ───────────────────────────────────────────────────────
-
-const STEPS = [
-  { id: 0, label: 'Компания', icon: Building2 },
-  { id: 1, label: 'Банк', icon: Landmark },
-  { id: 2, label: 'Просмотр', icon: Eye },
-] as const;
+export type ContractFormData = z.infer<ReturnType<typeof buildSchema>>;
 
 // ─── Helper: Format INN input ─────────────────────────────────────────────────
 function formatInn(value: string): string {
@@ -112,9 +101,7 @@ function Field({ label, error, required, children, hint }: FieldProps) {
         {required && <span className="text-red-500 ml-1">*</span>}
       </label>
       {children}
-      {hint && !error && (
-        <p className="text-xs text-slate-400">{hint}</p>
-      )}
+      {hint && !error && <p className="text-xs text-slate-400">{hint}</p>}
       <AnimatePresence mode="wait">
         {error && (
           <motion.p
@@ -156,7 +143,7 @@ function Input({ hasError, className = '', ...props }: InputProps) {
 
 // ─── Step 1: Company Info ─────────────────────────────────────────────────────
 
-function StepCompany({ form }: { form: ReturnType<typeof useForm<ContractFormData>> }) {
+function StepCompany({ form, t }: { form: ReturnType<typeof useForm<ContractFormData>>; t: TranslateFn }) {
   const { register, formState: { errors }, setValue, watch } = form;
 
   const handleInnChange = (field: 'companyInn') => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -177,37 +164,42 @@ function StepCompany({ form }: { form: ReturnType<typeof useForm<ContractFormDat
           <Building2 className="h-5 w-5 text-[#042C53]" />
         </div>
         <div>
-          <h3 className="font-semibold text-[#042C53]">Данные компании</h3>
-          <p className="text-xs text-slate-500">Информация о компании-клиенте</p>
+          <h3 className="font-semibold text-[#042C53]">{t('contractPage.company.heading')}</h3>
+          <p className="text-xs text-slate-500">{t('contractPage.company.subheading')}</p>
         </div>
       </div>
 
-      <Field label="Наименование организации" error={errors.companyName?.message} required>
+      <Field label={t('contractPage.company.name.label')} error={errors.companyName?.message} required>
         <Input
           {...register('companyName')}
           hasError={!!errors.companyName}
-          placeholder='ООО "Название компании"'
+          placeholder={t('contractPage.company.name.placeholder')}
         />
       </Field>
 
-      <Field label="Руководитель организации" error={errors.companyDirector?.message} required hint="ФИО директора в родительном падеже">
+      <Field
+        label={t('contractPage.company.director.label')}
+        error={errors.companyDirector?.message}
+        required
+        hint={t('contractPage.company.director.hint')}
+      >
         <div className="relative">
           <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input
             {...register('companyDirector')}
             hasError={!!errors.companyDirector}
-            placeholder="Иванов Иван Иванович"
+            placeholder={t('contractPage.company.director.placeholder')}
             className="pl-10"
           />
         </div>
       </Field>
 
-      <Field label="Адрес организации" error={errors.companyAddress?.message} required>
+      <Field label={t('contractPage.company.address.label')} error={errors.companyAddress?.message} required>
         <div className="relative">
           <MapPin className="absolute left-3 top-3.5 h-4 w-4 text-slate-400" />
           <textarea
             {...register('companyAddress')}
-            placeholder="г. Ташкент, ул. Навои 15"
+            placeholder={t('contractPage.company.address.placeholder')}
             rows={2}
             className={`
               w-full rounded-xl border bg-white px-4 py-3 pl-10 text-sm text-[#042C53]
@@ -221,19 +213,25 @@ function StepCompany({ form }: { form: ReturnType<typeof useForm<ContractFormDat
         </div>
         {errors.companyAddress && (
           <p className="flex items-center gap-1.5 text-xs text-red-500">
-            <AlertCircle className="h-3 w-3" />{errors.companyAddress?.message}
+            <AlertCircle className="h-3 w-3" />
+            {errors.companyAddress?.message}
           </p>
         )}
       </Field>
 
-      <Field label="ИНН организации" error={errors.companyInn?.message} required hint="Формат: 123 456 789">
+      <Field
+        label={t('contractPage.company.inn.label')}
+        error={errors.companyInn?.message}
+        required
+        hint={t('contractPage.company.inn.hint')}
+      >
         <div className="relative">
           <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input
             value={watch('companyInn') || ''}
             onChange={handleInnChange('companyInn')}
             hasError={!!errors.companyInn}
-            placeholder="123 456 789"
+            placeholder={t('contractPage.company.inn.placeholder')}
             maxLength={11}
             className="pl-10 font-mono tracking-wider"
           />
@@ -245,7 +243,7 @@ function StepCompany({ form }: { form: ReturnType<typeof useForm<ContractFormDat
 
 // ─── Step 2: Bank Info ────────────────────────────────────────────────────────
 
-function StepBank({ form }: { form: ReturnType<typeof useForm<ContractFormData>> }) {
+function StepBank({ form, t }: { form: ReturnType<typeof useForm<ContractFormData>>; t: TranslateFn }) {
   const { register, formState: { errors }, setValue, watch } = form;
   const hasCorrespondent = watch('hasCorrespondent');
   const bankCurrency = watch('bankCurrency');
@@ -273,56 +271,66 @@ function StepBank({ form }: { form: ReturnType<typeof useForm<ContractFormData>>
           <Landmark className="h-5 w-5 text-[#042C53]" />
         </div>
         <div>
-          <h3 className="font-semibold text-[#042C53]">Банковские реквизиты</h3>
-          <p className="text-xs text-slate-500">Реквизиты банка организации-клиента</p>
+          <h3 className="font-semibold text-[#042C53]">{t('contractPage.bank.heading')}</h3>
+          <p className="text-xs text-slate-500">{t('contractPage.bank.subheading')}</p>
         </div>
       </div>
 
-      <Field label="Наименование обслуживающего банка" error={errors.companyBank?.message} required>
+      <Field label={t('contractPage.bank.name.label')} error={errors.companyBank?.message} required>
         <Input
           {...register('companyBank')}
           hasError={!!errors.companyBank}
-          placeholder='АКБ "Название банка"'
+          placeholder={t('contractPage.bank.name.placeholder')}
         />
       </Field>
 
       <div className="grid grid-cols-2 gap-4">
-        <Field label="МФО банка" error={errors.bankMfo?.message} required hint="5 цифр">
+        <Field
+          label={t('contractPage.bank.mfo.label')}
+          error={errors.bankMfo?.message}
+          required
+          hint={t('contractPage.bank.mfo.hint')}
+        >
           <Input
             value={watch('bankMfo') || ''}
             onChange={handleMfoChange}
             hasError={!!errors.bankMfo}
-            placeholder="01234"
+            placeholder={t('contractPage.bank.mfo.placeholder')}
             maxLength={5}
             className="font-mono tracking-wider"
           />
         </Field>
 
-        <Field label="ИНН банка" error={errors.bankInn?.message} required hint="Формат: xxx xxx xxx">
+        <Field
+          label={t('contractPage.bank.inn.label')}
+          error={errors.bankInn?.message}
+          required
+          hint={t('contractPage.bank.inn.hint')}
+        >
           <Input
             value={watch('bankInn') || ''}
             onChange={handleInnChange('bankInn')}
             hasError={!!errors.bankInn}
-            placeholder="123 456 789"
+            placeholder={t('contractPage.bank.inn.placeholder')}
             maxLength={11}
             className="font-mono tracking-wider"
           />
         </Field>
       </div>
 
-      <Field label="Расчётный счёт" error={errors.bankNum?.message} required>
+      <Field label={t('contractPage.bank.account.label')} error={errors.bankNum?.message} required>
         <div className="relative">
           <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input
             {...register('bankNum')}
             hasError={!!errors.bankNum}
-            placeholder="20208 000 1 00000000 001"
+            placeholder={t('contractPage.bank.account.placeholder')}
             className="pl-10 font-mono tracking-wider"
           />
         </div>
       </Field>
 
-      <Field label="Валюта счёта" error={errors.bankCurrency?.message} required>
+      <Field label={t('contractPage.bank.currency.label')} error={errors.bankCurrency?.message} required>
         <div className="flex gap-3">
           {(['UZS', 'USD'] as const).map((cur) => (
             <button
@@ -337,20 +345,21 @@ function StepBank({ form }: { form: ReturnType<typeof useForm<ContractFormData>>
                 }
               `}
             >
-              {cur === 'UZS' ? '🇺🇿 UZS — Сум' : '🇺🇸 USD — Доллар'}
+              {cur === 'UZS'
+                ? t('contractPage.bank.currency.uzs')
+                : t('contractPage.bank.currency.usd')}
             </button>
           ))}
         </div>
       </Field>
 
-      {/* Correspondent Bank Toggle */}
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Globe2 className="h-5 w-5 text-[#042C53]" />
             <div>
-              <p className="text-sm font-medium text-[#042C53]">Банк-корреспондент</p>
-              <p className="text-xs text-slate-500">Для международных расчётов в USD</p>
+              <p className="text-sm font-medium text-[#042C53]">{t('contractPage.bank.correspondent.label')}</p>
+              <p className="text-xs text-slate-500">{t('contractPage.bank.correspondent.hint')}</p>
             </div>
           </div>
           <button
@@ -382,25 +391,38 @@ function StepBank({ form }: { form: ReturnType<typeof useForm<ContractFormData>>
               className="overflow-hidden"
             >
               <div className="mt-4 space-y-4 pt-4 border-t border-slate-200">
-                <Field label="Название банка-корреспондента" error={errors.bankCorrName?.message} required>
+                <Field
+                  label={t('contractPage.bank.correspondent.name.label')}
+                  error={errors.bankCorrName?.message}
+                  required
+                >
                   <Input
                     {...register('bankCorrName')}
                     hasError={!!errors.bankCorrName}
-                    placeholder="THE BANK OF NEW YORK MELLON"
+                    placeholder={t('contractPage.bank.correspondent.name.placeholder')}
                   />
                 </Field>
-                <Field label="Адрес банка-корреспондента" error={errors.bankCorrAddress?.message} required>
+                <Field
+                  label={t('contractPage.bank.correspondent.address.label')}
+                  error={errors.bankCorrAddress?.message}
+                  required
+                >
                   <Input
                     {...register('bankCorrAddress')}
                     hasError={!!errors.bankCorrAddress}
-                    placeholder="US-NY10286, New York"
+                    placeholder={t('contractPage.bank.correspondent.address.placeholder')}
                   />
                 </Field>
-                <Field label="SWIFT код" error={errors.bankCorrSwift?.message} required hint="8 или 11 символов">
+                <Field
+                  label={t('contractPage.bank.correspondent.swift.label')}
+                  error={errors.bankCorrSwift?.message}
+                  required
+                  hint={t('contractPage.bank.correspondent.swift.hint')}
+                >
                   <Input
                     {...register('bankCorrSwift')}
                     hasError={!!errors.bankCorrSwift}
-                    placeholder="IRVTUS3N"
+                    placeholder={t('contractPage.bank.correspondent.swift.placeholder')}
                     className="uppercase font-mono tracking-widest"
                     onChange={(e) => setValue('bankCorrSwift', e.target.value.toUpperCase(), { shouldValidate: true })}
                     value={watch('bankCorrSwift') || ''}
@@ -418,6 +440,18 @@ function StepBank({ form }: { form: ReturnType<typeof useForm<ContractFormData>>
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function ContractForm() {
+  const t = useTranslations();
+  const contractSchema = useMemo(() => buildSchema(t), [t]);
+
+  const STEPS = useMemo(
+    () => [
+      { id: 0, label: t('contractPage.steps.company'), icon: Building2 },
+      { id: 1, label: t('contractPage.steps.bank'), icon: Landmark },
+      { id: 2, label: t('contractPage.steps.preview'), icon: Eye },
+    ],
+    [t],
+  );
+
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -449,7 +483,6 @@ export function ContractForm() {
 
   const { handleSubmit, trigger } = form;
 
-  // Validate the current step before advancing
   const step0Fields = ['companyName', 'companyDirector', 'companyAddress', 'companyInn'] as const;
   const step1Fields = ['companyBank', 'bankMfo', 'bankInn', 'bankNum', 'bankCurrency', 'bankCorrName', 'bankCorrAddress', 'bankCorrSwift'] as const;
 
@@ -459,29 +492,31 @@ export function ContractForm() {
     if (valid) setCurrentStep((s) => s + 1);
   }, [currentStep, trigger]);
 
-  const onSubmit = useCallback(async (data: ContractFormData) => {
-    setIsSubmitting(true);
-    setSubmitError(null);
-    try {
-      const res = await fetch('/api/contracts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || 'Ошибка сервера');
+  const onSubmit = useCallback(
+    async (data: ContractFormData) => {
+      setIsSubmitting(true);
+      setSubmitError(null);
+      try {
+        const res = await fetch('/api/contracts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.message || t('contractPage.errors.genericServer'));
+        }
+        const result = await res.json();
+        setContractResult(result);
+      } catch (err) {
+        setSubmitError(err instanceof Error ? err.message : t('contractPage.errors.generic'));
+      } finally {
+        setIsSubmitting(false);
       }
-      const result = await res.json();
-      setContractResult(result);
-    } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : 'Произошла ошибка');
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, []);
+    },
+    [t],
+  );
 
-  // If we have a result, show the preview/download screen
   if (contractResult) {
     return (
       <ContractPreview
@@ -499,8 +534,7 @@ export function ContractForm() {
 
   return (
     <div className="space-y-8">
-      {/* ── Step indicator ── */}
-      <nav aria-label="Шаги оформления договора">
+      <nav aria-label={t('contractPage.stepsAria')}>
         <ol className="flex items-center justify-center gap-0">
           {STEPS.map((step, idx) => {
             const StepIcon = step.icon;
@@ -549,13 +583,12 @@ export function ContractForm() {
         </ol>
       </nav>
 
-      {/* ── Form card ── */}
       <div className="rounded-2xl border border-slate-100 bg-white shadow-xl shadow-slate-200/60 overflow-hidden">
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
           <div className="p-6 sm:p-8">
             <AnimatePresence mode="wait">
-              {currentStep === 0 && <StepCompany key="s0" form={form} />}
-              {currentStep === 1 && <StepBank key="s1" form={form} />}
+              {currentStep === 0 && <StepCompany key="s0" form={form} t={t} />}
+              {currentStep === 1 && <StepBank key="s1" form={form} t={t} />}
               {currentStep === 2 && (
                 <motion.div
                   key="s2"
@@ -564,13 +597,12 @@ export function ContractForm() {
                   exit={{ opacity: 0, x: -30 }}
                   transition={{ duration: 0.25 }}
                 >
-                  <PreviewStep formValues={form.getValues()} />
+                  <PreviewStep formValues={form.getValues()} t={t} />
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
 
-          {/* ── Error banner ── */}
           <AnimatePresence>
             {submitError && (
               <motion.div
@@ -585,7 +617,6 @@ export function ContractForm() {
             )}
           </AnimatePresence>
 
-          {/* ── Navigation buttons ── */}
           <div className="flex items-center justify-between border-t border-slate-100 px-6 py-4 sm:px-8">
             {currentStep > 0 ? (
               <button
@@ -595,7 +626,7 @@ export function ContractForm() {
                 className="flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium text-slate-600 hover:text-[#042C53] hover:bg-slate-100 transition-all"
               >
                 <ArrowLeft className="h-4 w-4" />
-                Назад
+                {t('contractPage.buttons.back')}
               </button>
             ) : (
               <div />
@@ -607,7 +638,7 @@ export function ContractForm() {
                 onClick={handleNext}
                 className="flex items-center gap-2 rounded-xl bg-[#042C53] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[#185FA5] transition-all shadow-md hover:shadow-lg active:scale-95"
               >
-                Далее
+                {t('contractPage.buttons.next')}
                 <ChevronRight className="h-4 w-4" />
               </button>
             ) : (
@@ -619,12 +650,12 @@ export function ContractForm() {
                 {isSubmitting ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Создание...
+                    {t('contractPage.buttons.submitting')}
                   </>
                 ) : (
                   <>
                     <FileText className="h-4 w-4" />
-                    Сформировать договор
+                    {t('contractPage.buttons.submit')}
                   </>
                 )}
               </button>
@@ -638,24 +669,39 @@ export function ContractForm() {
 
 // ─── Preview Summary (step 2) ─────────────────────────────────────────────────
 
-function PreviewStep({ formValues }: { formValues: ContractFormData }) {
+function PreviewStep({ formValues, t }: { formValues: ContractFormData; t: TranslateFn }) {
+  const labels = {
+    company: t('contractPage.review.labels.company'),
+    director: t('contractPage.review.labels.director'),
+    address: t('contractPage.review.labels.address'),
+    companyInn: t('contractPage.review.labels.companyInn'),
+    bank: t('contractPage.review.labels.bank'),
+    mfo: t('contractPage.review.labels.mfo'),
+    bankInn: t('contractPage.review.labels.bankInn'),
+    account: t('contractPage.review.labels.account'),
+    currency: t('contractPage.review.labels.currency'),
+    corrBank: t('contractPage.review.labels.corrBank'),
+    corrAddress: t('contractPage.review.labels.corrAddress'),
+    swift: t('contractPage.review.labels.swift'),
+  };
+
   const rows = [
-    { label: 'Организация', value: formValues.companyName },
-    { label: 'Директор', value: formValues.companyDirector },
-    { label: 'Адрес', value: formValues.companyAddress },
-    { label: 'ИНН организации', value: formValues.companyInn },
+    { label: labels.company, value: formValues.companyName },
+    { label: labels.director, value: formValues.companyDirector },
+    { label: labels.address, value: formValues.companyAddress },
+    { label: labels.companyInn, value: formValues.companyInn },
     null,
-    { label: 'Банк', value: formValues.companyBank },
-    { label: 'МФО', value: formValues.bankMfo },
-    { label: 'ИНН банка', value: formValues.bankInn },
-    { label: 'Расчётный счёт', value: formValues.bankNum },
-    { label: 'Валюта', value: formValues.bankCurrency },
+    { label: labels.bank, value: formValues.companyBank },
+    { label: labels.mfo, value: formValues.bankMfo },
+    { label: labels.bankInn, value: formValues.bankInn },
+    { label: labels.account, value: formValues.bankNum },
+    { label: labels.currency, value: formValues.bankCurrency },
     ...(formValues.hasCorrespondent
       ? [
           null,
-          { label: 'Банк-корреспондент', value: formValues.bankCorrName },
-          { label: 'Адрес корр. банка', value: formValues.bankCorrAddress },
-          { label: 'SWIFT', value: formValues.bankCorrSwift },
+          { label: labels.corrBank, value: formValues.bankCorrName },
+          { label: labels.corrAddress, value: formValues.bankCorrAddress },
+          { label: labels.swift, value: formValues.bankCorrSwift },
         ]
       : []),
   ];
@@ -667,8 +713,8 @@ function PreviewStep({ formValues }: { formValues: ContractFormData }) {
           <Eye className="h-5 w-5 text-green-600" />
         </div>
         <div>
-          <h3 className="font-semibold text-[#042C53]">Проверьте данные</h3>
-          <p className="text-xs text-slate-500">Убедитесь в правильности введённых данных перед созданием</p>
+          <h3 className="font-semibold text-[#042C53]">{t('contractPage.review.heading')}</h3>
+          <p className="text-xs text-slate-500">{t('contractPage.review.subheading')}</p>
         </div>
       </div>
 
@@ -686,15 +732,13 @@ function PreviewStep({ formValues }: { formValues: ContractFormData }) {
               <span className="w-40 shrink-0 font-medium text-slate-500">{row.label}</span>
               <span className="text-[#042C53] font-medium break-all">{row.value || '—'}</span>
             </div>
-          )
+          ),
         )}
       </div>
 
       <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 flex items-start gap-2">
         <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-        <span>
-          После нажатия <b>«Сформировать договор»</b> будет присвоен уникальный номер и сгенерирован документ Word.
-        </span>
+        <span>{t('contractPage.review.warning')}</span>
       </div>
     </div>
   );

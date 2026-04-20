@@ -260,5 +260,91 @@
     "copyright": "All rights reserved.",
     "privacy": "Privacy Policy",
     "terms": "Terms of Use"
+  },
+  "contractPage": {
+    "title": "Sign a Contract",
+    "description": "Fill out the form and receive a ready-to-sign contract with DasPay. The document is generated automatically with a unique number.",
+    "features": {
+      "document": { "title": "Ready document", "desc": "The contract is automatically generated as a Word file" },
+      "legal": { "title": "Legally binding", "desc": "Complies with the laws of the Republic of Uzbekistan" },
+      "instant": { "title": "Instant", "desc": "The contract is ready within seconds" },
+      "unique": { "title": "Unique number", "desc": "Each contract is assigned an automatic unique number" }
+    },
+    "legalNotice": "By filling in the form you confirm the validity of the data provided. The contract becomes legally binding once signed by both Parties. All data is protected and never shared with third parties.",
+    "stepsAria": "Contract completion steps",
+    "steps": { "company": "Company", "bank": "Bank", "preview": "Review" },
+    "company": {
+      "heading": "Company details",
+      "subheading": "Information about the client company",
+      "name": { "label": "Organisation name", "placeholder": "\"Company Name\" LLC" },
+      "director": { "label": "Organisation director", "placeholder": "John Smith", "hint": "Director's full name in the genitive case" },
+      "address": { "label": "Organisation address", "placeholder": "Tashkent, Navoi street 15" },
+      "inn": { "label": "Organisation TIN", "placeholder": "123 456 789", "hint": "Format: 123 456 789" }
+    },
+    "bank": {
+      "heading": "Bank details",
+      "subheading": "Banking details of the client organisation",
+      "name": { "label": "Name of servicing bank", "placeholder": "\"Bank Name\" JSCB" },
+      "mfo": { "label": "Bank MFO", "placeholder": "01234", "hint": "5 digits" },
+      "inn": { "label": "Bank TIN", "placeholder": "123 456 789", "hint": "Format: xxx xxx xxx" },
+      "account": { "label": "Account number", "placeholder": "20208 000 1 00000000 001" },
+      "currency": { "label": "Account currency", "uzs": "🇺🇿 UZS — Sum", "usd": "🇺🇸 USD — Dollar" },
+      "correspondent": {
+        "label": "Correspondent bank",
+        "hint": "For international USD settlements",
+        "name": { "label": "Correspondent bank name", "placeholder": "THE BANK OF NEW YORK MELLON" },
+        "address": { "label": "Correspondent bank address", "placeholder": "US-NY10286, New York" },
+        "swift": { "label": "SWIFT code", "placeholder": "IRVTUS3N", "hint": "8 or 11 characters" }
+      }
+    },
+    "review": {
+      "heading": "Review your data",
+      "subheading": "Make sure all details are correct before creating the contract",
+      "warning": "After clicking \"Create contract\", a unique number will be assigned and a Word document generated.",
+      "labels": {
+        "company": "Organisation",
+        "director": "Director",
+        "address": "Address",
+        "companyInn": "Organisation TIN",
+        "bank": "Bank",
+        "mfo": "MFO",
+        "bankInn": "Bank TIN",
+        "account": "Account number",
+        "currency": "Currency",
+        "corrBank": "Correspondent bank",
+        "corrAddress": "Corr. bank address",
+        "swift": "SWIFT"
+      }
+    },
+    "buttons": {
+      "back": "Back",
+      "next": "Next",
+      "submit": "Create contract",
+      "submitting": "Creating...",
+      "download": "Download DOCX",
+      "print": "Print",
+      "new": "New contract"
+    },
+    "success": {
+      "title": "Contract created successfully!",
+      "numberLabel": "Assigned number",
+      "dateLabel": "dated"
+    },
+    "previewHeader": "Contract No. {number} — Preview",
+    "errors": {
+      "genericServer": "Server error",
+      "generic": "An error occurred",
+      "download": "Could not download the file. Please use the print button.",
+      "min2": "Minimum 2 characters",
+      "minAddress": "Enter the full address",
+      "innFormat": "Format: xxx xxx xxx (9 digits)",
+      "mfoFormat": "MFO must contain exactly 5 digits",
+      "accountInvalid": "Invalid account number",
+      "corrName": "Enter the correspondent bank name",
+      "corrAddress": "Enter the correspondent bank address",
+      "swiftMin": "SWIFT code must contain at least 8 characters",
+      "previewLoadError": "Failed to generate preview.",
+      "previewConnectionError": "Connection error."
+    }
   }
 }

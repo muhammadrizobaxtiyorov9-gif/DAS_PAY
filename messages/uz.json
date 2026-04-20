@@ -260,5 +260,91 @@
     "copyright": "Barcha huquqlar himoyalangan.",
     "privacy": "Maxfiylik siyosati",
     "terms": "Foydalanish shartlari"
+  },
+  "contractPage": {
+    "title": "Shartnoma tuzish",
+    "description": "Shaklni to'ldiring — DasPay bilan tayyor shartnomani oling. Hujjat avtomatik ravishda, noyob raqam bilan shakllantiriladi.",
+    "features": {
+      "document": { "title": "Tayyor hujjat", "desc": "Word formatida shartnoma avtomatik shakllantiriladi" },
+      "legal": { "title": "Yuridik kuch", "desc": "O'zbekiston Respublikasi qonunchiligiga muvofiq" },
+      "instant": { "title": "Bir zumda", "desc": "Shartnoma bir necha soniyada tayyor bo'ladi" },
+      "unique": { "title": "Noyob raqam", "desc": "Har bir shartnomaga avtomatik raqam beriladi" }
+    },
+    "legalNotice": "Shaklni to'ldirish bilan siz taqdim etilgan ma'lumotlarning to'g'riligini tasdiqlaysiz. Shartnoma ikkala Tomon imzolagandan so'ng yuridik kuchga ega bo'ladi. Barcha ma'lumotlar himoyalangan va uchinchi shaxslarga berilmaydi.",
+    "stepsAria": "Shartnoma rasmiylashtirish bosqichlari",
+    "steps": { "company": "Kompaniya", "bank": "Bank", "preview": "Ko'rish" },
+    "company": {
+      "heading": "Kompaniya ma'lumotlari",
+      "subheading": "Mijoz-kompaniya haqidagi ma'lumot",
+      "name": { "label": "Tashkilot nomi", "placeholder": "«Kompaniya nomi» MChJ" },
+      "director": { "label": "Tashkilot rahbari", "placeholder": "Ivanov Ivan Ivanovich", "hint": "Direktor F.I.Sh. qaratqich kelishigida" },
+      "address": { "label": "Tashkilot manzili", "placeholder": "Toshkent sh., Navoiy ko'ch. 15" },
+      "inn": { "label": "Tashkilot STIR", "placeholder": "123 456 789", "hint": "Format: 123 456 789" }
+    },
+    "bank": {
+      "heading": "Bank rekvizitlari",
+      "subheading": "Mijoz-tashkilot banki rekvizitlari",
+      "name": { "label": "Xizmat ko'rsatuvchi bank nomi", "placeholder": "«Bank nomi» AITB" },
+      "mfo": { "label": "Bank MFO", "placeholder": "01234", "hint": "5 raqam" },
+      "inn": { "label": "Bank STIR", "placeholder": "123 456 789", "hint": "Format: xxx xxx xxx" },
+      "account": { "label": "Hisob raqami", "placeholder": "20208 000 1 00000000 001" },
+      "currency": { "label": "Hisob valyutasi", "uzs": "🇺🇿 UZS — So'm", "usd": "🇺🇸 USD — Dollar" },
+      "correspondent": {
+        "label": "Korrespondent bank",
+        "hint": "USD dagi xalqaro to'lovlar uchun",
+        "name": { "label": "Korrespondent bank nomi", "placeholder": "THE BANK OF NEW YORK MELLON" },
+        "address": { "label": "Korrespondent bank manzili", "placeholder": "US-NY10286, New York" },
+        "swift": { "label": "SWIFT kodi", "placeholder": "IRVTUS3N", "hint": "8 yoki 11 belgi" }
+      }
+    },
+    "review": {
+      "heading": "Ma'lumotlarni tekshiring",
+      "subheading": "Shartnomani yaratishdan oldin ma'lumotlar to'g'riligiga ishonch hosil qiling",
+      "warning": "«Shartnomani shakllantirish» tugmasi bosilgach, noyob raqam beriladi va Word hujjati shakllantiriladi.",
+      "labels": {
+        "company": "Tashkilot",
+        "director": "Direktor",
+        "address": "Manzil",
+        "companyInn": "Tashkilot STIR",
+        "bank": "Bank",
+        "mfo": "MFO",
+        "bankInn": "Bank STIR",
+        "account": "Hisob raqami",
+        "currency": "Valyuta",
+        "corrBank": "Korrespondent bank",
+        "corrAddress": "Korr. bank manzili",
+        "swift": "SWIFT"
+      }
+    },
+    "buttons": {
+      "back": "Orqaga",
+      "next": "Keyingi",
+      "submit": "Shartnomani shakllantirish",
+      "submitting": "Yaratilmoqda...",
+      "download": "DOCX yuklab olish",
+      "print": "Chop etish",
+      "new": "Yangi shartnoma"
+    },
+    "success": {
+      "title": "Shartnoma muvaffaqiyatli yaratildi!",
+      "numberLabel": "Raqam berildi",
+      "dateLabel": "sana"
+    },
+    "previewHeader": "Shartnoma № {number} — Oldindan ko'rish",
+    "errors": {
+      "genericServer": "Server xatosi",
+      "generic": "Xatolik yuz berdi",
+      "download": "Faylni yuklab olib bo'lmadi. Chop etish tugmasidan foydalaning.",
+      "min2": "Kamida 2 ta belgi",
+      "minAddress": "To'liq manzilni kiriting",
+      "innFormat": "Format: xxx xxx xxx (9 raqam)",
+      "mfoFormat": "MFO aniq 5 raqamdan iborat bo'lishi kerak",
+      "accountInvalid": "Noto'g'ri hisob raqami",
+      "corrName": "Korrespondent bank nomini kiriting",
+      "corrAddress": "Korrespondent bank manzilini kiriting",
+      "swiftMin": "SWIFT kodi kamida 8 belgidan iborat bo'lishi kerak",
+      "previewLoadError": "Oldindan ko'rishni shakllantirishda xatolik yuz berdi.",
+      "previewConnectionError": "Ulanishda xatolik."
+    }
   }
 }
