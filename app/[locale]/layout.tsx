@@ -21,19 +21,19 @@ const LOCALE_META: Record<Locale, { title: string; description: string; ogLocale
   uz: {
     title: "DasPay — Xalqaro Logistika va Yuk Tashish Xizmatlari",
     description:
-      "O'zbekistondan MDH, Xitoy, Turkiya va Yevropa davlatlariga ishonchli, tezkor va xavfsiz yuk tashish xizmatlari.",
+      "O'zbekistondan MDH, Xitoy, Eron, Afg'oniston va Pokiston davlatlariga ishonchli, tezkor va xavfsiz yuk tashish xizmatlari.",
     ogLocale: 'uz_UZ',
   },
   ru: {
     title: 'DasPay — Международная логистика и грузоперевозки',
     description:
-      'Надёжные и быстрые международные грузоперевозки из Узбекистана в СНГ, Китай, Турцию и Европу.',
+      'Надёжные и быстрые международные грузоперевозки из Узбекистана в СНГ, Китай, Иран, Афганистан и Пакистан.',
     ogLocale: 'ru_RU',
   },
   en: {
     title: 'DasPay — International Logistics & Freight Services',
     description:
-      'Reliable, fast and secure international freight services from Uzbekistan to CIS, China, Turkey and Europe.',
+      'Reliable, fast and secure international freight services from Uzbekistan to CIS, China, Iran, Afghanistan and Pakistan.',
     ogLocale: 'en_US',
   },
 };

@@ -72,13 +72,9 @@
         "title": "Xalqaro yuk tashish",
         "description": "Dunyo bo'ylab import va eksport xizmatlari"
       },
-      "air": {
-        "title": "Avia transport",
-        "description": "Tezkor va ishonchli havo yo'li orqali yetkazib berish"
-      },
       "rail": {
         "title": "Temir yo'l tashish",
-        "description": "Xitoy va Yevropa yo'nalishlarida temir yo'l transporti"
+        "description": "MDH, Xitoy, Eron, Afg'oniston va Pokiston yo'nalishlarida temir yo'l transporti"
       },
       "customs": {
         "title": "Bojxona rasmiylashtiruvi",

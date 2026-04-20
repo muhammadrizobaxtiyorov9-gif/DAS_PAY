@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     default: 'DasPay - Xalqaro Logistika Xizmatlari | International Logistics',
     template: '%s | DasPay',
   },
-  description: "O'zbekistondan MDH, Xitoy, Turkiya va Yevropa davlatlariga ishonchli yuk tashish xizmatlari. Reliable freight services from Uzbekistan worldwide.",
+  description: "O'zbekistondan MDH, Xitoy, Eron, Afg'oniston va Pokiston davlatlariga ishonchli yuk tashish xizmatlari. Reliable freight services from Uzbekistan to CIS, China, Iran, Afghanistan and Pakistan.",
   keywords: [
     'logistika',
     'yuk tashish',

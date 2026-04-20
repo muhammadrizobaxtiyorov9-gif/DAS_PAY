@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { UserCircle, Phone, Search, Package, FileSignature } from 'lucide-react';
+import { getAdminSession } from '@/lib/adminAuth';
+import { ClientDeleteButton } from './ClientDeleteButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,6 +13,8 @@ export default async function ClientsAdminPage({
 }) {
   const sp = await searchParams;
   const q = (sp.q || '').trim();
+  const session = await getAdminSession();
+  const isSuperAdmin = session?.role === 'SUPERADMIN';
 
   const clients = await prisma.client.findMany({
     where: q
@@ -66,12 +70,13 @@ export default async function ClientsAdminPage({
                 <th className="px-6 py-3 font-semibold text-center">Yuklar</th>
                 <th className="px-6 py-3 font-semibold text-center">Invoyslar</th>
                 <th className="px-6 py-3 font-semibold">Qo&apos;shilgan</th>
+                {isSuperAdmin && <th className="px-6 py-3 font-semibold text-right">Amallar</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {clients.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-16 text-center text-slate-500">
+                  <td colSpan={isSuperAdmin ? 6 : 5} className="px-6 py-16 text-center text-slate-500">
                     {q ? 'Hech narsa topilmadi.' : "Mijozlar hali qo'shilmagan."}
                   </td>
                 </tr>
@@ -108,6 +113,11 @@ export default async function ClientsAdminPage({
                     <td className="px-6 py-3 text-xs text-slate-500">
                       {c.createdAt.toLocaleDateString('uz-UZ')}
                     </td>
+                    {isSuperAdmin && (
+                      <td className="px-6 py-3 text-right">
+                        <ClientDeleteButton clientId={c.id} clientName={c.name || c.phone} />
+                      </td>
+                    )}
                   </tr>
                 ))
               )}

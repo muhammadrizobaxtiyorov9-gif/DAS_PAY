@@ -121,7 +121,7 @@ export const botMessages: Record<BotLocale, BotMessages> = {
         international: {
           title: '🌍 Xalqaro tashuvlar',
           body:
-            "🌍 <b>Xalqaro yuk tashish</b>\n\n• Xitoy, Rossiya, Eron, Turkiya yo'nalishlari\n• Avtomobil, temir yo'l va aralash qatnovlar\n• Bojxona rasmiylashtirish va hujjatlar\n• Yetkazishni kafolat bilan ta'minlaymiz",
+            "🌍 <b>Xalqaro yuk tashish</b>\n\n• Xitoy, Rossiya, Eron, Afg'oniston, Pokiston yo'nalishlari\n• Avtomobil, temir yo'l va aralash qatnovlar\n• Bojxona rasmiylashtirish va hujjatlar\n• Yetkazishni kafolat bilan ta'minlaymiz",
         },
         expedition: {
           title: '🗓 Ekspeditsiya',
@@ -232,7 +232,7 @@ export const botMessages: Record<BotLocale, BotMessages> = {
         international: {
           title: '🌍 Международные перевозки',
           body:
-            '🌍 <b>Международные перевозки</b>\n\n• Китай, Россия, Иран, Турция\n• Авто, ж/д и мультимодальные перевозки\n• Таможенное оформление\n• Гарантируем сроки доставки',
+            '🌍 <b>Международные перевозки</b>\n\n• Китай, Россия, Иран, Афганистан, Пакистан\n• Авто, ж/д и мультимодальные перевозки\n• Таможенное оформление\n• Гарантируем сроки доставки',
         },
         expedition: {
           title: '🗓 Экспедиция',
@@ -340,7 +340,7 @@ export const botMessages: Record<BotLocale, BotMessages> = {
         international: {
           title: '🌍 International transport',
           body:
-            '🌍 <b>International freight</b>\n\n• China, Russia, Iran, Turkey\n• Road, rail and multimodal\n• Customs clearance & documents\n• Guaranteed delivery',
+            '🌍 <b>International freight</b>\n\n• China, Russia, Iran, Afghanistan, Pakistan\n• Road, rail and multimodal\n• Customs clearance & documents\n• Guaranteed delivery',
         },
         expedition: {
           title: '🗓 Expedition',

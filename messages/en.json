@@ -72,13 +72,9 @@
         "title": "International Freight",
         "description": "Import and export services worldwide"
       },
-      "air": {
-        "title": "Air Transport",
-        "description": "Fast and reliable air freight delivery"
-      },
       "rail": {
         "title": "Rail Transport",
-        "description": "Railway freight to China and Europe"
+        "description": "Railway freight to China, Iran, Afghanistan, Pakistan, and CIS countries"
       },
       "customs": {
         "title": "Customs Clearance",

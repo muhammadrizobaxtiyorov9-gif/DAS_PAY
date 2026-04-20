@@ -6,13 +6,13 @@ import { getMessages, isValidLocale, type Locale } from '@/lib/i18n';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { breadcrumbsFor, buildService } from '@/lib/seo/structured-data';
 
-const validSlugs = ['road', 'warehouse', 'international', 'air', 'rail', 'customs'];
+const validSlugs = ['road', 'warehouse', 'international', 'rail', 'customs'];
 
 const SERVICE_DETAIL: Record<string, Record<Locale, { name: string; description: string; serviceType: string }>> = {
   road: {
-    uz: { name: 'Avtomobil tashish', description: "MDH va Yevropa bo'ylab avtomobil yuk tashish xizmati.", serviceType: 'Road Freight' },
-    ru: { name: 'Автоперевозки', description: 'Автомобильные грузоперевозки по СНГ и Европе.', serviceType: 'Road Freight' },
-    en: { name: 'Road Transport', description: 'Road freight across CIS and Europe.', serviceType: 'Road Freight' },
+    uz: { name: 'Avtomobil tashish', description: "MDH davlatlari bo'ylab avtomobil yuk tashish xizmati.", serviceType: 'Road Freight' },
+    ru: { name: 'Автоперевозки', description: 'Автомобильные грузоперевозки по странам СНГ.', serviceType: 'Road Freight' },
+    en: { name: 'Road Transport', description: 'Road freight across CIS countries.', serviceType: 'Road Freight' },
   },
   warehouse: {
     uz: { name: 'Ombor xizmati', description: 'Yuklarni saqlash, qadoqlash va konsolidatsiya qilish.', serviceType: 'Warehousing' },
@@ -20,9 +20,9 @@ const SERVICE_DETAIL: Record<string, Record<Locale, { name: string; description:
     en: { name: 'Warehouse Services', description: 'Cargo storage, packaging and consolidation.', serviceType: 'Warehousing' },
   },
   international: {
-    uz: { name: 'Xalqaro yuk tashish', description: 'Xitoy, Turkiya, Yevropa va MDH yo\'nalishlari.', serviceType: 'International Freight' },
-    ru: { name: 'Международные перевозки', description: 'Направления: Китай, Турция, Европа и СНГ.', serviceType: 'International Freight' },
-    en: { name: 'International Freight', description: 'Routes to China, Turkey, Europe and CIS.', serviceType: 'International Freight' },
+    uz: { name: 'Xalqaro yuk tashish', description: 'Xitoy, Eron, Afg\'oniston, Pokiston va MDH yo\'nalishlari.', serviceType: 'International Freight' },
+    ru: { name: 'Международные перевозки', description: 'Направления: Китай, Иран, Афганистан, Пакистан и СНГ.', serviceType: 'International Freight' },
+    en: { name: 'International Freight', description: 'Routes to China, Iran, Afghanistan, Pakistan and CIS.', serviceType: 'International Freight' },
   },
   air: {
     uz: { name: 'Avia transport', description: 'Tezkor havo yuk tashish xalqaro yo\'nalishlarda.', serviceType: 'Air Freight' },
@@ -30,9 +30,9 @@ const SERVICE_DETAIL: Record<string, Record<Locale, { name: string; description:
     en: { name: 'Air Transport', description: 'Fast air cargo across international routes.', serviceType: 'Air Freight' },
   },
   rail: {
-    uz: { name: "Temir yo'l tashish", description: 'Xitoy va Yevropaga temir yo\'l orqali yuk tashish.', serviceType: 'Rail Freight' },
-    ru: { name: 'Ж/Д перевозки', description: 'Железнодорожные перевозки в Китай и Европу.', serviceType: 'Rail Freight' },
-    en: { name: 'Rail Transport', description: 'Rail freight to China and Europe.', serviceType: 'Rail Freight' },
+    uz: { name: "Temir yo'l tashish", description: 'MDH, Xitoy, Eron va Pokistonga temir yo\'l orqali yuk tashish.', serviceType: 'Rail Freight' },
+    ru: { name: 'Ж/Д перевозки', description: 'Ж/Д перевозки в Китай, Иран, Пакистан и страны СНГ.', serviceType: 'Rail Freight' },
+    en: { name: 'Rail Transport', description: 'Rail freight to China, Iran, Pakistan and CIS.', serviceType: 'Rail Freight' },
   },
   customs: {
     uz: { name: 'Bojxona rasmiylashtiruvi', description: 'To\'liq bojxona brokerlik xizmatlari.', serviceType: 'Customs Brokerage' },

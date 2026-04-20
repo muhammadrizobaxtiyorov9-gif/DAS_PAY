@@ -24,7 +24,7 @@ const serviceDetails: Record<string, {
       'Sug\'urta xizmati',
       'Door-to-door yetkazish',
     ],
-    routes: ['Yevropa', 'Turkiya', 'Rossiya', 'Qozog\'iston', 'Qirg\'iziston'],
+    routes: ['Rossiya', 'Qozog\'iston', 'Qirg\'iziston', 'Tojikiston', 'Turkmaniston'],
   },
   warehouse: {
     icon: Warehouse,
@@ -45,7 +45,7 @@ const serviceDetails: Record<string, {
       'Hujjatlashtirish',
       'Sug\'urta',
     ],
-    routes: ['Xitoy', 'Yevropa', 'Turkiya', 'MDH', 'AQSH'],
+    routes: ['Xitoy', 'Eron', 'Afg\'oniston', 'Pokiston', 'MDH'],
   },
   air: {
     icon: Plane,
@@ -62,11 +62,11 @@ const serviceDetails: Record<string, {
     features: [
       'Konteyner tashish',
       'Vagon yuki',
-      'Xitoy-Yevropa yo\'nalishi',
+      'Xitoy-MDH yo\'nalishi',
       'Raqamli kuzatish',
       'Intermodal xizmatlar',
     ],
-    routes: ['Xitoy', 'Yevropa', 'Rossiya', 'Belarus'],
+    routes: ['Xitoy', 'Eron', 'Pokiston', 'Rossiya', 'MDH'],
   },
   customs: {
     icon: FileCheck,

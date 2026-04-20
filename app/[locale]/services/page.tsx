@@ -34,21 +34,21 @@ export async function generateMetadata({ params }: ServicesPageProps): Promise<M
 
 const SERVICE_OFFERS: Record<Locale, { name: string; description: string }[]> = {
   uz: [
-    { name: "Temir yo'l tashish", description: 'Xitoy va Yevropaga temir yo\'l yuk tashish' },
+    { name: "Temir yo'l tashish", description: 'MDH, Xitoy, Eron, Afg\'oniston va Pokistonga temir yo\'l yuk tashish' },
     { name: 'Avtomobil tashish', description: "MDH bo'ylab avtomobil yuk tashish" },
     { name: 'Ombor xizmati', description: 'Yuklarni saqlash va qadoqlash' },
     { name: 'Bojxona rasmiylashtiruvi', description: 'To\'liq bojxona xizmatlari' },
     { name: 'Xalqaro yuk tashish', description: '9+ davlatga ishonchli yetkazib berish' },
   ],
   ru: [
-    { name: 'Ж/Д перевозки', description: 'Железнодорожные перевозки в Китай и Европу' },
+    { name: 'Ж/Д перевозки', description: 'Ж/Д перевозки в Китай, Иран, Афганистан, Пакистан и страны СНГ' },
     { name: 'Автоперевозки', description: 'Автомобильные перевозки по СНГ' },
     { name: 'Складские услуги', description: 'Хранение и упаковка грузов' },
     { name: 'Таможенное оформление', description: 'Полный комплекс таможенных услуг' },
     { name: 'Международные перевозки', description: 'Надёжная доставка в 9+ стран' },
   ],
   en: [
-    { name: 'Rail Transport', description: 'Rail freight to China and Europe' },
+    { name: 'Rail Transport', description: 'Rail freight to China, Iran, Afghanistan, Pakistan and CIS' },
     { name: 'Road Transport', description: 'Road freight across CIS countries' },
     { name: 'Warehouse Services', description: 'Cargo storage and packaging' },
     { name: 'Customs Clearance', description: 'Full-service customs brokerage' },
