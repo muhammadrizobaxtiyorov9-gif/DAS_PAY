@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Star, Pencil, Trash2, Phone, MapPin } from 'lucide-react';
+import { Plus, Star, Pencil, Trash2, Phone, MapPin, UserRound, Users } from 'lucide-react';
 import { createAddress, updateAddress, deleteAddress, setDefaultAddress } from '@/app/actions/addresses';
 
 interface Address {
@@ -20,11 +20,12 @@ interface Address {
 interface AddressListProps {
   role: 'sender' | 'receiver';
   title: string;
-  icon: React.ComponentType<{ className?: string }>;
+  iconName: 'sender' | 'receiver';
   items: Address[];
 }
 
-export function AddressList({ role, title, icon: Icon, items }: AddressListProps) {
+export function AddressList({ role, title, iconName, items }: AddressListProps) {
+  const Icon = iconName === 'sender' ? UserRound : Users;
   const [editing, setEditing] = useState<Address | null>(null);
   const [creating, setCreating] = useState(false);
 

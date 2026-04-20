@@ -14,6 +14,7 @@ import {
   User,
 } from 'lucide-react';
 import { addShipmentEvent, deleteShipmentEvent } from '@/app/actions/admin';
+import { SHIPMENT_STATUSES, ShipmentStatusKey } from '@/lib/shipment-status';
 
 const LazyEventLocationPicker = lazy(() => import('./EventLocationPicker'));
 
@@ -62,14 +63,12 @@ interface Props {
   hasClientTelegram: boolean;
 }
 
-const STATUS_PRESETS = [
-  { key: 'processing', uz: 'Qayta ishlanmoqda', ru: 'В обработке', en: 'Processing' },
-  { key: 'in_transit', uz: "Yo'lda", ru: 'В пути', en: 'In transit' },
-  { key: 'customs', uz: 'Bojxonada', ru: 'На таможне', en: 'At customs' },
-  { key: 'warehouse', uz: 'Omborxonada', ru: 'На складе', en: 'At warehouse' },
-  { key: 'out_for_delivery', uz: 'Yetkazish uchun chiqdi', ru: 'Выдан на доставку', en: 'Out for delivery' },
-  { key: 'delivered', uz: 'Yetkazildi', ru: 'Доставлено', en: 'Delivered' },
-];
+const STATUS_PRESETS = Object.entries(SHIPMENT_STATUSES).map(([key, meta]) => ({
+  key: key as ShipmentStatusKey,
+  uz: meta.label.uz,
+  ru: meta.label.ru,
+  en: meta.label.en,
+}));
 
 function resolveStatus(
   status: TimelineEvent['status'],

@@ -10,23 +10,7 @@ interface TrackingDetailsPageProps {
   }>;
 }
 
-const statusIcons: Record<string, any> = {
-  pending: Clock,
-  processing: Package,
-  in_transit: Truck,
-  inTransit: Truck,
-  customs: Package,
-  delivered: CheckCircle2,
-};
-
-const statusColors: Record<string, string> = {
-  pending: 'text-yellow-500 bg-yellow-500/10',
-  processing: 'text-blue-500 bg-blue-500/10',
-  in_transit: 'text-[#185FA5] bg-[#185FA5]/10',
-  inTransit: 'text-[#185FA5] bg-[#185FA5]/10',
-  customs: 'text-orange-500 bg-orange-500/10',
-  delivered: 'text-green-500 bg-green-500/10',
-};
+import { SHIPMENT_STATUSES, ShipmentStatusKey } from '@/lib/shipment-status';
 
 export default async function TrackingDetailsPage({ params }: TrackingDetailsPageProps) {
   const { code, locale } = await params;
@@ -51,14 +35,19 @@ export default async function TrackingDetailsPage({ params }: TrackingDetailsPag
     status: event.status?.[locale] || event.status?.uz || event.status,
   }));
 
-  const StatusIcon = statusIcons[shipment.status] || Package;
+  const localeCode: 'uz' | 'ru' | 'en' = locale === 'ru' || locale === 'en' ? locale : 'uz';
+
+  const statusKey = shipment.status as ShipmentStatusKey;
+  const statusMeta = SHIPMENT_STATUSES[statusKey];
+  const StatusIcon = statusMeta ? statusMeta.icon : Package;
+  const statusColorClass = statusMeta ? `${statusMeta.color} ${statusMeta.bgColor}` : 'text-gray-500 bg-gray-500/10';
+  const statusLabel = statusMeta ? statusMeta.label[localeCode] || statusMeta.label.uz : shipment.status;
 
   const rawSegments = typeof shipment.routeSegments === 'string'
     ? (() => { try { return JSON.parse(shipment.routeSegments as unknown as string); } catch { return []; } })()
     : Array.isArray(shipment.routeSegments) ? shipment.routeSegments : [];
   const segments: RouteSegment[] = (rawSegments as unknown[]).map((s) => s as RouteSegment);
   const eta = computeEta(segments, shipment.status, shipment.currentLat, shipment.currentLng);
-  const localeCode: 'uz' | 'ru' | 'en' = locale === 'ru' || locale === 'en' ? locale : 'uz';
   const etaTitle =
     localeCode === 'ru' ? 'Ожидаемая доставка' : localeCode === 'en' ? 'Estimated delivery' : 'Taxminiy yetkazib berish';
   const remainingTitle =
@@ -86,12 +75,10 @@ export default async function TrackingDetailsPage({ params }: TrackingDetailsPag
             </div>
             <div className="flex flex-col items-start md:items-end">
               <div
-                className={`mt-2 flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold uppercase tracking-wide ${
-                  statusColors[shipment.status] || 'text-gray-500 bg-gray-500/10'
-                }`}
+                className={`mt-2 flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold uppercase tracking-wide ${statusColorClass}`}
               >
                 <StatusIcon className="h-5 w-5" />
-                {shipment.status}
+                {statusLabel}
               </div>
             </div>
           </div>

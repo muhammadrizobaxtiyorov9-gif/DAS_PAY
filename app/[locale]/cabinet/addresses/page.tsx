@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedClient } from '../lib/clientAuth';
-import { BookUser, UserRound, Users } from 'lucide-react';
+import { BookUser } from 'lucide-react';
 import { AddressList } from './AddressList';
 
 export const dynamic = 'force-dynamic';
@@ -42,13 +42,13 @@ export default async function CabinetAddressesPage({
         <AddressList
           role="sender"
           title="Jo'natuvchilar"
-          icon={UserRound}
+          iconName="sender"
           items={senders}
         />
         <AddressList
           role="receiver"
           title="Qabul qiluvchilar"
-          icon={Users}
+          iconName="receiver"
           items={receivers}
         />
       </div>

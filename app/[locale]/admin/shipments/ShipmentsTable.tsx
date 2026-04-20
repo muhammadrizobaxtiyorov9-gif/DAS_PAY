@@ -15,15 +15,12 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { bulkShipmentAction, deleteShipment } from '@/app/actions/admin';
-import { shipmentStatusMeta } from '@/lib/shipment-status';
+import { SHIPMENT_STATUSES, shipmentStatusMeta, ShipmentStatusKey } from '@/lib/shipment-status';
 
-const STATUS_OPTIONS = [
-  { value: 'pending', label: 'Kutilmoqda' },
-  { value: 'processing', label: 'Qayta ishlanmoqda' },
-  { value: 'in_transit', label: "Yo'lda" },
-  { value: 'customs', label: 'Bojxonada' },
-  { value: 'delivered', label: 'Yetkazildi' },
-];
+const STATUS_OPTIONS = Object.entries(SHIPMENT_STATUSES).map(([key, meta]) => ({
+  value: key,
+  label: meta.label.uz,
+}));
 
 type Shipment = {
   id: number;
@@ -216,7 +213,7 @@ export function ShipmentsTable({ shipments }: { shipments: Shipment[] }) {
                           return (
                             <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${m.pill}`}>
                               <span className={`h-1.5 w-1.5 rounded-full ${m.dot}`} />
-                              {m.label}
+                              {m.labelText}
                             </span>
                           );
                         })()}

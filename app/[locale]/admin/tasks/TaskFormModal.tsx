@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import { createTask } from '@/app/actions/admin';
 import { useRouter } from 'next/navigation';
 
-export function TaskFormModal({ staff, leads }: { staff: any[], leads: any[] }) {
+export function TaskFormModal({ staff, leads, currentUserId }: { staff: any[], leads: any[], currentUserId: number }) {
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
@@ -24,19 +24,18 @@ export function TaskFormModal({ staff, leads }: { staff: any[], leads: any[] }) 
     const title = formData.get('title') as string;
     const description = formData.get('description') as string;
     const deadline = new Date(formData.get('deadline') as string);
-    const assignedById = parseInt(formData.get('assignedById') as string);
     const assignedToId = parseInt(formData.get('assignedToId') as string);
     const priority = formData.get('priority') as string;
     const leadId = formData.get('leadId') ? parseInt(formData.get('leadId') as string) : undefined;
 
-    if (!assignedById || !assignedToId || !title || !deadline) {
+    if (!assignedToId || !title || !deadline) {
        toast.error("Barcha majburiy maydonlarni to'ldiring");
        setIsSubmitting(false);
        return;
     }
 
     const { success, error } = await createTask({
-       title, description, deadline, assignedById, assignedToId, priority, leadId, status: 'pending'
+       title, description, deadline, assignedById: currentUserId, assignedToId, priority, leadId, status: 'pending'
     });
 
     if (success) {
@@ -69,24 +68,16 @@ export function TaskFormModal({ staff, leads }: { staff: any[], leads: any[] }) 
           </div>
 
           <div className="space-y-2">
-            <Label>Batafsil ma'lumot</Label>
+            <Label>Batafsil ma&apos;lumot</Label>
             <Textarea name="description" placeholder="Aynan nima qilinishi kerak..." rows={3} />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-             <div className="space-y-2">
-               <Label>Kimga *</Label>
-               <select name="assignedToId" required className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background disabled:cursor-not-allowed disabled:opacity-50">
-                 <option value="">Tanlang...</option>
-                 {staff.map(u => <option key={u.id} value={u.id}>{u.name || u.username}</option>)}
-               </select>
-             </div>
-             <div className="space-y-2">
-               <Label>Kirituvchi *</Label>
-               <select name="assignedById" required className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background disabled:cursor-not-allowed disabled:opacity-50">
-                 {staff.map(u => <option key={u.id} value={u.id}>{u.name || u.username}</option>)}
-               </select>
-             </div>
+          <div className="space-y-2">
+            <Label>Kimga topshirilsin? *</Label>
+            <select name="assignedToId" required className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background disabled:cursor-not-allowed disabled:opacity-50">
+              <option value="">Tanlang...</option>
+              {staff.map(u => <option key={u.id} value={u.id}>{u.name || u.username}</option>)}
+            </select>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -98,7 +89,7 @@ export function TaskFormModal({ staff, leads }: { staff: any[], leads: any[] }) 
                <Label>Muhimlik darajasi</Label>
                <select name="priority" className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background disabled:cursor-not-allowed disabled:opacity-50">
                  <option value="low">Past</option>
-                 <option value="medium" selected>O'rta</option>
+                 <option value="medium">O&apos;rta</option>
                  <option value="high">Yuqori</option>
                  <option value="urgent">Shoshilinch!</option>
                </select>
@@ -106,9 +97,9 @@ export function TaskFormModal({ staff, leads }: { staff: any[], leads: any[] }) 
           </div>
 
           <div className="space-y-2">
-            <Label>Bog'langan mijoz arizasi (Ixtiyoriy)</Label>
+            <Label>Bog&apos;langan mijoz arizasi (Ixtiyoriy)</Label>
             <select name="leadId" className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background disabled:cursor-not-allowed disabled:opacity-50">
-              <option value="">Arizaga bog'lamaslik</option>
+              <option value="">Arizaga bog&apos;lamaslik</option>
               {leads.map(lead => <option key={lead.id} value={lead.id}>{lead.name} - {lead.service}</option>)}
             </select>
           </div>

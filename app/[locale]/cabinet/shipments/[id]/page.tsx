@@ -83,7 +83,7 @@ export default async function CabinetShipmentDetailsPage({ params, searchParams 
                  <span className="text-sm font-bold text-gray-500 uppercase tracking-wider">Holat</span>
                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${statusMeta.pill}`}>
                     <span className={`h-1.5 w-1.5 rounded-full ${statusMeta.dot}`} />
-                    {statusMeta.label}
+                    {statusMeta.labelText}
                  </span>
               </div>
               

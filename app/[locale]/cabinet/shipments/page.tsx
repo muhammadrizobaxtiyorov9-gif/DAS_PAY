@@ -1,5 +1,5 @@
 import { getAuthenticatedClient } from '../lib/clientAuth';
-import { Package, Truck, Plus, ArrowRight } from 'lucide-react';
+import { Package, Truck, Plus, ArrowRight, Globe2 } from 'lucide-react';
 import Link from 'next/link';
 import { shipmentStatusMeta } from '@/lib/shipment-status';
 
@@ -31,12 +31,20 @@ export default async function CabinetShipmentsPage({ params, searchParams }: Cab
             </p>
           </div>
         </div>
-        <Link
-          href={`/${locale}/cabinet/shipments/new`}
-          className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition-colors hover:bg-emerald-700"
-        >
-          <Plus className="h-4 w-4" /> Yangi so'rov
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/${locale}/cabinet/shipments/map`}
+            className="inline-flex items-center gap-1.5 rounded-full border border-[#185FA5]/30 bg-blue-50 px-4 py-2 text-sm font-bold text-[#185FA5] shadow-sm transition-colors hover:bg-blue-100"
+          >
+            <Globe2 className="h-4 w-4" /> Xaritada ko'rish
+          </Link>
+          <Link
+            href={`/${locale}/cabinet/shipments/new`}
+            className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition-colors hover:bg-emerald-700"
+          >
+            <Plus className="h-4 w-4" /> Yangi so'rov
+          </Link>
+        </div>
       </div>
 
       {shipments.length === 0 ? (
@@ -74,7 +82,7 @@ export default async function CabinetShipmentsPage({ params, searchParams }: Cab
                     className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${status.pill}`}
                   >
                     <span className={`h-1.5 w-1.5 rounded-full ${status.dot}`} />
-                    {status.label}
+                    {status.labelText}
                   </span>
                 </div>
 

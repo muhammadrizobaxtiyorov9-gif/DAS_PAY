@@ -2,10 +2,14 @@ import { prisma } from '@/lib/prisma';
 import { ClipboardList } from 'lucide-react';
 import { TaskRow } from './TaskRow';
 import { TaskFormModal } from './TaskFormModal';
+import { getAdminSession } from '@/lib/adminAuth';
 
 export const revalidate = 0;
 
 export default async function AdminTasksPage() {
+  const session = await getAdminSession();
+  const currentUserId = session?.userId ?? 0;
+
   const tasks = await prisma.task.findMany({
     orderBy: { createdAt: 'desc' },
     include: {
@@ -31,7 +35,7 @@ export default async function AdminTasksPage() {
         <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent flex items-center gap-2">
           <ClipboardList className="h-6 w-6"/> Topshiriqlar Boshqaruvi
         </h1>
-        <TaskFormModal staff={staff} leads={leads} />
+        <TaskFormModal staff={staff} leads={leads} currentUserId={currentUserId} />
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
@@ -40,8 +44,8 @@ export default async function AdminTasksPage() {
             <thead className="bg-gray-50 border-b">
               <tr>
                 <th className="px-6 py-4 font-semibold text-gray-900">Topshiriq nomi</th>
-                <th className="px-6 py-4 font-semibold text-gray-900">Bog'langan Ariza</th>
-                <th className="px-6 py-4 font-semibold text-gray-900">Mas'ul (Kimga)</th>
+                <th className="px-6 py-4 font-semibold text-gray-900">Bog&apos;langan Ariza</th>
+                <th className="px-6 py-4 font-semibold text-gray-900">Mas&apos;ul (Kimga)</th>
                 <th className="px-6 py-4 font-semibold text-gray-900">Muddat</th>
                 <th className="px-6 py-4 font-semibold text-gray-900">Holati</th>
                 <th className="px-6 py-4 font-semibold text-gray-900">Muhimligi</th>
@@ -52,7 +56,7 @@ export default async function AdminTasksPage() {
               {tasks.length === 0 ? (
                 <tr>
                    <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
-                      Hozircha hech qanday topshiriq qo'shilmagan.
+                      Hozircha hech qanday topshiriq qo&apos;shilmagan.
                    </td>
                 </tr>
               ) : tasks.map(task => (

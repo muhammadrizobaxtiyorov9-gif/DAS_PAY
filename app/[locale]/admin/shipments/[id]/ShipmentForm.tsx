@@ -4,6 +4,7 @@ import { useState, useEffect, lazy, Suspense, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation';
 import { Loader2, MapPin, Train, Truck, Route } from 'lucide-react';
 import { createShipment, updateShipment } from '@/app/actions/admin';
+import { SHIPMENT_STATUSES, ShipmentStatusKey } from '@/lib/shipment-status';
 import { StationAutocomplete } from '@/components/forms/StationAutocomplete';
 import { resolveRouteGeometry } from '@/lib/map-utils';
 
@@ -188,10 +189,15 @@ export function ShipmentForm({ initialData }: { initialData: any }) {
             defaultValue={initialData?.status || 'pending'}
             className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20"
           >
-            <option value="pending">Kutilmoqda</option>
-            <option value="in_transit">Yo&apos;lda (Tranzit)</option>
-            <option value="customs">Bojxonada</option>
-            <option value="delivered">Yetkazildi</option>
+            <option value="pending">{SHIPMENT_STATUSES['pending'].label.uz}</option>
+            <option value="wagons_arrived">{SHIPMENT_STATUSES['wagons_arrived'].label.uz}</option>
+            <option value="loaded">{SHIPMENT_STATUSES['loaded'].label.uz}</option>
+            <option value="docs_ready">{SHIPMENT_STATUSES['docs_ready'].label.uz}</option>
+            <option value="customs_cleared">{SHIPMENT_STATUSES['customs_cleared'].label.uz}</option>
+            <option value="in_transit">{SHIPMENT_STATUSES['in_transit'].label.uz}</option>
+            <option value="arrived_at_station">{SHIPMENT_STATUSES['arrived_at_station'].label.uz}</option>
+            <option value="delivered">{SHIPMENT_STATUSES['delivered'].label.uz}</option>
+            <option value="unloaded">{SHIPMENT_STATUSES['unloaded'].label.uz}</option>
           </select>
         </div>
       </div>

@@ -17,6 +17,8 @@ import {
   Bell,
 } from 'lucide-react';
 import { formatMoney } from '@/lib/money';
+import { getAdminSession } from '@/lib/adminAuth';
+import { ClientActions } from './ClientActions';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,6 +47,9 @@ export default async function ClientProfilePage({
   });
 
   if (!client) notFound();
+
+  const session = await getAdminSession();
+  const isSuperAdmin = session?.role === 'SUPERADMIN';
 
   const totalBilled = client.invoices.reduce((s, i) => s + i.total, 0);
   const totalPaid = client.invoices.reduce((s, i) => s + i.paidAmount, 0);
@@ -103,6 +108,15 @@ export default async function ClientProfilePage({
           </div>
         </div>
       </div>
+
+      {/* SuperAdmin: Edit / Delete */}
+      <ClientActions
+        clientId={client.id}
+        clientName={client.name}
+        clientPhone={client.phone}
+        notifyEmail={prefs.notifyEmail ?? null}
+        isSuperAdmin={isSuperAdmin}
+      />
 
       {/* KPI grid */}
       <div className="grid gap-3 md:grid-cols-4">
