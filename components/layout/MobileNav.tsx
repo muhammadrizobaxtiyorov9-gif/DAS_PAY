@@ -11,6 +11,7 @@ const navItems = [
   { key: 'home', href: '' },
   { key: 'services', href: '/services' },
   { key: 'tracking', href: '/tracking' },
+  { key: 'calculator', href: '/calculator' },
   { key: 'about', href: '/about' },
   { key: 'blog', href: '/blog' },
   { key: 'contract', href: '/contract' },

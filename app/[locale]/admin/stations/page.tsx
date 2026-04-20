@@ -33,6 +33,17 @@ export default async function StationsAdminPage({
 
   const stations = await prisma.station.findMany({
     where,
+    select: {
+      id: true,
+      code: true,
+      nameUz: true,
+      nameRu: true,
+      nameEn: true,
+      country: true,
+      lat: true,
+      lng: true,
+      active: true,
+    },
     orderBy: [{ active: 'desc' }, { nameUz: 'asc' }],
   });
 

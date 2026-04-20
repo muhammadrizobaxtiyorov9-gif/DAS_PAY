@@ -48,7 +48,7 @@ export interface BotMessages {
     askDest: string;
     askWeight: string;
     invalidWeight: string;
-    askPhone: (origin: string, dest: string, weight: string, est: number) => string;
+    askPhone: (origin: string, dest: string, weight: string, estStr: string) => string;
     submitted: string;
     cancelled: string;
   };
@@ -152,8 +152,8 @@ export const botMessages: Record<BotLocale, BotMessages> = {
       askWeight:
         "⚖️ Yukning taxminiy <b>og'irligini</b> kiriting (tonna):\n\n<i>Masalan:</i> 20",
       invalidWeight: "⚠️ To'g'ri raqam kiriting (masalan 500):",
-      askPhone: (origin: string, dest: string, weight: string, est: number) =>
-        `💡 <b>Taxminiy hisob</b>\n\n📍 Yo'nalish: ${origin} → ${dest}\n⚖️ Og'irlik: ${weight} tonna\n💵 <b>Taxminiy narx: $${est} dan boshlab</b>\n\n<i>Aniq narx mutaxassislarimiz tomonidan sizga telefon orqali aytiladi.</i>\n\nArizani tasdiqlash uchun telefon raqamingizni yuboring 👇`,
+      askPhone: (origin: string, dest: string, weight: string, estStr: string) =>
+        `💡 <b>Taxminiy hisob</b>\n\n📍 Yo'nalish: ${origin} → ${dest}\n⚖️ Og'irlik: ${weight} tonna\n💵 <b>Taxminiy narx: ${estStr} dan boshlab</b>\n\n<i>Aniq narx mutaxassislarimiz tomonidan sizga telefon orqali aytiladi.</i>\n\nArizani tasdiqlash uchun telefon raqamingizni yuboring 👇`,
       submitted:
         "✅ Arizangiz muvaffaqiyatli qabul qilindi!\n\nMenejerlarimiz <b>1 soat ichida</b> siz bilan bog'lanadi.",
       cancelled: 'Amaliyot bekor qilindi.',
@@ -262,8 +262,8 @@ export const botMessages: Record<BotLocale, BotMessages> = {
       askDest: '✅ Принято.\n\nКуда нужно доставить груз?',
       askWeight: '⚖️ Укажите примерный <b>вес</b> груза (тонн):\n\n<i>Пример:</i> 20',
       invalidWeight: '⚠️ Введите корректное число (например 500):',
-      askPhone: (origin: string, dest: string, weight: string, est: number) =>
-        `💡 <b>Предварительный расчёт</b>\n\n📍 Маршрут: ${origin} → ${dest}\n⚖️ Вес: ${weight} т\n💵 <b>От $${est}</b>\n\n<i>Точную цену менеджер сообщит по телефону.</i>\n\nОтправьте свой номер телефона для подтверждения 👇`,
+      askPhone: (origin: string, dest: string, weight: string, estStr: string) =>
+        `💡 <b>Предварительный расчёт</b>\n\n📍 Маршрут: ${origin} → ${dest}\n⚖️ Вес: ${weight} т\n💵 <b>От ${estStr}</b>\n\n<i>Точную цену менеджер сообщит по телефону.</i>\n\nОтправьте свой номер телефона для подтверждения 👇`,
       submitted:
         '✅ Заявка принята!\n\nМенеджер свяжется с вами <b>в течение часа</b>.',
       cancelled: 'Операция отменена.',
@@ -371,8 +371,8 @@ export const botMessages: Record<BotLocale, BotMessages> = {
       askWeight:
         '⚖️ Please enter the approximate <b>weight</b> (tons):\n\n<i>Example:</i> 20',
       invalidWeight: '⚠️ Please enter a valid number (e.g. 500):',
-      askPhone: (origin: string, dest: string, weight: string, est: number) =>
-        `💡 <b>Preliminary estimate</b>\n\n📍 Route: ${origin} → ${dest}\n⚖️ Weight: ${weight} tons\n💵 <b>From $${est}</b>\n\n<i>Exact pricing will be confirmed by our manager over the phone.</i>\n\nShare your phone to submit the request 👇`,
+      askPhone: (origin: string, dest: string, weight: string, estStr: string) =>
+        `💡 <b>Preliminary estimate</b>\n\n📍 Route: ${origin} → ${dest}\n⚖️ Weight: ${weight} tons\n💵 <b>From ${estStr}</b>\n\n<i>Exact pricing will be confirmed by our manager over the phone.</i>\n\nShare your phone to submit the request 👇`,
       submitted:
         '✅ Request received!\n\nOur manager will reach out <b>within 1 hour</b>.',
       cancelled: 'Operation cancelled.',

@@ -9,10 +9,12 @@ import { LanguageSwitcher } from './LanguageSwitcher';
 import { MobileNav } from './MobileNav';
 import { useLocale, useTranslations } from '@/components/providers/LocaleProvider';
 import { cn } from '@/lib/utils';
+import { usePathname } from 'next/navigation';
 
 const navItems = [
   { key: 'services', href: '/services' },
   { key: 'tracking', href: '/tracking' },
+  { key: 'calculator', href: '/calculator' },
   { key: 'about', href: '/about' },
   { key: 'blog', href: '/blog' },
   { key: 'contract', href: '/contract' },
@@ -24,6 +26,8 @@ export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { locale } = useLocale();
   const t = useTranslations();
+  const pathname = usePathname();
+  const isHome = pathname === `/${locale}` || pathname === `/${locale}/`;
 
   useEffect(() => {
     let ticking = false;
@@ -58,12 +62,14 @@ export function Header() {
     [locale]
   );
 
+  const isEffectiveScrolled = isScrolled || !isHome;
+
   return (
     <>
       <header
         className={cn(
           'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
-          isScrolled ? 'bg-background/95 shadow-md backdrop-blur-md' : 'bg-transparent'
+          isEffectiveScrolled ? 'bg-background/95 shadow-md backdrop-blur-md' : 'bg-transparent'
         )}
       >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -72,7 +78,7 @@ export function Header() {
               <div className="relative h-16 w-48 sm:h-20 sm:w-56 flex items-center justify-start -ml-2">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={isScrolled ? '/logo_blue.svg' : '/logo_white.svg'}
+                  src={isEffectiveScrolled ? '/logo_blue.svg' : '/logo_white.svg'}
                   alt={t('common.brand')}
                   className=" max-w-full object-contain"
                   style={{ height: '130%' }}
@@ -88,7 +94,7 @@ export function Header() {
                   prefetch
                   className={cn(
                     'rounded-md px-4 py-2 text-sm font-medium transition-colors',
-                    isScrolled
+                    isEffectiveScrolled
                       ? 'text-foreground hover:bg-muted hover:text-[#185FA5]'
                       : 'text-white/90 hover:bg-white/10 hover:text-white'
                   )}
@@ -99,13 +105,13 @@ export function Header() {
             </nav>
 
             <div className="flex items-center gap-3">
-              <LanguageSwitcher isScrolled={isScrolled} />
+              <LanguageSwitcher isScrolled={isEffectiveScrolled} />
 
               <Button
                 asChild
                 className={cn(
                   'hidden sm:inline-flex',
-                  isScrolled
+                  isEffectiveScrolled
                     ? 'bg-[#042C53] text-white hover:bg-[#185FA5]'
                     : 'bg-white text-[#042C53] hover:bg-white/90'
                 )}
@@ -120,7 +126,7 @@ export function Header() {
                 variant="outline"
                 className={cn(
                   'hidden md:inline-flex border-2',
-                  isScrolled
+                  isEffectiveScrolled
                     ? 'border-[#042C53] bg-transparent text-[#042C53] hover:bg-blue-50'
                     : 'border-white bg-[#042C53] text-white hover:bg-white/10'
                 )}
@@ -135,7 +141,7 @@ export function Header() {
                 size="icon"
                 className={cn(
                   'lg:hidden',
-                  isScrolled
+                  isEffectiveScrolled
                     ? 'text-foreground hover:bg-muted'
                     : 'text-white hover:bg-white/10'
                 )}

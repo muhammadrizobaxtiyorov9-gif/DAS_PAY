@@ -306,7 +306,7 @@ export function setupMessageHandlers(bot: Bot<MyContext>) {
             session.calcData.origin || '',
             session.calcData.destination || '',
             text,
-            est,
+            session.calcData.estimateLabel || '',
           ),
           {
             parse_mode: 'HTML',
