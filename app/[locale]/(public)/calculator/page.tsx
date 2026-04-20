@@ -104,7 +104,7 @@ export default function CalculatorPage() {
   };
 
   return (
-    <div className="bg-secondary min-h-screen py-16">
+    <div className="bg-secondary min-h-screen pt-32 pb-16">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">

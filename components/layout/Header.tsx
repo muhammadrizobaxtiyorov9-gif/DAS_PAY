@@ -86,14 +86,14 @@ export function Header() {
               </div>
             </Link>
 
-            <nav className="hidden items-center gap-1 lg:flex">
+            <nav className="hidden items-center gap-0.5 xl:gap-1 lg:flex">
               {localizedNav.map((item) => (
                 <Link
                   key={item.key}
                   href={item.fullHref}
                   prefetch
                   className={cn(
-                    'rounded-md px-4 py-2 text-sm font-medium transition-colors',
+                    'rounded-md px-2 xl:px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap',
                     isEffectiveScrolled
                       ? 'text-foreground hover:bg-muted hover:text-[#185FA5]'
                       : 'text-white/90 hover:bg-white/10 hover:text-white'
