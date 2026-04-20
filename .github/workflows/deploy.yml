@@ -43,7 +43,8 @@ jobs:
             fi
             echo "::endgroup::"
 
-            echo "::group::Prisma generate"
+            echo "::group::Prisma migrate and generate"
+            npx prisma migrate deploy
             npx prisma generate
             echo "::endgroup::"
 
