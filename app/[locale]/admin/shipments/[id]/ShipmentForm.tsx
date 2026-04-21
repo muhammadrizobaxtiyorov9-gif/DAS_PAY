@@ -52,6 +52,13 @@ export function ShipmentForm({ initialData }: { initialData: any }) {
     initialData?.transportMode || 'train'
   );
   const [isRouting, setIsRouting] = useState(false);
+  const [trackingCode, setTrackingCode] = useState(initialData?.trackingCode || '');
+
+  useEffect(() => {
+    if (!initialData?.trackingCode) {
+      setTrackingCode('DP-' + Math.floor(100000 + Math.random() * 900000));
+    }
+  }, [initialData]);
 
   // Station autocomplete state
   const [fromStation, setFromStation] = useState(initialData?.origin || '');
@@ -176,10 +183,9 @@ export function ShipmentForm({ initialData }: { initialData: any }) {
           <input 
             required 
             name="trackingCode"
-            defaultValue={initialData?.trackingCode}
-            readOnly={!!initialData}
-            className={`w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors ${!!initialData && 'opacity-60 cursor-not-allowed'}`}
-            placeholder="Masalan: DP-12345"
+            value={trackingCode}
+            readOnly
+            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors opacity-60 cursor-not-allowed"
           />
         </div>
         <div>
@@ -190,12 +196,12 @@ export function ShipmentForm({ initialData }: { initialData: any }) {
             className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20"
           >
             <option value="pending">{SHIPMENT_STATUSES['pending'].label.uz}</option>
-            <option value="wagons_arrived">{SHIPMENT_STATUSES['wagons_arrived'].label.uz}</option>
+            {transportMode !== 'truck' && <option value="wagons_arrived">{SHIPMENT_STATUSES['wagons_arrived'].label.uz}</option>}
             <option value="loaded">{SHIPMENT_STATUSES['loaded'].label.uz}</option>
             <option value="docs_ready">{SHIPMENT_STATUSES['docs_ready'].label.uz}</option>
             <option value="customs_cleared">{SHIPMENT_STATUSES['customs_cleared'].label.uz}</option>
             <option value="in_transit">{SHIPMENT_STATUSES['in_transit'].label.uz}</option>
-            <option value="arrived_at_station">{SHIPMENT_STATUSES['arrived_at_station'].label.uz}</option>
+            {transportMode !== 'truck' && <option value="arrived_at_station">{SHIPMENT_STATUSES['arrived_at_station'].label.uz}</option>}
             <option value="delivered">{SHIPMENT_STATUSES['delivered'].label.uz}</option>
             <option value="unloaded">{SHIPMENT_STATUSES['unloaded'].label.uz}</option>
           </select>

@@ -110,31 +110,7 @@ export default async function CabinetShipmentDetailsPage({ params, searchParams 
               </div>
            </div>
 
-           {eta.etaDate && shipment.status !== 'delivered' && segments.length >= 2 && (
-              <div className="rounded-3xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-5 shadow-sm">
-                 <div className="mb-3 flex items-center gap-2">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500 text-white shadow">
-                       <Clock className="h-4 w-4" />
-                    </div>
-                    <div>
-                       <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">Taxminiy yetkazib berish</div>
-                       <div className="text-xs text-slate-500">OSRM marshruti asosida hisoblangan</div>
-                    </div>
-                 </div>
-                 <div className="flex items-end justify-between gap-4">
-                    <div>
-                       <div className="text-xl font-bold text-slate-900">{formatEtaRelative(eta.etaDate, localeCode)}</div>
-                       <div className="text-xs text-slate-600">{formatEtaDate(eta.etaDate, localeCode)}</div>
-                    </div>
-                    <div className="text-right">
-                       <div className="flex items-center justify-end gap-1 text-xs font-semibold text-slate-600">
-                          <Ruler className="h-3 w-3" /> {eta.remainingKm.toFixed(0)} km
-                       </div>
-                       <div className="text-[11px] text-slate-500">{Math.round(eta.progress * 100)}% o&apos;tilgan</div>
-                    </div>
-                 </div>
-              </div>
-           )}
+
 
            {shipment.status === 'delivered' && (
               <div className="rounded-3xl border border-emerald-300 bg-gradient-to-br from-emerald-100 to-white p-5 shadow-sm">

@@ -6,6 +6,21 @@ import { Loader2, Globe } from 'lucide-react';
 import { createStation, updateStation, type StationInput } from '@/app/actions/admin';
 import { StationMapPicker } from '@/components/map/StationMapPicker';
 
+const COUNTRIES = [
+  { uz: "O'zbekiston", ru: "Узбекистан", en: "Uzbekistan" },
+  { uz: "Qozog'iston", ru: "Казахстан", en: "Kazakhstan" },
+  { uz: "Qirg'iziston", ru: "Кыргызстан", en: "Kyrgyzstan" },
+  { uz: "Tojikiston", ru: "Таджикистан", en: "Tajikistan" },
+  { uz: "Rossiya", ru: "Россия", en: "Russia" },
+  { uz: "Afg'oniston", ru: "Афганистан", en: "Afghanistan" },
+  { uz: "Turkmaniston", ru: "Туркменистан", en: "Turkmenistan" },
+  { uz: "Ukraina", ru: "Украина", en: "Ukraine" },
+  { uz: "Belarusiya", ru: "Беларусь", en: "Belarus" },
+  { uz: "Xitoy", ru: "Китай", en: "China" },
+  { uz: "Eron", ru: "Иран", en: "Iran" },
+  { uz: "Pokiston", ru: "Пакистан", en: "Pakistan" }
+];
+
 interface StationModel {
   id: number;
   code: string;
@@ -49,7 +64,7 @@ export function StationForm({
       nameUz: String(fd.get('nameUz') || '').trim(),
       nameRu: String(fd.get('nameRu') || '').trim(),
       nameEn: String(fd.get('nameEn') || '').trim(),
-      country: String(fd.get('country') || '').trim(),
+      country: JSON.stringify(COUNTRIES[Number(fd.get('country_idx'))] || COUNTRIES[0]),
       lat,
       lng,
       active: fd.get('active') === 'on',
@@ -158,12 +173,21 @@ export function StationForm({
       {/* Country */}
       <div>
         <label className="mb-1 block text-sm font-medium text-gray-700">Davlat</label>
-        <input
-          name="country"
-          defaultValue={initialData?.country || "O'zbekiston"}
-          placeholder="O'zbekiston"
+        <select
+          name="country_idx"
+          defaultValue={
+            initialData?.country 
+              ? COUNTRIES.findIndex(c => initialData.country.includes(c.uz)) !== -1 
+                  ? COUNTRIES.findIndex(c => initialData.country.includes(c.uz)) 
+                  : 0
+              : 0
+          }
           className="w-full max-w-sm rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-        />
+        >
+          {COUNTRIES.map((c, idx) => (
+            <option key={idx} value={idx}>{c.uz}</option>
+          ))}
+        </select>
       </div>
 
       {/* Map Picker */}

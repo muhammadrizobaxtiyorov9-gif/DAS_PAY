@@ -49,7 +49,16 @@ export function StationRow({ station, locale }: { station: StationData; locale: 
           {station.code}
         </span>
       </td>
-      <td className="px-6 py-3.5 text-sm text-gray-600">{station.country}</td>
+      <td className="px-6 py-3.5 text-sm text-gray-600">
+        {(() => {
+          try {
+            const parsed = JSON.parse(station.country);
+            return parsed[locale as keyof typeof parsed] || parsed.uz || station.country;
+          } catch {
+            return station.country;
+          }
+        })()}
+      </td>
       <td className="px-6 py-3.5 text-center">
         {station.lat && station.lng ? (
           <span className="inline-flex items-center gap-1 text-xs text-emerald-600">

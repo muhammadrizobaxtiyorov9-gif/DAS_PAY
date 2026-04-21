@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { MapPin } from 'lucide-react';
+import { MapPin, Search, Loader2 } from 'lucide-react';
 
 interface StationMapPickerProps {
   lat?: number | null;
@@ -14,6 +14,8 @@ export function StationMapPicker({ lat, lng, onLocationChange }: StationMapPicke
   const mapInstanceRef = useRef<any>(null);
   const markerRef = useRef<any>(null);
   const [mounted, setMounted] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searching, setSearching] = useState(false);
 
   const defaultLat = lat || 41.2995;
   const defaultLng = lng || 69.2401;
@@ -124,8 +126,54 @@ export function StationMapPicker({ lat, lng, onLocationChange }: StationMapPicke
     );
   }
 
+  const handleSearch = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!searchQuery.trim()) return;
+    setSearching(true);
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}`);
+      const data = await res.json();
+      if (data && data.length > 0) {
+        const nLat = parseFloat(data[0].lat);
+        const nLng = parseFloat(data[0].lon);
+        onLocationChange(nLat, nLng);
+        mapInstanceRef.current?.setView([nLat, nLng], 12);
+        
+        if (markerRef.current) {
+          markerRef.current.setLatLng([nLat, nLng]);
+        }
+      } else {
+        alert("Manzil topilmadi");
+      }
+    } catch (err) {
+      alert("Qidiruvda xatolik yuz berdi");
+    } finally {
+      setSearching(false);
+    }
+  };
+
   return (
     <div className="space-y-2">
+      <form onSubmit={handleSearch} className="flex gap-2">
+        <div className="relative flex-1">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Manzil yoki shahar nomini qidiring..."
+            className="w-full rounded-lg border border-gray-200 py-2 pl-4 pr-10 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={searching}
+          className="flex items-center justify-center gap-2 rounded-lg bg-slate-100 px-4 py-2 font-medium text-slate-700 transition hover:bg-slate-200"
+        >
+          {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+          Qidirish
+        </button>
+      </form>
+
       <div
         ref={mapRef}
         className="h-[350px] w-full rounded-xl border border-gray-200 shadow-sm"
