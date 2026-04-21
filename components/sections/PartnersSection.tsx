@@ -10,10 +10,16 @@ interface PartnersSectionProps {
 export async function PartnersSection({ messages }: PartnersSectionProps) {
   const t = getTranslator(messages);
 
-  const partners = await prisma.partner.findMany({
-    where: { active: true },
-    orderBy: { order: 'asc' },
-  });
+  let partners = [];
+  try {
+    partners = await prisma.partner.findMany({
+      where: { active: true },
+      orderBy: { order: 'asc' },
+    });
+  } catch (error) {
+    console.error("Failed to fetch partners:", error);
+    return null;
+  }
 
   if (partners.length === 0) return null;
 

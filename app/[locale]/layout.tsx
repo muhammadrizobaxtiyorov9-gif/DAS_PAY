@@ -9,8 +9,6 @@ interface LocaleLayoutProps {
   params: Promise<{ locale: string }>;
 }
 
-export const dynamicParams = false;
-
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
 }
