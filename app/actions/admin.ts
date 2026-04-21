@@ -144,6 +144,16 @@ export async function createShipment(data: {
 }) {
   try {
     const session = await getAdminSession();
+
+    if (data.clientPhone) {
+      const existingClient = await prisma.client.findUnique({
+        where: { phone: data.clientPhone }
+      });
+      if (!existingClient) {
+        return { success: false, error: 'Bunday mijoz mavjud emas' };
+      }
+    }
+
     const distanceKm = data.routeSegments ? totalSegmentDistanceKm(data.routeSegments) : 0;
     const etaAt = distanceKm > 0
       ? computeShipmentEta({ startAt: new Date(), distanceKm, mode: data.transportMode })
@@ -185,6 +195,16 @@ export async function updateShipment(id: number, data: {
 }) {
   try {
     const session = await getAdminSession();
+    
+    if (data.clientPhone) {
+      const existingClient = await prisma.client.findUnique({
+        where: { phone: data.clientPhone }
+      });
+      if (!existingClient) {
+        return { success: false, error: 'Bunday mijoz mavjud emas' };
+      }
+    }
+
     const existing = await prisma.shipment.findUnique({ where: { id } });
     const distanceKm = data.routeSegments ? totalSegmentDistanceKm(data.routeSegments) : 0;
 
