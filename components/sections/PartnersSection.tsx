@@ -1,24 +1,21 @@
 import { getTranslator, type Locale, type Messages } from '@/lib/i18n-translator';
 import { Reveal } from '@/components/shared/motion-primitives';
-
-const partners = [
-  { name: 'DHL', color: '#D40511' },
-  { name: 'FedEx', color: '#4D148C' },
-  { name: 'Maersk', color: '#00243D' },
-  { name: 'DB Schenker', color: '#FF0000' },
-  { name: 'Kuehne+Nagel', color: '#003C69' },
-  { name: 'COSCO', color: '#003366' },
-  { name: 'Evergreen', color: '#008751' },
-  { name: 'CMA CGM', color: '#00457C' },
-] as const;
+import { prisma } from '@/lib/prisma';
 
 interface PartnersSectionProps {
   locale: Locale;
   messages: Messages;
 }
 
-export function PartnersSection({ messages }: PartnersSectionProps) {
+export async function PartnersSection({ messages }: PartnersSectionProps) {
   const t = getTranslator(messages);
+
+  const partners = await prisma.partner.findMany({
+    where: { active: true },
+    orderBy: { order: 'asc' },
+  });
+
+  if (partners.length === 0) return null;
 
   return (
     <section className="bg-secondary py-12 lg:py-16">
@@ -34,15 +31,23 @@ export function PartnersSection({ messages }: PartnersSectionProps) {
           <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-20 bg-gradient-to-r from-secondary to-transparent" />
           <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-20 bg-gradient-to-l from-secondary to-transparent" />
 
-          <div className="flex animate-marquee items-center gap-12">
-            {[...partners, ...partners].map((partner, index) => (
+          <div className="flex animate-marquee items-center gap-12 hover:[animation-play-state:paused]">
+            {[...partners, ...partners, ...partners].map((partner, index) => (
               <div
-                key={`${partner.name}-${index}`}
-                className="flex h-16 min-w-[160px] items-center justify-center rounded-lg bg-card px-6 shadow-sm"
+                key={`${partner.id}-${index}`}
+                className="flex h-16 min-w-[160px] items-center justify-center rounded-lg bg-card px-6 shadow-sm border border-gray-100/50"
               >
-                <span className="text-lg font-bold" style={{ color: partner.color }}>
-                  {partner.name}
-                </span>
+                {partner.logoUrl ? (
+                  <img 
+                    src={partner.logoUrl} 
+                    alt={partner.name} 
+                    className="max-h-12 max-w-[120px] object-contain" 
+                  />
+                ) : (
+                  <span className="text-lg font-bold" style={{ color: partner.color || '#042C53' }}>
+                    {partner.name}
+                  </span>
+                )}
               </div>
             ))}
           </div>

@@ -24,6 +24,7 @@ import {
   Star,
   Train,
   Globe2,
+  Handshake,
 } from 'lucide-react';
 
 const navigation = [
@@ -42,6 +43,7 @@ const navigation = [
   { name: 'Arizalar', href: '/admin/leads', icon: Users, description: 'Mijoz so\'rovlari', roles: ['SUPERADMIN', 'ADMIN'] },
   { name: 'NPS fikrlar', href: '/admin/feedback', icon: Star, description: "Yetkazib berilgandan keyin baholash", roles: ['SUPERADMIN'] },
   { name: 'Shartnomalar', href: '/admin/contracts', icon: FileSignature, description: 'Kontrakt arxivi', roles: ['SUPERADMIN', 'ADMIN', 'DIRECTOR'] },
+  { name: 'Hamkorlar', href: '/admin/partners', icon: Handshake, description: 'Hamkorlar ro\'yxati', roles: ['SUPERADMIN'] },
   { name: 'Adminlar', href: '/admin/users', icon: Shield, description: 'Xodimlar boshqaruvi', roles: ['SUPERADMIN'] },
   { name: 'Audit Log', href: '/admin/audit', icon: ScrollText, description: 'Tizim harakatlari tarixi', roles: ['SUPERADMIN'] },
 ];

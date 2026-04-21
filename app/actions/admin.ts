@@ -951,3 +951,95 @@ export async function toggleStationActive(id: number, active: boolean) {
     return { success: false, error: err.message };
   }
 }
+
+// --- PARTNERS ---
+
+export interface PartnerInput {
+  name: string;
+  logoUrl?: string | null;
+  color?: string | null;
+  active: boolean;
+  order: number;
+}
+
+export async function createPartner(input: PartnerInput) {
+  try {
+    const session = await getAdminSession();
+    if (session?.role !== 'SUPERADMIN') return { success: false, error: 'unauthorized' };
+
+    const created = await prisma.partner.create({ data: {
+      name: input.name.trim(),
+      logoUrl: input.logoUrl?.trim() || null,
+      color: input.color?.trim() || null,
+      active: !!input.active,
+      order: Number(input.order) || 0,
+    } });
+    
+    await logAudit(session?.userId, 'CREATE_PARTNER', `Hamkor qo'shildi: ${created.name}`);
+    revalidatePath('/[locale]/admin/partners', 'page');
+    revalidatePath('/', 'layout');
+    return { success: true, id: created.id };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function updatePartner(id: number, input: PartnerInput) {
+  try {
+    const session = await getAdminSession();
+    if (session?.role !== 'SUPERADMIN') return { success: false, error: 'unauthorized' };
+
+    const updated = await prisma.partner.update({
+      where: { id },
+      data: {
+        name: input.name.trim(),
+        logoUrl: input.logoUrl?.trim() || null,
+        color: input.color?.trim() || null,
+        active: !!input.active,
+        order: Number(input.order) || 0,
+      }
+    });
+
+    await logAudit(session?.userId, 'UPDATE_PARTNER', `Hamkor yangilandi: ${updated.name}`);
+    revalidatePath('/[locale]/admin/partners', 'page');
+    revalidatePath('/', 'layout');
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function deletePartner(id: number) {
+  try {
+    const session = await getAdminSession();
+    if (session?.role !== 'SUPERADMIN') return { success: false, error: 'unauthorized' };
+
+    const existing = await prisma.partner.findUnique({ where: { id }, select: { name: true } });
+    await prisma.partner.delete({ where: { id } });
+    await logAudit(session?.userId, 'DELETE_PARTNER', `Hamkor o'chirildi: ${existing?.name || id}`);
+    revalidatePath('/[locale]/admin/partners', 'page');
+    revalidatePath('/', 'layout');
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function togglePartnerActive(id: number, active: boolean) {
+  try {
+    const session = await getAdminSession();
+    if (session?.role !== 'SUPERADMIN') return { success: false, error: 'unauthorized' };
+
+    const updated = await prisma.partner.update({ where: { id }, data: { active } });
+    await logAudit(
+      session?.userId,
+      'UPDATE_PARTNER',
+      `${active ? 'Yoqildi' : "O'chirildi"}: ${updated.name}`,
+    );
+    revalidatePath('/[locale]/admin/partners', 'page');
+    revalidatePath('/', 'layout');
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
