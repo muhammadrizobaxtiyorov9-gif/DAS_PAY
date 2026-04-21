@@ -16,6 +16,7 @@ export function StationMapPicker({ lat, lng, onLocationChange }: StationMapPicke
   const [mounted, setMounted] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searching, setSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
 
   const defaultLat = lat || 41.2995;
   const defaultLng = lng || 69.2401;
@@ -126,22 +127,16 @@ export function StationMapPicker({ lat, lng, onLocationChange }: StationMapPicke
     );
   }
 
-  const handleSearch = async (e?: React.FormEvent) => {
+  const handleSearch = async (e?: React.FormEvent | React.MouseEvent) => {
     e?.preventDefault();
     if (!searchQuery.trim()) return;
     setSearching(true);
+    setSearchResults([]);
     try {
       const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}`);
       const data = await res.json();
       if (data && data.length > 0) {
-        const nLat = parseFloat(data[0].lat);
-        const nLng = parseFloat(data[0].lon);
-        onLocationChange(nLat, nLng);
-        mapInstanceRef.current?.setView([nLat, nLng], 12);
-        
-        if (markerRef.current) {
-          markerRef.current.setLatLng([nLat, nLng]);
-        }
+        setSearchResults(data);
       } else {
         alert("Manzil topilmadi");
       }
@@ -152,27 +147,64 @@ export function StationMapPicker({ lat, lng, onLocationChange }: StationMapPicke
     }
   };
 
+  const selectLocation = (latStr: string, lonStr: string, displayName: string) => {
+    const nLat = parseFloat(latStr);
+    const nLng = parseFloat(lonStr);
+    setSearchQuery(displayName.split(',')[0]);
+    setSearchResults([]);
+    onLocationChange(nLat, nLng);
+    mapInstanceRef.current?.setView([nLat, nLng], 14);
+    
+    if (markerRef.current) {
+      markerRef.current.setLatLng([nLat, nLng]);
+    }
+  };
+
   return (
-    <div className="space-y-2">
-      <form onSubmit={handleSearch} className="flex gap-2">
-        <div className="relative flex-1">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Manzil yoki shahar nomini qidiring..."
-            className="w-full rounded-lg border border-gray-200 py-2 pl-4 pr-10 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-          />
+    <div className="space-y-2 relative">
+      <div className="relative z-10">
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleSearch();
+                }
+              }}
+              placeholder="Manzil yoki stansiya nomini qidiring (Masalan: Keles railway)..."
+              className="w-full rounded-lg border border-gray-200 py-2 pl-4 pr-10 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={handleSearch}
+            disabled={searching}
+            className="flex items-center justify-center gap-2 rounded-lg bg-slate-100 px-4 py-2 font-medium text-slate-700 transition hover:bg-slate-200"
+          >
+            {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+            Qidirish
+          </button>
         </div>
-        <button
-          type="submit"
-          disabled={searching}
-          className="flex items-center justify-center gap-2 rounded-lg bg-slate-100 px-4 py-2 font-medium text-slate-700 transition hover:bg-slate-200"
-        >
-          {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-          Qidirish
-        </button>
-      </form>
+
+        {searchResults.length > 0 && (
+          <ul className="absolute top-full left-0 right-0 mt-1 max-h-60 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-xl z-[1000] divide-y divide-gray-100">
+            {searchResults.map((item: any, i: number) => (
+              <li 
+                key={i}
+                onClick={() => selectLocation(item.lat, item.lon, item.display_name)}
+                className="px-4 py-3 text-sm hover:bg-blue-50 cursor-pointer transition-colors"
+              >
+                <div className="font-medium text-[#042C53]">{item.display_name.split(',')[0]}</div>
+                <div className="text-xs text-gray-500 truncate">{item.display_name}</div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
       <div
         ref={mapRef}
