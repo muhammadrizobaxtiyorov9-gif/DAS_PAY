@@ -13,9 +13,9 @@ interface Wagon {
   type: string;
   capacity: number;
   status: string;
-  assignedTo?: { id: number; name: string | null; username: string };
-  currentStation?: { id: number; nameUz: string; code: string };
-  shipments?: { id: number; trackingCode: string; status: string }[];
+  assignedTo?: { id: number; name: string | null; username: string } | null;
+  currentStation?: { id: number; nameUz: string; code: string } | null;
+  shipments?: { id: number; trackingCode: string; status: string }[] | null;
   lockedByShipmentId?: number | null;
 }
 
