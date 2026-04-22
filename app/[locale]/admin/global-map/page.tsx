@@ -18,8 +18,7 @@ export default async function GlobalMapPage({
     redirect(`/${locale}/admin-login`);
   }
 
-  // Fetch all shipments that are not delivered or cancelled, to show on map
-  // or fetch all active shipments depending on requirements.
+  // Fetch active shipments
   const activeShipments = await prisma.shipment.findMany({
     where: {
       status: {
@@ -27,11 +26,25 @@ export default async function GlobalMapPage({
       }
     },
     include: {
-      client: {
-        select: { name: true }
-      }
+      client: { select: { name: true } },
+      wagons: { select: { number: true } }
     },
     orderBy: { updatedAt: 'desc' }
+  });
+
+  // Fetch wagons with location data
+  const wagons = await prisma.wagon.findMany({
+    where: {
+      currentLat: { not: null },
+      currentLng: { not: null },
+    },
+    include: {
+      shipments: {
+        where: { status: { notIn: ['delivered', 'unloaded'] } },
+        select: { trackingCode: true }
+      },
+      currentStation: { select: { nameUz: true } }
+    }
   });
 
   return (
@@ -43,12 +56,12 @@ export default async function GlobalMapPage({
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Global Xarita</h1>
           <p className="text-sm text-gray-500">
-            Barcha faol yuklarni xaritada real vaqtda kuzatish
+            Barcha faol yuklar va vagonlarni xaritada real vaqtda kuzatish
           </p>
         </div>
       </div>
 
-      <GlobalMapClient initialShipments={activeShipments} />
+      <GlobalMapClient initialShipments={activeShipments} initialWagons={wagons} />
     </div>
   );
 }

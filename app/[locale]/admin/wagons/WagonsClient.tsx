@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Search, Edit2, Trash2, Train, AlertCircle } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Train, MapPin, User, Package } from 'lucide-react';
 import { WagonFormModal } from './WagonFormModal';
 import { deleteWagon } from '@/app/actions/wagons';
 import { useRouter } from 'next/navigation';
+import { wagonStatusMeta } from '@/lib/wagon-status';
 
 interface Wagon {
   id: number;
@@ -12,13 +13,19 @@ interface Wagon {
   type: string;
   capacity: number;
   status: string;
+  assignedTo?: { id: number; name: string | null; username: string };
+  currentStation?: { id: number; nameUz: string; code: string };
+  shipments?: { id: number; trackingCode: string; status: string }[];
+  lockedByShipmentId?: number | null;
 }
 
 interface Props {
   initialWagons: Wagon[];
+  users: any[];
+  stations: any[];
 }
 
-export function WagonsClient({ initialWagons }: Props) {
+export function WagonsClient({ initialWagons, users, stations }: Props) {
   const router = useRouter();
   const [wagons, setWagons] = useState(initialWagons);
   const [search, setSearch] = useState('');
@@ -86,9 +93,9 @@ export function WagonsClient({ initialWagons }: Props) {
             <thead className="bg-slate-50/50 text-xs font-semibold uppercase tracking-wider text-slate-500">
               <tr>
                 <th className="px-6 py-4">Vagon raqami</th>
-                <th className="px-6 py-4">Turi</th>
-                <th className="px-6 py-4">Ko'tarish qobiliyati</th>
+                <th className="px-6 py-4">Turi & Sig'imi</th>
                 <th className="px-6 py-4">Holati</th>
+                <th className="px-6 py-4">Kuzatuv ma'lumotlari</th>
                 <th className="px-6 py-4 text-right">Amallar</th>
               </tr>
             </thead>
@@ -104,46 +111,68 @@ export function WagonsClient({ initialWagons }: Props) {
                   </td>
                 </tr>
               ) : (
-                filteredWagons.map((wagon) => (
-                  <tr key={wagon.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-6 py-4 font-medium text-slate-900">
-                      {wagon.number}
-                    </td>
-                    <td className="px-6 py-4">{wagon.type}</td>
-                    <td className="px-6 py-4">{wagon.capacity} t</td>
-                    <td className="px-6 py-4">
-                      {wagon.status === 'active' ? (
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
-                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
-                          Soz (Faol)
+                filteredWagons.map((wagon) => {
+                  const statusMeta = wagonStatusMeta(wagon.status);
+                  // Find active shipment if locked
+                  const activeShipment = wagon.lockedByShipmentId 
+                    ? wagon.shipments?.find(s => s.id === wagon.lockedByShipmentId)
+                    : wagon.shipments?.[0]; // Fallback to any active
+
+                  return (
+                    <tr key={wagon.id} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="font-semibold text-slate-900">{wagon.number}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="font-medium">{wagon.type}</div>
+                        <div className="text-xs text-slate-500">{wagon.capacity} t</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${statusMeta.pill}`}>
+                          {statusMeta.icon} {statusMeta.labelText}
                         </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
-                          <span className="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
-                          Remontda
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => handleEdit(wagon)}
-                          className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-blue-600 transition-colors"
-                          title="Tahrirlash"
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(wagon.id)}
-                          className="rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600 transition-colors"
-                          title="O'chirish"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                        {activeShipment && (
+                          <div className="mt-2 flex items-center gap-1.5 text-[10px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded w-max">
+                            <Package className="w-3 h-3" />
+                            {activeShipment.trackingCode} ga band
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-xs space-y-1.5">
+                        <div className="flex items-center gap-2">
+                          <User className="w-3.5 h-3.5 text-slate-400" />
+                          <span className={wagon.assignedTo ? 'text-slate-700 font-medium' : 'text-slate-400'}>
+                            {wagon.assignedTo?.name || wagon.assignedTo?.username || 'Biriktirilmagan'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                          <span className={wagon.currentStation ? 'text-slate-700' : 'text-slate-400'}>
+                            {wagon.currentStation?.nameUz || 'Noma\'lum'}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleEdit(wagon)}
+                            className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-blue-600 transition-colors"
+                            title="Tahrirlash"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(wagon.id)}
+                            className="rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                            title="O'chirish"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -153,7 +182,9 @@ export function WagonsClient({ initialWagons }: Props) {
       <WagonFormModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        wagon={selectedWagon} 
+        wagon={selectedWagon}
+        users={users}
+        stations={stations}
       />
     </div>
   );

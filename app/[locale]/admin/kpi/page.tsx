@@ -94,8 +94,10 @@ export default async function KPIAdminPage() {
                 <td className="px-6 py-4 font-medium">{action.user.username}</td>
                 <td className="px-6 py-4">{action.description || action.actionType}</td>
                 <td className="px-6 py-4">
-                  <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-green-50 text-green-700 font-bold">
-                    +{action.points}
+                  <span className={`inline-flex items-center justify-center min-w-[32px] h-8 px-2 rounded-lg font-bold ${
+                    action.points < 0 ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'
+                  }`}>
+                    {action.points > 0 ? '+' : ''}{action.points}
                   </span>
                 </td>
               </tr>

@@ -7,6 +7,7 @@ import { createShipment, updateShipment } from '@/app/actions/admin';
 import { SHIPMENT_STATUSES, ShipmentStatusKey } from '@/lib/shipment-status';
 import { StationAutocomplete } from '@/components/forms/StationAutocomplete';
 import { resolveRouteGeometry } from '@/lib/map-utils';
+import { CARGO_TYPES, isWagonCompatible } from '@/lib/cargo-wagon-compatibility';
 
 const LazyLocationPicker = lazy(() => import('./LocationPickerMap'));
 
@@ -59,6 +60,10 @@ export function ShipmentForm({ initialData, allWagons = [] }: { initialData: any
       setTrackingCode('DP-' + Math.floor(100000 + Math.random() * 900000));
     }
   }, [initialData]);
+
+  const [cargoType, setCargoType] = useState(initialData?.cargoType || 'general');
+  const [weightStr, setWeightStr] = useState(initialData?.weight?.toString() || '');
+  const [weightError, setWeightError] = useState('');
 
   const [selectedWagonIds, setSelectedWagonIds] = useState<number[]>(
     initialData?.wagons?.map((w: any) => w.id) || []
@@ -157,11 +162,23 @@ export function ShipmentForm({ initialData, allWagons = [] }: { initialData: any
       status: formData.get('status') as string,
       clientPhone: formData.get('clientPhone') as string || undefined,
       weight: parseFloat(formData.get('weight') as string) || undefined,
+      cargoType: transportMode === 'train' ? cargoType : undefined,
       description: formData.get('description') as string,
       routeSegments: JSON.parse(formData.get('routeSegments') as string || '[]'),
       transportMode,
       wagonIds: transportMode === 'train' ? selectedWagonIds : undefined,
     };
+
+    // Client-side weight validation for wagons
+    if (transportMode === 'train' && selectedWagonIds.length > 0 && data.weight) {
+      const selectedWagonObjects = allWagons.filter(w => selectedWagonIds.includes(w.id));
+      const totalCapacity = selectedWagonObjects.reduce((sum, w) => sum + w.capacity, 0);
+      if (data.weight > totalCapacity) {
+        setError(`Yuk og'irligi (${data.weight}t) vagonlar umumiy sig'imidan (${totalCapacity}t) oshib ketdi. Qo'shimcha vagon tanlang.`);
+        setIsSubmitting(false);
+        return;
+      }
+    }
 
     let result;
     if (initialData) {
@@ -242,6 +259,35 @@ export function ShipmentForm({ initialData, allWagons = [] }: { initialData: any
         </div>
       </div>
 
+      {transportMode === 'train' && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Yuk turi</label>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {Object.entries(CARGO_TYPES).map(([key, info]) => (
+              <label 
+                key={key} 
+                className={`flex flex-col p-3 rounded-xl border cursor-pointer transition-all ${
+                  cargoType === key ? 'border-[#185FA5] bg-blue-50 ring-1 ring-[#185FA5]' : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <input 
+                    type="radio" 
+                    name="cargoType_radio"
+                    checked={cargoType === key} 
+                    onChange={() => setCargoType(key)}
+                    className="text-[#185FA5] focus:ring-[#185FA5]"
+                  />
+                  <span className="text-xl">{info.icon}</span>
+                  <span className="font-semibold text-sm text-gray-900">{info.label.uz}</span>
+                </div>
+                <span className="text-[10px] text-gray-500 pl-6 leading-tight">{info.description.uz}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="grid md:grid-cols-2 gap-5">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Jo&apos;natuvchi</label>
@@ -308,8 +354,16 @@ export function ShipmentForm({ initialData, allWagons = [] }: { initialData: any
 
           {/* Wagons Selector */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Yukga biriktirilgan vagonlar</label>
-            <div className="bg-white border border-gray-200 rounded-lg p-3 max-h-48 overflow-y-auto space-y-2">
+            <div className="flex items-end justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-700">Yukga biriktirilgan vagonlar</label>
+              {selectedWagonIds.length > 0 && (
+                <div className="text-xs font-semibold px-2 py-1 bg-slate-100 rounded text-slate-600">
+                  Tanlandi: {selectedWagonIds.length} ta (Jami sig'im: {allWagons.filter(w => selectedWagonIds.includes(w.id)).reduce((sum, w) => sum + w.capacity, 0)}t)
+                </div>
+              )}
+            </div>
+            
+            <div className="bg-white border border-gray-200 rounded-lg p-3 max-h-60 overflow-y-auto space-y-2">
               {allWagons.length === 0 ? (
                 <div className="text-sm text-gray-500 text-center py-2">Faol vagonlar topilmadi. Avval bazaga vagon qo&apos;shing.</div>
               ) : (
@@ -321,6 +375,9 @@ export function ShipmentForm({ initialData, allWagons = [] }: { initialData: any
                   );
                   const isBusy = busyShipments.length > 0;
                   const busyInfo = isBusy ? busyShipments[0] : null;
+                  
+                  // Check compatibility
+                  const isCompatible = isWagonCompatible(w.type, cargoType);
 
                   return (
                     <label 
@@ -328,18 +385,21 @@ export function ShipmentForm({ initialData, allWagons = [] }: { initialData: any
                       className={`flex items-center gap-3 p-2 rounded-md border cursor-pointer transition-colors ${
                         isBusy 
                           ? 'bg-red-50 border-red-200 opacity-70 cursor-not-allowed' 
-                          : isChecked 
-                            ? 'bg-blue-50 border-blue-200' 
-                            : 'hover:bg-slate-50 border-transparent'
+                          : !isCompatible && !isChecked
+                            ? 'bg-gray-50 border-gray-200 opacity-50 grayscale cursor-not-allowed'
+                            : isChecked 
+                              ? 'bg-blue-50 border-blue-200' 
+                              : 'hover:bg-slate-50 border-transparent'
                       }`}
+                      title={!isCompatible ? `Bu vagon ${CARGO_TYPES[cargoType as keyof typeof CARGO_TYPES]?.label.uz} uchun mos emas` : ''}
                     >
                       <input 
                         type="checkbox" 
                         className="rounded text-[#185FA5] focus:ring-[#185FA5]"
                         checked={isChecked}
-                        disabled={isBusy}
+                        disabled={isBusy || (!isCompatible && !isChecked)}
                         onChange={(e) => {
-                          if (isBusy) return;
+                          if (isBusy || (!isCompatible && !isChecked)) return;
                           if (e.target.checked) setSelectedWagonIds([...selectedWagonIds, w.id]);
                           else setSelectedWagonIds(selectedWagonIds.filter(id => id !== w.id));
                         }}
@@ -353,11 +413,19 @@ export function ShipmentForm({ initialData, allWagons = [] }: { initialData: any
                           🔒 Band ({busyInfo?.trackingCode})
                         </span>
                       )}
+                      {!isCompatible && !isBusy && !isChecked && (
+                        <span className="text-[10px] font-medium text-gray-400 border border-gray-200 px-1.5 py-0.5 rounded whitespace-nowrap">
+                          Mos emas
+                        </span>
+                      )}
                     </label>
                   );
                 })
               )}
             </div>
+            {weightError && (
+              <p className="mt-2 text-sm text-red-600 font-medium">{weightError}</p>
+            )}
           </div>
         </div>
       ) : (
@@ -391,7 +459,22 @@ export function ShipmentForm({ initialData, allWagons = [] }: { initialData: any
             type="number"
             step="0.01"
             name="weight"
-            defaultValue={initialData?.weight}
+            value={weightStr}
+            onChange={(e) => {
+              setWeightStr(e.target.value);
+              const w = parseFloat(e.target.value);
+              if (transportMode === 'train' && selectedWagonIds.length > 0 && w) {
+                const selectedWagonObjects = allWagons.filter(wg => selectedWagonIds.includes(wg.id));
+                const totalCapacity = selectedWagonObjects.reduce((sum, wg) => sum + wg.capacity, 0);
+                if (w > totalCapacity) {
+                  setWeightError(`⚠️ Yuk og'irligi (${w}t) vagonlar sig'imidan (${totalCapacity}t) oshdi.`);
+                } else {
+                  setWeightError('');
+                }
+              } else {
+                setWeightError('');
+              }
+            }}
             className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20"
           />
         </div>

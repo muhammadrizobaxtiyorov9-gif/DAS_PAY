@@ -27,7 +27,12 @@ export type AuditActionType =
   | 'EXPORT_DATA'
   | 'CREATE_PARTNER'
   | 'UPDATE_PARTNER'
-  | 'DELETE_PARTNER';
+  | 'DELETE_PARTNER'
+  | 'UPDATE_WAGON_STATUS'
+  | 'UPDATE_WAGON_LOCATION'
+  | 'REASSIGN_WAGON'
+  | 'ASSIGN_WAGON'
+  | 'SLA_VIOLATION';
 
 const POINTS_MAP: Record<AuditActionType, number> = {
   CREATE_SHIPMENT: 5,
@@ -56,6 +61,11 @@ const POINTS_MAP: Record<AuditActionType, number> = {
   CREATE_PARTNER: 2,
   UPDATE_PARTNER: 1,
   DELETE_PARTNER: 1,
+  UPDATE_WAGON_STATUS: 2,
+  UPDATE_WAGON_LOCATION: 1,
+  REASSIGN_WAGON: 1,
+  ASSIGN_WAGON: 3,
+  SLA_VIOLATION: -3,
 };
 
 export async function logAudit(

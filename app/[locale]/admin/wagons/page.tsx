@@ -1,4 +1,5 @@
 import { getWagons } from '@/app/actions/wagons';
+import { prisma } from '@/lib/prisma';
 import { WagonsClient } from './WagonsClient';
 import { Metadata } from 'next';
 
@@ -10,5 +11,15 @@ export default async function WagonsPage() {
   const res = await getWagons();
   const initialWagons = res.wagons || [];
 
-  return <WagonsClient initialWagons={initialWagons} />;
+  const users = await prisma.user.findMany({
+    where: { isActive: true },
+    select: { id: true, name: true, username: true }
+  });
+
+  const stations = await prisma.station.findMany({
+    select: { id: true, nameUz: true, code: true },
+    orderBy: { nameUz: 'asc' }
+  });
+
+  return <WagonsClient initialWagons={initialWagons} users={users} stations={stations} />;
 }

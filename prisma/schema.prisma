@@ -114,6 +114,14 @@ model Shipment {
   cost            Float    @default(0)
   currency        String   @default("USD")
 
+  /// Cargo type: bulk, container, liquid, perishable, oversized, general
+  cargoType       String?
+  /// Assigned employee responsible for status updates
+  assignedToId    Int?
+  assignedTo      User?    @relation("ShipmentAssignedTo", fields: [assignedToId], references: [id])
+  /// Last time status was updated (for SLA monitoring)
+  lastStatusUpdate DateTime?
+
   createdById     Int?
   createdBy       User?    @relation("ShipmentsCreated", fields: [createdById], references: [id])
   invoices        Invoice[]
@@ -124,6 +132,7 @@ model Shipment {
   @@index([status])
   @@index([createdById])
   @@index([clientPhone])
+  @@index([assignedToId])
 }
 
 /// Rate limiting for forms
@@ -277,7 +286,11 @@ model User {
   tasksCreated  Task[] @relation("TasksCreated")
   tasksAssigned Task[] @relation("TasksAssigned")
   shipmentsCreated Shipment[] @relation("ShipmentsCreated")
+  shipmentsAssigned Shipment[] @relation("ShipmentAssignedTo")
   invoicesCreated Invoice[]  @relation("InvoicesCreated")
+  wagonsAssigned  Wagon[]    @relation("WagonAssignedTo")
+  wagonStatusChanges WagonStatusLog[] @relation("WagonStatusChanges")
+  slaViolations   SlaViolation[] @relation("SlaViolations")
 
   @@index([username])
 }
@@ -438,6 +451,7 @@ model Station {
 
   leadsFrom   Lead[]   @relation("LeadFromStation")
   leadsTo     Lead[]   @relation("LeadToStation")
+  wagonsAtStation Wagon[] @relation("WagonAtStation")
 
   @@index([code])
   @@index([country])
@@ -462,18 +476,76 @@ model Partner {
   @@index([order])
 }
 
-/// Railway wagons
+/// Railway wagons with full lifecycle tracking
 model Wagon {
   id        Int      @id @default(autoincrement())
   number    String   @unique
   type      String
   capacity  Float
-  status    String   @default("active") // "active" or "maintenance"
+  /// Lifecycle status: available, assigned, in_transit, at_station, returning, maintenance
+  status    String   @default("available")
+  
+  /// Current location tracking
+  currentLat  Float?
+  currentLng  Float?
+  lastLocationUpdate DateTime?
+  
+  /// Current station (if at a station)
+  currentStationId Int?
+  currentStation   Station? @relation("WagonAtStation", fields: [currentStationId], references: [id])
+  
+  /// Assigned employee responsible for updates
+  assignedToId Int?
+  assignedTo   User?  @relation("WagonAssignedTo", fields: [assignedToId], references: [id])
+  
+  /// Lock info: prevents reassignment without SuperAdmin
+  lockedByShipmentId Int?
+  lockedAt           DateTime?
+  lockedByUserId     Int?
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  shipments Shipment[]
+  shipments  Shipment[]
+  statusLogs WagonStatusLog[]
 
   @@index([number])
   @@index([status])
+  @@index([assignedToId])
+  @@index([currentStationId])
+}
+
+/// Wagon status change history
+model WagonStatusLog {
+  id          Int      @id @default(autoincrement())
+  wagonId     Int
+  wagon       Wagon    @relation(fields: [wagonId], references: [id], onDelete: Cascade)
+  fromStatus  String
+  toStatus    String
+  lat         Float?
+  lng         Float?
+  note        String?
+  changedById Int?
+  changedBy   User?    @relation("WagonStatusChanges", fields: [changedById], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@index([wagonId])
+  @@index([createdAt])
+}
+
+/// SLA violation tracking for KPI penalties
+model SlaViolation {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  user        User     @relation("SlaViolations", fields: [userId], references: [id])
+  wagonId     Int?
+  shipmentId  Int?
+  /// WAGON_UPDATE_MISSED | SHIPMENT_UPDATE_MISSED
+  type        String
+  penalty     Int      @default(-3)
+  resolved    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
 }
