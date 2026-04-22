@@ -12,7 +12,7 @@ export default async function WagonsPage() {
   const initialWagons = res.wagons || [];
 
   const users = await prisma.user.findMany({
-    where: { isActive: true },
+    where: { status: 'ACTIVE' },
     select: { id: true, name: true, username: true }
   });
 
