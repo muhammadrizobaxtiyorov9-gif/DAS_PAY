@@ -308,20 +308,38 @@ export function ShipmentForm({ initialData, allWagons = [] }: { initialData: any
 
           {/* Wagons Selector */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Yukka biriktirilgan vagonlar</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Yukga biriktirilgan vagonlar</label>
             <div className="bg-white border border-gray-200 rounded-lg p-3 max-h-48 overflow-y-auto space-y-2">
               {allWagons.length === 0 ? (
-                <div className="text-sm text-gray-500 text-center py-2">Faol vagonlar topilmadi. Avval bazaga vagon qo'shing.</div>
+                <div className="text-sm text-gray-500 text-center py-2">Faol vagonlar topilmadi. Avval bazaga vagon qo&apos;shing.</div>
               ) : (
                 allWagons.map((w: any) => {
                   const isChecked = selectedWagonIds.includes(w.id);
+                  // Check if wagon is assigned to another active shipment (not the current one)
+                  const busyShipments = (w.shipments || []).filter(
+                    (s: any) => !initialData || s.id !== initialData.id
+                  );
+                  const isBusy = busyShipments.length > 0;
+                  const busyInfo = isBusy ? busyShipments[0] : null;
+
                   return (
-                    <label key={w.id} className={`flex items-center gap-3 p-2 rounded-md border cursor-pointer transition-colors ${isChecked ? 'bg-blue-50 border-blue-200' : 'hover:bg-slate-50 border-transparent'}`}>
+                    <label 
+                      key={w.id} 
+                      className={`flex items-center gap-3 p-2 rounded-md border cursor-pointer transition-colors ${
+                        isBusy 
+                          ? 'bg-red-50 border-red-200 opacity-70 cursor-not-allowed' 
+                          : isChecked 
+                            ? 'bg-blue-50 border-blue-200' 
+                            : 'hover:bg-slate-50 border-transparent'
+                      }`}
+                    >
                       <input 
                         type="checkbox" 
                         className="rounded text-[#185FA5] focus:ring-[#185FA5]"
                         checked={isChecked}
+                        disabled={isBusy}
                         onChange={(e) => {
+                          if (isBusy) return;
                           if (e.target.checked) setSelectedWagonIds([...selectedWagonIds, w.id]);
                           else setSelectedWagonIds(selectedWagonIds.filter(id => id !== w.id));
                         }}
@@ -330,6 +348,11 @@ export function ShipmentForm({ initialData, allWagons = [] }: { initialData: any
                         <div className="text-sm font-semibold text-gray-900">{w.number}</div>
                         <div className="text-xs text-gray-500">{w.type} · {w.capacity}t</div>
                       </div>
+                      {isBusy && (
+                        <span className="text-[10px] font-semibold bg-red-100 text-red-700 px-2 py-0.5 rounded-full whitespace-nowrap">
+                          🔒 Band ({busyInfo?.trackingCode})
+                        </span>
+                      )}
                     </label>
                   );
                 })

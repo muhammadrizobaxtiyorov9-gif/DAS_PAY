@@ -48,7 +48,15 @@ export default async function ShipmentEditPage({
 
   const allWagons = await prisma.wagon.findMany({
     where: { status: 'active' },
-    orderBy: { number: 'asc' }
+    orderBy: { number: 'asc' },
+    include: {
+      shipments: {
+        where: {
+          status: { notIn: ['delivered', 'unloaded'] }
+        },
+        select: { id: true, trackingCode: true, status: true }
+      }
+    }
   });
 
   return (

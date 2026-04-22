@@ -14,14 +14,24 @@ const ROLE_STYLES: Record<string, { label: string; bg: string; text: string }> =
 const MODULES = [
   { key: '/uz/admin', label: 'Dashboard' },
   { key: '/uz/admin/analytics', label: 'Analitika' },
+  { key: '/uz/admin/global-map', label: 'Global Xarita' },
+  { key: '/uz/admin/tasks', label: 'Topshiriqlar' },
+  { key: '/uz/admin/calendar', label: 'Kalendar' },
+  { key: '/uz/admin/kpi', label: 'Xodimlar (KPI)' },
   { key: '/uz/admin/clients', label: 'Mijozlar' },
   { key: '/uz/admin/shipments/new', label: 'Yangi Yuk/Marshrut' },
-  { key: '/uz/admin/shipments', label: 'Barcha Yuklar' },
+  { key: '/uz/admin/shipments', label: 'Yuklar (Barcha)' },
   { key: '/uz/admin/tariffs', label: 'Tariflar' },
-  { key: '/uz/admin/invoices', label: 'Hisob-kitoblar (Invoyslar)' },
+  { key: '/uz/admin/stations', label: 'Stansiyalar' },
   { key: '/uz/admin/wagons', label: 'Vagonlar bazasi' },
-  { key: '/uz/admin/tasks', label: 'Topshiriqlar' },
-  { key: '/uz/admin/users', label: 'Xodimlar' },
+  { key: '/uz/admin/invoices', label: 'Hisob-kitoblar (Invoyslar)' },
+  { key: '/uz/admin/blog', label: 'Maqolalar (Blog)' },
+  { key: '/uz/admin/leads', label: 'Arizalar' },
+  { key: '/uz/admin/feedback', label: 'NPS Fikrlar' },
+  { key: '/uz/admin/contracts', label: 'Shartnomalar' },
+  { key: '/uz/admin/partners', label: 'Hamkorlar' },
+  { key: '/uz/admin/users', label: 'Adminlar (Xodimlar)' },
+  { key: '/uz/admin/audit', label: 'Audit Log' },
 ];
 
 export default function UsersAdminPage() {

@@ -155,6 +155,21 @@ export async function createShipment(data: {
       }
     }
 
+    // Server-side wagon availability check
+    if (data.wagonIds && data.wagonIds.length > 0) {
+      const busyWagons = await prisma.wagon.findMany({
+        where: {
+          id: { in: data.wagonIds },
+          shipments: { some: { status: { notIn: ['delivered', 'unloaded'] } } }
+        },
+        select: { number: true }
+      });
+      if (busyWagons.length > 0) {
+        const nums = busyWagons.map(w => w.number).join(', ');
+        return { success: false, error: `Vagon(lar) band: ${nums}. Yuk yetkazilmaguncha boshqa yukka biriktirib bo'lmaydi.` };
+      }
+    }
+
     const distanceKm = data.routeSegments ? totalSegmentDistanceKm(data.routeSegments) : 0;
     const etaAt = distanceKm > 0
       ? computeShipmentEta({ startAt: new Date(), distanceKm, mode: data.transportMode })
@@ -208,6 +223,26 @@ export async function updateShipment(id: number, data: {
       });
       if (!existingClient) {
         return { success: false, error: 'Bunday mijoz mavjud emas' };
+      }
+    }
+
+    // Server-side wagon availability check for update
+    if (data.wagonIds && data.wagonIds.length > 0) {
+      const busyWagons = await prisma.wagon.findMany({
+        where: {
+          id: { in: data.wagonIds },
+          shipments: {
+            some: {
+              id: { not: id },
+              status: { notIn: ['delivered', 'unloaded'] }
+            }
+          }
+        },
+        select: { number: true }
+      });
+      if (busyWagons.length > 0) {
+        const nums = busyWagons.map(w => w.number).join(', ');
+        return { success: false, error: `Vagon(lar) band: ${nums}. Yuk yetkazilmaguncha boshqa yukka biriktirib bo'lmaydi.` };
       }
     }
 
