@@ -20,7 +20,8 @@ export default async function ShipmentEditPage({
   let hasClientTelegram = false;
   if (!isNew) {
     shipment = await prisma.shipment.findUnique({
-      where: { id: parseInt(id) }
+      where: { id: parseInt(id) },
+      include: { wagons: true }
     });
     if (!shipment) notFound();
 
@@ -42,9 +43,13 @@ export default async function ShipmentEditPage({
         lat?: number;
         lng?: number;
         addedBy?: string;
-        addedAt?: string;
       })
     : [];
+
+  const allWagons = await prisma.wagon.findMany({
+    where: { status: 'active' },
+    orderBy: { number: 'asc' }
+  });
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -73,7 +78,7 @@ export default async function ShipmentEditPage({
       </div>
 
       <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm md:p-8">
-        <ShipmentForm initialData={shipment} />
+        <ShipmentForm initialData={shipment} allWagons={allWagons} />
       </div>
 
       {!isNew && shipment && (

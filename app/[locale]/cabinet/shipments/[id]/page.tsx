@@ -20,7 +20,8 @@ export default async function CabinetShipmentDetailsPage({ params, searchParams 
   const shipmentId = parseInt(id);
 
   const shipment = await prisma.shipment.findUnique({
-    where: { id: shipmentId }
+    where: { id: shipmentId },
+    include: { wagons: true }
   });
 
   if (!shipment || shipment.clientPhone !== client.phone) {
@@ -37,7 +38,7 @@ export default async function CabinetShipmentDetailsPage({ params, searchParams 
     orderBy: { createdAt: 'desc' },
   });
 
-  type TimelineEvent = { date?: string; location?: string; description?: string };
+  type TimelineEvent = { date?: string; location?: string; description?: string; status?: any; note?: string };
   const events: TimelineEvent[] = (() => {
     const raw = shipment.events;
     if (!raw) return [];
@@ -110,7 +111,35 @@ export default async function CabinetShipmentDetailsPage({ params, searchParams 
               </div>
            </div>
 
-
+           {(shipment as any).wagons && (shipment as any).wagons.length > 0 && (
+              <div className="bg-white rounded-3xl p-6 border shadow-sm">
+                 <h3 className="font-bold text-[#042C53] mb-4 flex items-center gap-2">
+                    <span className="text-xl">🚂</span> Biriktirilgan vagonlar
+                 </h3>
+                 <div className="space-y-3">
+                    {(shipment as any).wagons.map((wagon: any) => (
+                       <div key={wagon.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-slate-50">
+                          <div>
+                             <div className="font-bold text-[#185FA5] text-sm">{wagon.number}</div>
+                             <div className="text-xs text-slate-500">{wagon.type}</div>
+                          </div>
+                          <div className="text-right">
+                             <div className="text-sm font-semibold">{wagon.capacity}t</div>
+                             <div className="text-[10px] uppercase font-bold text-emerald-600">
+                                {wagon.status === 'active' ? 'Soz' : 'Remontda'}
+                             </div>
+                          </div>
+                       </div>
+                    ))}
+                 </div>
+                 {events.length > 0 && (
+                    <div className="mt-4 p-3 rounded-xl bg-blue-50 border border-blue-100 text-sm">
+                       <span className="font-bold text-blue-800">Joriy stansiya: </span>
+                       <span className="text-blue-900">{events[events.length - 1].location || 'Noma\'lum'}</span>
+                    </div>
+                 )}
+              </div>
+           )}
 
            {shipment.status === 'delivered' && (
               <div className="rounded-3xl border border-emerald-300 bg-gradient-to-br from-emerald-100 to-white p-5 shadow-sm">
@@ -180,7 +209,7 @@ export default async function CabinetShipmentDetailsPage({ params, searchParams 
                        <div className="flex-1 bg-gray-50 border rounded-xl p-3 shadow-sm">
                           <p className="text-xs text-[#185FA5] font-bold mb-1">{event.date}</p>
                           <p className="text-sm font-semibold text-gray-800">{event.location}</p>
-                          <p className="text-xs text-gray-600 mt-1">{event.description}</p>
+                          <p className="text-xs text-gray-600 mt-1">{event.note || event.description}</p>
                        </div>
                     </div>
                  ))}

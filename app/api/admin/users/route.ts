@@ -27,6 +27,7 @@ export async function GET(req: NextRequest) {
         username: true,
         name: true,
         role: true,
+        permissions: true,
         status: true,
         createdAt: true,
       },
@@ -43,7 +44,7 @@ export async function POST(req: NextRequest) {
   if (!isSuper) return NextResponse.json({ error: 'Ruxsat yo\'q' }, { status: 403 });
 
   try {
-    const { username, password, name, role } = await req.json();
+    const { username, password, name, role, permissions } = await req.json();
     
     const existing = await prisma.user.findUnique({ where: { username } });
     if (existing) {
@@ -59,6 +60,7 @@ export async function POST(req: NextRequest) {
         password: hashedPassword,
         name,
         role: role || 'ADMIN',
+        permissions: permissions ? JSON.stringify(permissions) : '[]',
       },
       select: { id: true, username: true, role: true }
     });

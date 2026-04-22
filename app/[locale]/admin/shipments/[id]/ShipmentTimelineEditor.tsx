@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { addShipmentEvent, deleteShipmentEvent } from '@/app/actions/admin';
 import { SHIPMENT_STATUSES, ShipmentStatusKey } from '@/lib/shipment-status';
+import { StationAutocomplete } from '@/components/forms/StationAutocomplete';
 
 const LazyEventLocationPicker = lazy(() => import('./EventLocationPicker'));
 
@@ -110,6 +111,20 @@ export function ShipmentTimelineEditor({
     setLng('');
     setNote('');
   }
+
+  const handleStationSelect = (station: any) => {
+    if (station) {
+      setLocation(station.nameUz);
+      if (station.lat && station.lng) {
+        setLat(station.lat.toString());
+        setLng(station.lng.toString());
+      }
+    } else {
+      setLocation('');
+      setLat('');
+      setLng('');
+    }
+  };
 
   function chosenStatusLabels() {
     if (preset === 'custom') {
@@ -259,21 +274,18 @@ export function ShipmentTimelineEditor({
           )}
 
           <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-600">
-              Joylashuv
-            </label>
-            <input
+            <StationAutocomplete
+              label="Joylashuv (Stansiya yoki shahar)"
+              placeholder="Xaritadan tanlang yoki qidirib toping..."
               value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="Xaritadan tanlang yoki qo'lda kiriting..."
-              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              onSelect={handleStationSelect}
             />
+            <div className="mt-2 text-xs text-slate-500">
+              Yoki xaritadan nuqtani qo'lda tanlang:
+            </div>
           </div>
 
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-600">
-              📍 Xaritadan joylashuvni tanlash
-            </label>
+          <div className="mt-[-10px]">
             <EventMapPicker
               lat={lat}
               lng={lng}

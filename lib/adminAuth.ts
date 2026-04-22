@@ -14,6 +14,7 @@ export async function getAdminSession() {
       userId: payload.userId as number,
       username: payload.username as string,
       role: payload.role as string,
+      permissions: (payload.permissions as string[]) || [],
     };
   } catch (error) {
     return null;

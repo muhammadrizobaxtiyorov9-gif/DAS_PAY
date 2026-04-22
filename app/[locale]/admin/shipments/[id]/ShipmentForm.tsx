@@ -44,7 +44,7 @@ function uid() {
   return Math.random().toString(36).slice(2, 10);
 }
 
-export function ShipmentForm({ initialData }: { initialData: any }) {
+export function ShipmentForm({ initialData, allWagons = [] }: { initialData: any, allWagons?: any[] }) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -59,6 +59,10 @@ export function ShipmentForm({ initialData }: { initialData: any }) {
       setTrackingCode('DP-' + Math.floor(100000 + Math.random() * 900000));
     }
   }, [initialData]);
+
+  const [selectedWagonIds, setSelectedWagonIds] = useState<number[]>(
+    initialData?.wagons?.map((w: any) => w.id) || []
+  );
 
   // Station autocomplete state
   const [fromStation, setFromStation] = useState(initialData?.origin || '');
@@ -156,6 +160,7 @@ export function ShipmentForm({ initialData }: { initialData: any }) {
       description: formData.get('description') as string,
       routeSegments: JSON.parse(formData.get('routeSegments') as string || '[]'),
       transportMode,
+      wagonIds: transportMode === 'train' ? selectedWagonIds : undefined,
     };
 
     let result;
@@ -300,6 +305,37 @@ export function ShipmentForm({ initialData }: { initialData: any }) {
               </span>
             </div>
           )}
+
+          {/* Wagons Selector */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Yukka biriktirilgan vagonlar</label>
+            <div className="bg-white border border-gray-200 rounded-lg p-3 max-h-48 overflow-y-auto space-y-2">
+              {allWagons.length === 0 ? (
+                <div className="text-sm text-gray-500 text-center py-2">Faol vagonlar topilmadi. Avval bazaga vagon qo'shing.</div>
+              ) : (
+                allWagons.map((w: any) => {
+                  const isChecked = selectedWagonIds.includes(w.id);
+                  return (
+                    <label key={w.id} className={`flex items-center gap-3 p-2 rounded-md border cursor-pointer transition-colors ${isChecked ? 'bg-blue-50 border-blue-200' : 'hover:bg-slate-50 border-transparent'}`}>
+                      <input 
+                        type="checkbox" 
+                        className="rounded text-[#185FA5] focus:ring-[#185FA5]"
+                        checked={isChecked}
+                        onChange={(e) => {
+                          if (e.target.checked) setSelectedWagonIds([...selectedWagonIds, w.id]);
+                          else setSelectedWagonIds(selectedWagonIds.filter(id => id !== w.id));
+                        }}
+                      />
+                      <div className="flex-1">
+                        <div className="text-sm font-semibold text-gray-900">{w.number}</div>
+                        <div className="text-xs text-gray-500">{w.type} · {w.capacity}t</div>
+                      </div>
+                    </label>
+                  );
+                })
+              )}
+            </div>
+          </div>
         </div>
       ) : (
         <div className="grid md:grid-cols-2 gap-5">

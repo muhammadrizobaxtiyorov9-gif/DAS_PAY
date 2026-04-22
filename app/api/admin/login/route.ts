@@ -50,7 +50,12 @@ export async function POST(request: NextRequest) {
     const iat = Math.floor(Date.now() / 1000);
     const exp = iat + 60 * 60 * 24 * 7;
 
-    const token = await new SignJWT({ userId: user.id, username: user.username, role: user.role })
+    const token = await new SignJWT({ 
+      userId: user.id, 
+      username: user.username, 
+      role: user.role,
+      permissions: typeof user.permissions === 'string' ? JSON.parse(user.permissions) : (user.permissions || [])
+    })
       .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
       .setExpirationTime(exp)
       .setIssuedAt(iat)

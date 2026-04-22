@@ -141,6 +141,7 @@ export async function createShipment(data: {
   cost?: number;
   revenue?: number;
   currency?: string;
+  wagonIds?: number[];
 }) {
   try {
     const session = await getAdminSession();
@@ -164,10 +165,14 @@ export async function createShipment(data: {
        distanceKm: distanceKm > 0 ? distanceKm : null,
        etaAt,
        createdById: session?.userId || null,
-    } as Record<string, unknown>;
+       wagons: data.wagonIds && data.wagonIds.length > 0 ? {
+         connect: data.wagonIds.map(id => ({ id }))
+       } : undefined
+    };
+    delete dataWithUser.wagonIds;
 
     const created = await prisma.shipment.create({
-      data: dataWithUser as never,
+      data: dataWithUser as any,
     });
     await logAudit(session?.userId, 'CREATE_SHIPMENT', `Created shipment ${created.trackingCode}`);
     revalidatePath('/[locale]/admin/shipments', 'page');
@@ -192,6 +197,7 @@ export async function updateShipment(id: number, data: {
   cost?: number;
   revenue?: number;
   currency?: string;
+  wagonIds?: number[];
 }) {
   try {
     const session = await getAdminSession();
@@ -217,13 +223,19 @@ export async function updateShipment(id: number, data: {
       ? computeShipmentEta({ startAt: existing?.createdAt ?? new Date(), distanceKm, mode: data.transportMode })
       : undefined;
 
+    const updateData = {
+      ...data,
+      ...(distanceKm > 0 ? { distanceKm } : {}),
+      ...(etaAt ? { etaAt } : {}),
+      wagons: data.wagonIds ? {
+        set: data.wagonIds.map(id => ({ id }))
+      } : undefined
+    };
+    delete updateData.wagonIds;
+
     const updated = await prisma.shipment.update({
       where: { id },
-      data: {
-        ...data,
-        ...(distanceKm > 0 ? { distanceKm } : {}),
-        ...(etaAt ? { etaAt } : {}),
-      } as never,
+      data: updateData as any,
     });
     await logAudit(session?.userId, 'UPDATE_SHIPMENT', `Updated shipment ${updated.trackingCode}`);
     revalidatePath('/[locale]/admin/shipments', 'page');

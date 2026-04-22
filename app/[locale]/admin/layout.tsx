@@ -17,7 +17,7 @@ export default async function AdminLayout({
   }
 
   return (
-    <AdminLayoutClient userRole={session.role}>
+    <AdminLayoutClient userRole={session.role} userPermissions={(session as any).permissions || []}>
       {children}
     </AdminLayoutClient>
   );

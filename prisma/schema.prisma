@@ -118,6 +118,7 @@ model Shipment {
   createdBy       User?    @relation("ShipmentsCreated", fields: [createdById], references: [id])
   invoices        Invoice[]
   feedback        Feedback?
+  wagons          Wagon[]
 
   @@index([trackingCode])
   @@index([status])
@@ -265,10 +266,11 @@ model User {
   username  String   @unique
   password  String
   name      String?
-  role      String   @default("ADMIN") // SUPERADMIN, ADMIN, or DIRECTOR
-  status    String   @default("ACTIVE")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  role        String   @default("ADMIN") // SUPERADMIN, ADMIN, ACCOUNTANT or DIRECTOR
+  status      String   @default("ACTIVE")
+  permissions Json?    @default("[]")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
   
   actions   UserAction[]
   leads     Lead[]       @relation("UserLeads")
@@ -458,4 +460,20 @@ model Partner {
 
   @@index([active])
   @@index([order])
+}
+
+/// Railway wagons
+model Wagon {
+  id        Int      @id @default(autoincrement())
+  number    String   @unique
+  type      String
+  capacity  Float
+  status    String   @default("active") // "active" or "maintenance"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  shipments Shipment[]
+
+  @@index([number])
+  @@index([status])
 }

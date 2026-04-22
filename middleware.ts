@@ -103,7 +103,7 @@ export async function middleware(request: NextRequest) {
     try {
       const { payload } = await jwtVerify(adminToken, ADMIN_SECRET);
       const role = payload.role;
-      if (role !== 'ADMIN' && role !== 'SUPERADMIN' && role !== 'DIRECTOR' && role !== 'admin') {
+      if (role !== 'ADMIN' && role !== 'SUPERADMIN' && role !== 'DIRECTOR' && role !== 'admin' && role !== 'ACCOUNTANT') {
         throw new Error('Invalid Role');
       }
     } catch {

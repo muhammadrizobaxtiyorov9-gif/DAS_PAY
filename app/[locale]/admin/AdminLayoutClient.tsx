@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 
 const navigation = [
-  { name: 'Dashboard', href: '/admin', icon: LayoutDashboard, description: 'Umumiy ko\'rish', roles: ['SUPERADMIN', 'ADMIN', 'DIRECTOR'] },
+  { name: 'Dashboard', href: '/admin', icon: LayoutDashboard, description: 'Umumiy ko\'rish', roles: ['SUPERADMIN', 'ADMIN', 'DIRECTOR', 'ACCOUNTANT'] },
   { name: 'Analitika', href: '/admin/analytics', icon: BarChart3, description: 'KPI va tendensiyalar', roles: ['SUPERADMIN', 'DIRECTOR'] },
   { name: 'Global Xarita', href: '/admin/global-map', icon: Globe2, description: 'Barcha yuklar xaritasi', roles: ['SUPERADMIN', 'ADMIN', 'DIRECTOR'] },
   { name: 'Topshiriqlar', href: '/admin/tasks', icon: ClipboardList, description: 'Hodimlar vazifalari', roles: ['SUPERADMIN', 'ADMIN'] },
@@ -36,9 +36,10 @@ const navigation = [
   { name: 'Xodimlar (KPI)', href: '/admin/kpi', icon: Users, description: 'KPI reytingi', roles: ['SUPERADMIN', 'DIRECTOR'] },
   { name: 'Mijozlar', href: '/admin/clients', icon: UserCircle, description: "Mijoz 360° profili", roles: ['SUPERADMIN', 'ADMIN', 'DIRECTOR'] },
   { name: 'Yuklar', href: '/admin/shipments', icon: PackageSearch, description: 'Tracking boshqaruvi', roles: ['SUPERADMIN', 'ADMIN'] },
-  { name: 'Tariflar', href: '/admin/tariffs', icon: Banknote, description: 'Narx katalogi', roles: ['SUPERADMIN', 'ADMIN'] },
+  { name: 'Tariflar', href: '/admin/tariffs', icon: Banknote, description: 'Narx katalogi', roles: ['SUPERADMIN', 'ADMIN', 'ACCOUNTANT'] },
   { name: 'Stansiyalar', href: '/admin/stations', icon: Train, description: "Temir yo'l stansiyalari", roles: ['SUPERADMIN', 'ADMIN'] },
-  { name: 'Invoyslar', href: '/admin/invoices', icon: FileSignature, description: 'Hisob-fakturalar', roles: ['SUPERADMIN', 'ADMIN', 'DIRECTOR'] },
+  { name: 'Vagonlar', href: '/admin/wagons', icon: Train, description: "Vagonlar bazasi", roles: ['SUPERADMIN', 'ADMIN'] },
+  { name: 'Invoyslar', href: '/admin/invoices', icon: FileSignature, description: 'Hisob-fakturalar', roles: ['SUPERADMIN', 'DIRECTOR', 'ACCOUNTANT'] },
   { name: 'Maqolalar', href: '/admin/blog', icon: Newspaper, description: 'Blog & yangiliklar', roles: ['SUPERADMIN'] },
   { name: 'Arizalar', href: '/admin/leads', icon: Users, description: 'Mijoz so\'rovlari', roles: ['SUPERADMIN', 'ADMIN'] },
   { name: 'NPS fikrlar', href: '/admin/feedback', icon: Star, description: "Yetkazib berilgandan keyin baholash", roles: ['SUPERADMIN'] },
@@ -51,9 +52,11 @@ const navigation = [
 export default function AdminLayoutClient({
   children,
   userRole,
+  userPermissions = [],
 }: {
   children: React.ReactNode;
   userRole: string;
+  userPermissions?: string[];
 }) {
   const pathname = usePathname();
   const locale = pathname.split('/')[1] || 'uz';
@@ -111,9 +114,10 @@ export default function AdminLayoutClient({
               <span className={`ml-1.5 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest ${
                 userRole === 'SUPERADMIN' ? 'bg-purple-50 text-purple-600' :
                 userRole === 'DIRECTOR' ? 'bg-amber-50 text-amber-600' :
+                userRole === 'ACCOUNTANT' ? 'bg-emerald-50 text-emerald-600' :
                 'bg-blue-50 text-blue-600'
               }`}>
-                {userRole === 'SUPERADMIN' ? 'SuperAdmin' : userRole === 'DIRECTOR' ? 'Direktor' : 'Admin'}
+                {userRole === 'SUPERADMIN' ? 'SuperAdmin' : userRole === 'DIRECTOR' ? 'Direktor' : userRole === 'ACCOUNTANT' ? 'Buxgalter' : 'Admin'}
               </span>
             </div>
           </div>
@@ -132,7 +136,13 @@ export default function AdminLayoutClient({
           </p>
           <div className="space-y-1">
             {navigation
-              .filter(item => item.roles.includes(userRole) || userRole === 'SUPERADMIN')
+              .filter((item) => {
+                if (userRole === 'SUPERADMIN') return true;
+                if (userPermissions && userPermissions.length > 0) {
+                  return userPermissions.some(perm => perm.includes(item.href));
+                }
+                return item.roles.includes(userRole);
+              })
               .map((item) => {
               const active = isActive(item.href);
               return (
