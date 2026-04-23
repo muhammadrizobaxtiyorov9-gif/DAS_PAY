@@ -35,7 +35,7 @@ const WAGON_TYPES = [
   'Boshqa'
 ];
 
-export function WagonFormModal({ isOpen, onClose, wagon, users = [], stations = [] }: Props) {
+export function WagonFormModal({ isOpen, onClose, wagon, stations = [] }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);

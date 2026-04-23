@@ -20,11 +20,10 @@ interface Wagon {
 
 interface Props {
   initialWagons: Wagon[];
-  users: any[];
   stations: any[];
 }
 
-export function WagonsClient({ initialWagons, users, stations }: Props) {
+export function WagonsClient({ initialWagons, stations }: Props) {
   const router = useRouter();
   const [wagons, setWagons] = useState(initialWagons);
   const [search, setSearch] = useState('');
@@ -176,7 +175,6 @@ export function WagonsClient({ initialWagons, users, stations }: Props) {
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         wagon={selectedWagon}
-        users={users}
         stations={stations}
       />
     </div>
