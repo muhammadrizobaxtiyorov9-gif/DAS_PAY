@@ -22,7 +22,6 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   wagon: Wagon | null;
-  users?: any[];
   stations?: any[];
 }
 
@@ -46,7 +45,6 @@ export function WagonFormModal({ isOpen, onClose, wagon, users = [], stations = 
   const [customType, setCustomType] = useState('');
   const [capacity, setCapacity] = useState('');
   const [status, setStatus] = useState('available');
-  const [assignedToId, setAssignedToId] = useState<string>('');
   const [currentStationId, setCurrentStationId] = useState<string>('');
 
   useEffect(() => {
@@ -61,7 +59,6 @@ export function WagonFormModal({ isOpen, onClose, wagon, users = [], stations = 
       }
       setCapacity(wagon.capacity.toString());
       setStatus(wagon.status || 'available');
-      setAssignedToId(wagon.assignedToId?.toString() || '');
       setCurrentStationId(wagon.currentStationId?.toString() || '');
     } else {
       setNumber('');
@@ -69,7 +66,6 @@ export function WagonFormModal({ isOpen, onClose, wagon, users = [], stations = 
       setCustomType('');
       setCapacity('');
       setStatus('available');
-      setAssignedToId('');
       setCurrentStationId('');
     }
     setError(null);
@@ -99,7 +95,6 @@ export function WagonFormModal({ isOpen, onClose, wagon, users = [], stations = 
         type: finalType, 
         capacity: cap, 
         status,
-        assignedToId: assignedToId ? parseInt(assignedToId) : undefined,
         currentStationId: currentStationId ? parseInt(currentStationId) : undefined,
       };
       
@@ -195,12 +190,13 @@ export function WagonFormModal({ isOpen, onClose, wagon, users = [], stations = 
               )}
             </div>
 
-            <div>
               <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                Holati (Status)
+                Texnik holati (Status)
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {Object.entries(WAGON_STATUSES).map(([key, info]) => (
+                {Object.entries(WAGON_STATUSES)
+                  .filter(([k]) => ['available', 'needs_repair', 'maintenance'].includes(k))
+                  .map(([key, info]) => (
                   <label 
                     key={key}
                     className={`flex items-center gap-2 p-2 border rounded-lg cursor-pointer transition-colors ${
@@ -220,22 +216,6 @@ export function WagonFormModal({ isOpen, onClose, wagon, users = [], stations = 
                   </label>
                 ))}
               </div>
-            </div>
-
-            <div className="pt-2 border-t border-slate-100">
-              <label className="mb-1.5 block text-sm font-medium text-slate-700 flex items-center gap-2">
-                <User className="w-4 h-4 text-slate-400" /> Biriktirilgan xodim (Mas'ul)
-              </label>
-              <select
-                value={assignedToId}
-                onChange={(e) => setAssignedToId(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm transition-colors focus:border-[#185FA5] focus:outline-none focus:ring-2 focus:ring-[#185FA5]/20"
-              >
-                <option value="">-- Xodim tanlanmagan --</option>
-                {users.map(u => (
-                  <option key={u.id} value={u.id}>{u.name || u.username}</option>
-                ))}
-              </select>
             </div>
 
             <div>

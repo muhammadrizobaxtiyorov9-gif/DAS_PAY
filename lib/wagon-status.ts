@@ -1,6 +1,6 @@
 /**
  * Wagon Status Lifecycle
- * 6 statuses: available → assigned → in_transit → at_station → returning → maintenance
+ * 7 statuses: available → assigned → in_transit → at_station → returning → maintenance → needs_repair
  */
 
 export type WagonStatusKey =
@@ -9,7 +9,8 @@ export type WagonStatusKey =
   | 'in_transit'
   | 'at_station'
   | 'returning'
-  | 'maintenance';
+  | 'maintenance'
+  | 'needs_repair';
 
 export const WAGON_STATUSES: Record<WagonStatusKey, {
   label: { uz: string; ru: string; en: string };
@@ -20,7 +21,7 @@ export const WAGON_STATUSES: Record<WagonStatusKey, {
   icon: string;
 }> = {
   available: {
-    label: { uz: "Bo'sh (Tayyor)", ru: 'Свободен', en: 'Available' },
+    label: { uz: "Bo'sh (Soz)", ru: 'Свободен (Исправен)', en: 'Available' },
     color: 'text-emerald-600',
     bgColor: 'bg-emerald-600/10',
     pill: 'bg-emerald-100 text-emerald-700',
@@ -67,6 +68,14 @@ export const WAGON_STATUSES: Record<WagonStatusKey, {
     dot: 'bg-red-500',
     icon: '🔴',
   },
+  needs_repair: {
+    label: { uz: 'Remont talab', ru: 'Требует ремонта', en: 'Needs Repair' },
+    color: 'text-pink-600',
+    bgColor: 'bg-pink-600/10',
+    pill: 'bg-pink-100 text-pink-700',
+    dot: 'bg-pink-500',
+    icon: '🔧',
+  },
 };
 
 const FALLBACK_WAGON_STATUS = {
@@ -86,12 +95,13 @@ export function wagonStatusMeta(status: string | null | undefined, locale: 'uz' 
 
 /** Valid status transitions */
 export const WAGON_TRANSITIONS: Record<WagonStatusKey, WagonStatusKey[]> = {
-  available: ['assigned', 'maintenance'],
-  assigned: ['in_transit', 'available', 'maintenance'],
-  in_transit: ['at_station', 'maintenance'],
-  at_station: ['returning', 'available', 'maintenance'],
-  returning: ['available', 'at_station', 'maintenance'],
-  maintenance: ['available'],
+  available: ['assigned', 'maintenance', 'needs_repair'],
+  assigned: ['in_transit', 'available', 'maintenance', 'needs_repair'],
+  in_transit: ['at_station', 'maintenance', 'needs_repair'],
+  at_station: ['returning', 'available', 'maintenance', 'needs_repair'],
+  returning: ['available', 'at_station', 'maintenance', 'needs_repair'],
+  maintenance: ['available', 'needs_repair'],
+  needs_repair: ['available', 'maintenance'],
 };
 
 export function canTransitionWagon(from: string, to: string): boolean {

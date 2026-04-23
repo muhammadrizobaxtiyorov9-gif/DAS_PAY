@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import Link from 'next/link';
 import {
   CheckSquare,
@@ -31,6 +31,7 @@ type Shipment = {
   destination: string;
   status: string;
   etaAt: Date | string | null;
+  lastStatusUpdate: Date | string | null;
 };
 
 export function ShipmentsTable({ shipments }: { shipments: Shipment[] }) {
@@ -211,10 +212,13 @@ export function ShipmentsTable({ shipments }: { shipments: Shipment[] }) {
                         {(() => {
                           const m = shipmentStatusMeta(s.status);
                           return (
-                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${m.pill}`}>
-                              <span className={`h-1.5 w-1.5 rounded-full ${m.dot}`} />
-                              {m.labelText}
-                            </span>
+                            <div className="flex flex-col gap-1.5">
+                              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold w-max ${m.pill}`}>
+                                <span className={`h-1.5 w-1.5 rounded-full ${m.dot}`} />
+                                {m.labelText}
+                              </span>
+                              <SlaTimer lastStatusUpdate={s.lastStatusUpdate} status={s.status} />
+                            </div>
                           );
                         })()}
                       </td>
@@ -284,4 +288,49 @@ function EtaCell({ etaAt, status }: { etaAt: Date | string | null; status: strin
       <Clock className="h-3 w-3" /> {label}
     </span>
   );
+}
+
+function SlaTimer({ lastStatusUpdate, status }: { lastStatusUpdate: string | Date | null; status: string }) {
+  const [now, setNow] = useState(new Date());
+  
+  // Timer doesn't need to run perfectly real-time every second, 
+  // every 60 seconds is enough to update the UI
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 60000);
+    return () => clearInterval(t);
+  }, []);
+
+  // To strictly respect hooks, let's use the outer import
+  // But wait, the file imports { useState, useTransition } from 'react'. 
+  // I need to add useEffect to the top import. I will do that in a separate replacement or assume it's there.
+  
+  if (['delivered', 'cancelled', 'unloaded'].includes(status)) return null;
+  if (!lastStatusUpdate) return null;
+
+  const lastUpdate = new Date(lastStatusUpdate);
+  const diffMs = now.getTime() - lastUpdate.getTime();
+  const diffH = diffMs / 3600000;
+  
+  if (diffH >= 2) {
+    return (
+      <div className="flex items-center gap-1 text-[10px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded w-max border border-red-200">
+        <AlertCircle className="w-3 h-3" /> Kechikish: -3 KPI
+      </div>
+    );
+  } else if (diffH >= 1.5) {
+     const minsLeft = Math.floor((2 - diffH) * 60);
+     return (
+      <div className="flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded w-max border border-amber-200">
+        <Clock className="w-3 h-3" /> SLA: {minsLeft} daq qoldi
+      </div>
+    );
+  } else {
+    const hoursLeft = Math.floor(2 - diffH);
+    const minsLeft = Math.floor(((2 - diffH) % 1) * 60);
+    return (
+      <div className="flex items-center gap-1 text-[10px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded w-max border border-emerald-200">
+        <CheckCircle2 className="w-3 h-3" /> SLA: {hoursLeft}s {minsLeft}d
+      </div>
+    );
+  }
 }

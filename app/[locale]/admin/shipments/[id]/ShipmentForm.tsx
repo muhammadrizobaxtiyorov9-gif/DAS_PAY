@@ -367,17 +367,27 @@ export function ShipmentForm({ initialData, allWagons = [] }: { initialData: any
               {allWagons.length === 0 ? (
                 <div className="text-sm text-gray-500 text-center py-2">Faol vagonlar topilmadi. Avval bazaga vagon qo&apos;shing.</div>
               ) : (
-                allWagons.map((w: any) => {
+                [...allWagons].sort((a: any, b: any) => {
+                  const aSelected = selectedWagonIds.includes(a.id);
+                  const bSelected = selectedWagonIds.includes(b.id);
+                  if (aSelected && !bSelected) return -1;
+                  if (!aSelected && bSelected) return 1;
+
+                  const originStationId = fromStationRef.current?.id;
+                  const aNear = a.currentStationId === originStationId && originStationId != null;
+                  const bNear = b.currentStationId === originStationId && originStationId != null;
+                  if (aNear && !bNear) return -1;
+                  if (!aNear && bNear) return 1;
+                  return 0;
+                }).map((w: any) => {
                   const isChecked = selectedWagonIds.includes(w.id);
-                  // Check if wagon is assigned to another active shipment (not the current one)
                   const busyShipments = (w.shipments || []).filter(
                     (s: any) => !initialData || s.id !== initialData.id
                   );
                   const isBusy = busyShipments.length > 0;
                   const busyInfo = isBusy ? busyShipments[0] : null;
-                  
-                  // Check compatibility
                   const isCompatible = isWagonCompatible(w.type, cargoType);
+                  const isNear = fromStationRef.current?.id != null && w.currentStationId === fromStationRef.current.id;
 
                   return (
                     <label 
@@ -405,7 +415,12 @@ export function ShipmentForm({ initialData, allWagons = [] }: { initialData: any
                         }}
                       />
                       <div className="flex-1">
-                        <div className="text-sm font-semibold text-gray-900">{w.number}</div>
+                        <div className="flex items-center gap-2">
+                          <div className="text-sm font-semibold text-gray-900">{w.number}</div>
+                          {isNear && !isBusy && (
+                            <span className="text-[10px] font-medium bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded whitespace-nowrap">📍 Eng yaqin</span>
+                          )}
+                        </div>
                         <div className="text-xs text-gray-500">{w.type} · {w.capacity}t</div>
                       </div>
                       {isBusy && (

@@ -15,7 +15,6 @@ export async function createWagon(data: {
   currentLat?: number;
   currentLng?: number;
   currentStationId?: number;
-  assignedToId?: number;
 }) {
   try {
     const session = await getAdminSession();
@@ -33,7 +32,6 @@ export async function createWagon(data: {
         currentLat: data.currentLat,
         currentLng: data.currentLng,
         currentStationId: data.currentStationId,
-        assignedToId: data.assignedToId,
         lastLocationUpdate: data.currentLat ? new Date() : undefined,
       },
     });
@@ -70,7 +68,6 @@ export async function updateWagon(
     currentLat?: number;
     currentLng?: number;
     currentStationId?: number;
-    assignedToId?: number;
   }
 ) {
   try {
@@ -93,7 +90,6 @@ export async function updateWagon(
         currentLat: data.currentLat,
         currentLng: data.currentLng,
         currentStationId: data.currentStationId || null,
-        assignedToId: data.assignedToId || null,
         lastLocationUpdate: data.currentLat ? new Date() : current.lastLocationUpdate,
       },
     });

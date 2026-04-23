@@ -219,17 +219,31 @@ export async function createShipment(data: {
       data: dataWithUser as any,
     });
 
+    // Sync wagon statuses to shipment status
+    let mappedWagonStatus = 'assigned';
+    if (['in_transit'].includes(data.status)) mappedWagonStatus = 'in_transit';
+    else if (['arrived_at_station'].includes(data.status)) mappedWagonStatus = 'at_station';
+    else if (['unloaded', 'delivered'].includes(data.status)) mappedWagonStatus = 'available';
+
     // Lock wagons to this shipment
     if (data.wagonIds && data.wagonIds.length > 0) {
-      await prisma.wagon.updateMany({
-        where: { id: { in: data.wagonIds } },
-        data: {
-          status: 'assigned',
-          lockedByShipmentId: created.id,
-          lockedAt: new Date(),
-          lockedByUserId: session?.userId || null,
-        },
-      });
+      if (mappedWagonStatus === 'available') {
+        // Just free them if shipment is instantly completed (edge case)
+        await prisma.wagon.updateMany({
+          where: { id: { in: data.wagonIds } },
+          data: { status: 'available', lockedByShipmentId: null, lockedAt: null, lockedByUserId: null },
+        });
+      } else {
+        await prisma.wagon.updateMany({
+          where: { id: { in: data.wagonIds } },
+          data: {
+            status: mappedWagonStatus,
+            lockedByShipmentId: created.id,
+            lockedAt: new Date(),
+            lockedByUserId: session?.userId || null,
+          },
+        });
+      }
     }
 
     await logAudit(session?.userId, 'CREATE_SHIPMENT', `Created shipment ${created.trackingCode}`);
@@ -349,6 +363,12 @@ export async function updateShipment(id: number, data: {
       data: updatePayload as any,
     });
 
+    // Sync wagon statuses to shipment status
+    let mappedWagonStatus = 'assigned';
+    if (['in_transit'].includes(data.status)) mappedWagonStatus = 'in_transit';
+    else if (['arrived_at_station'].includes(data.status)) mappedWagonStatus = 'at_station';
+    else if (['unloaded', 'delivered'].includes(data.status)) mappedWagonStatus = 'available';
+
     // Manage wagon locks on change
     if (wagonsChanged) {
       // Unlock removed wagons
@@ -364,17 +384,26 @@ export async function updateShipment(id: number, data: {
       if (addedIds.length > 0) {
         await prisma.wagon.updateMany({
           where: { id: { in: addedIds } },
-          data: { status: 'assigned', lockedByShipmentId: id, lockedAt: new Date(), lockedByUserId: session?.userId || null },
+          data: { status: mappedWagonStatus, lockedByShipmentId: id, lockedAt: new Date(), lockedByUserId: session?.userId || null },
         });
       }
     }
 
-    // If shipment delivered/unloaded → free all wagons
-    if (['delivered', 'unloaded'].includes(data.status) && !['delivered', 'unloaded'].includes(existing.status)) {
-      await prisma.wagon.updateMany({
-        where: { lockedByShipmentId: id },
-        data: { status: 'available', lockedByShipmentId: null, lockedAt: null, lockedByUserId: null },
-      });
+    // Sync status for ALL current wagons belonging to this shipment
+    if (data.wagonIds && data.wagonIds.length > 0) {
+      if (mappedWagonStatus === 'available') {
+         // Shipment is delivered/unloaded -> free all wagons
+         await prisma.wagon.updateMany({
+            where: { lockedByShipmentId: id },
+            data: { status: 'available', lockedByShipmentId: null, lockedAt: null, lockedByUserId: null },
+         });
+      } else {
+         // Update status of all locked wagons
+         await prisma.wagon.updateMany({
+            where: { lockedByShipmentId: id },
+            data: { status: mappedWagonStatus },
+         });
+      }
     }
 
     await logAudit(session?.userId, 'UPDATE_SHIPMENT', `Updated shipment ${updated.trackingCode}`);

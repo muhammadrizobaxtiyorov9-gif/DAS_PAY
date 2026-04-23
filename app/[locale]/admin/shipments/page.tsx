@@ -27,6 +27,7 @@ export default async function ShipmentsAdminPage() {
       destination: true,
       status: true,
       etaAt: true,
+      lastStatusUpdate: true,
     } as never,
   });
 

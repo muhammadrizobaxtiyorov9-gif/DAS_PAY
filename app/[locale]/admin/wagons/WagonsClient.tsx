@@ -13,7 +13,6 @@ interface Wagon {
   type: string;
   capacity: number;
   status: string;
-  assignedTo?: { id: number; name: string | null; username: string } | null;
   currentStation?: { id: number; nameUz: string; code: string } | null;
   shipments?: { id: number; trackingCode: string; status: string }[] | null;
   lockedByShipmentId?: number | null;
@@ -139,12 +138,6 @@ export function WagonsClient({ initialWagons, users, stations }: Props) {
                         )}
                       </td>
                       <td className="px-6 py-4 text-xs space-y-1.5">
-                        <div className="flex items-center gap-2">
-                          <User className="w-3.5 h-3.5 text-slate-400" />
-                          <span className={wagon.assignedTo ? 'text-slate-700 font-medium' : 'text-slate-400'}>
-                            {wagon.assignedTo?.name || wagon.assignedTo?.username || 'Biriktirilmagan'}
-                          </span>
-                        </div>
                         <div className="flex items-center gap-2">
                           <MapPin className="w-3.5 h-3.5 text-slate-400" />
                           <span className={wagon.currentStation ? 'text-slate-700' : 'text-slate-400'}>
