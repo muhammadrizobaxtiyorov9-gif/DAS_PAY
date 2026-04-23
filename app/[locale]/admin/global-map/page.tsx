@@ -35,15 +35,34 @@ export default async function GlobalMapPage({
   // Fetch wagons with location data
   const wagons = await prisma.wagon.findMany({
     where: {
-      currentLat: { not: null },
-      currentLng: { not: null },
+      OR: [
+        { currentLat: { not: null }, currentLng: { not: null } },
+        { currentStationId: { not: null } }
+      ]
     },
     include: {
       shipments: {
         where: { status: { notIn: ['delivered', 'unloaded'] } },
         select: { trackingCode: true }
       },
-      currentStation: { select: { nameUz: true } }
+      currentStation: { select: { nameUz: true, lat: true, lng: true } }
+    }
+  });
+
+  // Fetch trucks with location data
+  const trucks = await prisma.truck.findMany({
+    where: {
+      OR: [
+        { currentLat: { not: null }, currentLng: { not: null } },
+        { currentStationId: { not: null } }
+      ]
+    },
+    include: {
+      shipments: {
+        where: { status: { notIn: ['delivered', 'unloaded'] } },
+        select: { trackingCode: true }
+      },
+      currentStation: { select: { nameUz: true, lat: true, lng: true } }
     }
   });
 
@@ -61,7 +80,9 @@ export default async function GlobalMapPage({
         </div>
       </div>
 
-      <GlobalMapClient initialShipments={activeShipments} initialWagons={wagons} />
+      <div className="h-[calc(100vh-140px)] min-h-[600px] w-full rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden relative">
+        <GlobalMapClient initialShipments={activeShipments} initialWagons={wagons} trucks={trucks} />
+      </div>
     </div>
   );
 }

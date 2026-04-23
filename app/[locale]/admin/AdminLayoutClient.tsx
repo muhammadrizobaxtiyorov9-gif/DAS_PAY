@@ -25,6 +25,7 @@ import {
   Train,
   Globe2,
   Handshake,
+  Truck as TruckIcon,
 } from 'lucide-react';
 
 const navigation = [
@@ -39,6 +40,7 @@ const navigation = [
   { name: 'Tariflar', href: '/admin/tariffs', icon: Banknote, description: 'Narx katalogi', roles: ['SUPERADMIN', 'ADMIN', 'ACCOUNTANT'] },
   { name: 'Stansiyalar', href: '/admin/stations', icon: Train, description: "Temir yo'l stansiyalari", roles: ['SUPERADMIN', 'ADMIN'] },
   { name: 'Vagonlar', href: '/admin/wagons', icon: Train, description: "Vagonlar bazasi", roles: ['SUPERADMIN', 'ADMIN'] },
+  { name: 'Avtomobillar', href: '/admin/trucks', icon: TruckIcon, description: "Yuk avtomobillari", roles: ['SUPERADMIN', 'ADMIN'] },
   { name: 'Invoyslar', href: '/admin/invoices', icon: FileSignature, description: 'Hisob-fakturalar', roles: ['SUPERADMIN', 'DIRECTOR', 'ACCOUNTANT'] },
   { name: 'Maqolalar', href: '/admin/blog', icon: Newspaper, description: 'Blog & yangiliklar', roles: ['SUPERADMIN'] },
   { name: 'Arizalar', href: '/admin/leads', icon: Users, description: 'Mijoz so\'rovlari', roles: ['SUPERADMIN', 'ADMIN'] },

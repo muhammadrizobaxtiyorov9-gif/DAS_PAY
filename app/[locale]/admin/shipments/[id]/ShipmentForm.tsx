@@ -8,8 +8,13 @@ import { SHIPMENT_STATUSES, ShipmentStatusKey } from '@/lib/shipment-status';
 import { StationAutocomplete } from '@/components/forms/StationAutocomplete';
 import { resolveRouteGeometry } from '@/lib/map-utils';
 import { CARGO_TYPES, isWagonCompatible } from '@/lib/cargo-wagon-compatibility';
+import dynamic from 'next/dynamic';
 
 const LazyLocationPicker = lazy(() => import('./LocationPickerMap'));
+const TruckRoutePicker = dynamic(() => import('./TruckRoutePickerMap'), {
+  ssr: false,
+  loading: () => <div className="h-[350px] w-full bg-gray-100 animate-pulse flex items-center justify-center rounded-xl border border-gray-200"><MapPin className="text-gray-400 w-8 h-8" /></div>
+});
 
 interface StationData {
   id: number;
@@ -45,7 +50,7 @@ function uid() {
   return Math.random().toString(36).slice(2, 10);
 }
 
-export function ShipmentForm({ initialData, allWagons = [] }: { initialData: any, allWagons?: any[] }) {
+export function ShipmentForm({ initialData, allWagons = [], allTrucks = [] }: { initialData: any, allWagons?: any[], allTrucks?: any[] }) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -69,11 +74,27 @@ export function ShipmentForm({ initialData, allWagons = [] }: { initialData: any
     initialData?.wagons?.map((w: any) => w.id) || []
   );
 
+  const [selectedTruckIds, setSelectedTruckIds] = useState<number[]>(
+    initialData?.trucks?.map((t: any) => t.id) || []
+  );
+
   // Station autocomplete state
   const [fromStation, setFromStation] = useState(initialData?.origin || '');
   const [toStation, setToStation] = useState(initialData?.destination || '');
   const fromStationRef = useRef<StationData | null>(null);
   const toStationRef = useRef<StationData | null>(null);
+
+  // Truck origin/destination for Yandex Maps preview
+  const [truckOrigin, setTruckOrigin] = useState(initialData?.origin || '');
+  const [truckDest, setTruckDest] = useState(initialData?.destination || '');
+  
+  // Coordinates for map picker
+  const [truckCoords, setTruckCoords] = useState<{originLat?: number; originLng?: number; destLat?: number; destLng?: number}>({
+    originLat: initialData?.originLat || undefined,
+    originLng: initialData?.originLng || undefined,
+    destLat: initialData?.destinationLat || undefined,
+    destLng: initialData?.destinationLng || undefined,
+  });
 
   // Extract initial segments if saved, else empty
   const initialSegments = typeof initialData?.routeSegments === 'string' 
@@ -167,6 +188,11 @@ export function ShipmentForm({ initialData, allWagons = [] }: { initialData: any
       routeSegments: JSON.parse(formData.get('routeSegments') as string || '[]'),
       transportMode,
       wagonIds: transportMode === 'train' ? selectedWagonIds : undefined,
+      truckIds: transportMode === 'truck' ? selectedTruckIds : undefined,
+      originLat: transportMode === 'truck' ? truckCoords.originLat : (fromStationRef.current?.lat || undefined),
+      originLng: transportMode === 'truck' ? truckCoords.originLng : (fromStationRef.current?.lng || undefined),
+      destinationLat: transportMode === 'truck' ? truckCoords.destLat : (toStationRef.current?.lat || undefined),
+      destinationLng: transportMode === 'truck' ? truckCoords.destLng : (toStationRef.current?.lng || undefined),
     };
 
     // Client-side weight validation for wagons
@@ -175,6 +201,17 @@ export function ShipmentForm({ initialData, allWagons = [] }: { initialData: any
       const totalCapacity = selectedWagonObjects.reduce((sum, w) => sum + w.capacity, 0);
       if (data.weight > totalCapacity) {
         setError(`Yuk og'irligi (${data.weight}t) vagonlar umumiy sig'imidan (${totalCapacity}t) oshib ketdi. Qo'shimcha vagon tanlang.`);
+        setIsSubmitting(false);
+        return;
+      }
+    }
+
+    // Client-side weight validation for trucks
+    if (transportMode === 'truck' && selectedTruckIds.length > 0 && data.weight) {
+      const selectedTruckObjects = allTrucks.filter(t => selectedTruckIds.includes(t.id));
+      const totalCapacity = selectedTruckObjects.reduce((sum, t) => sum + t.capacity, 0);
+      if (data.weight > totalCapacity) {
+        setError(`Yuk og'irligi (${data.weight}t) avtomobillar umumiy sig'imidan (${totalCapacity}t) oshib ketdi. Qo'shimcha avtomobil tanlang.`);
         setIsSubmitting(false);
         return;
       }
@@ -444,26 +481,142 @@ export function ShipmentForm({ initialData, allWagons = [] }: { initialData: any
           </div>
         </div>
       ) : (
-        <div className="grid md:grid-cols-2 gap-5">
+        <div className="space-y-5">
+          <div className="grid md:grid-cols-2 gap-5">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Jo&apos;natish manzili</label>
+              <input 
+                required 
+                name="origin"
+                value={truckOrigin}
+                onChange={(e) => setTruckOrigin(e.target.value)}
+                className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20"
+                placeholder="Davlat, Shahar"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Yetkazib berish manzili</label>
+              <input 
+                required 
+                name="destination"
+                value={truckDest}
+                onChange={(e) => setTruckDest(e.target.value)}
+                className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20"
+              />
+            </div>
+          </div>
+
+          {/* Trucks Selector */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Jo&apos;natish manzili</label>
-            <input 
-              required 
-              name="origin"
-              defaultValue={initialData?.origin}
-              className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20"
-              placeholder="Davlat, Shahar"
+            <div className="flex items-end justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-700">Yukga biriktirilgan avtomobillar</label>
+              {selectedTruckIds.length > 0 && (
+                <div className="text-xs font-semibold px-2 py-1 bg-slate-100 rounded text-slate-600">
+                  Tanlandi: {selectedTruckIds.length} ta (Jami sig'im: {allTrucks.filter(t => selectedTruckIds.includes(t.id)).reduce((sum, t) => sum + t.capacity, 0)}t)
+                </div>
+              )}
+            </div>
+            
+            <div className="bg-white border border-gray-200 rounded-lg p-3 max-h-60 overflow-y-auto space-y-2">
+              {allTrucks.length === 0 ? (
+                <div className="text-sm text-gray-500 text-center py-2">Faol avtomobillar topilmadi. Avval bazaga avtomobil qo&apos;shing.</div>
+              ) : (
+                [...allTrucks].sort((a: any, b: any) => {
+                  const aSelected = selectedTruckIds.includes(a.id);
+                  const bSelected = selectedTruckIds.includes(b.id);
+                  if (aSelected && !bSelected) return -1;
+                  if (!aSelected && bSelected) return 1;
+                  return 0;
+                }).map((t: any) => {
+                  const isChecked = selectedTruckIds.includes(t.id);
+                  const busyShipments = (t.shipments || []).filter(
+                    (s: any) => !initialData || s.id !== initialData.id
+                  );
+                  const isBusy = busyShipments.length > 0;
+                  const busyInfo = isBusy ? busyShipments[0] : null;
+
+                  return (
+                    <label 
+                      key={t.id} 
+                      className={`flex items-center gap-3 p-2 rounded-md border cursor-pointer transition-colors ${
+                        isBusy 
+                          ? 'bg-red-50 border-red-200 opacity-70 cursor-not-allowed' 
+                          : isChecked 
+                            ? 'bg-blue-50 border-blue-200' 
+                            : 'hover:bg-slate-50 border-transparent'
+                      }`}
+                    >
+                      <input 
+                        type="checkbox" 
+                        className="rounded text-[#185FA5] focus:ring-[#185FA5]"
+                        checked={isChecked}
+                        disabled={isBusy}
+                        onChange={(e) => {
+                          if (isBusy) return;
+                          if (e.target.checked) setSelectedTruckIds([...selectedTruckIds, t.id]);
+                          else setSelectedTruckIds(selectedTruckIds.filter(id => id !== t.id));
+                        }}
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <div className="text-sm font-semibold text-gray-900 border border-gray-200 px-2 py-0.5 rounded bg-gray-50">{t.plateNumber}</div>
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">{t.model} · {t.capacity}t</div>
+                      </div>
+                      {isBusy && (
+                        <span className="text-[10px] font-semibold bg-red-100 text-red-700 px-2 py-0.5 rounded-full whitespace-nowrap">
+                          🔒 Band ({busyInfo?.trackingCode})
+                        </span>
+                      )}
+                    </label>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          {/* Truck Route Picker Map */}
+          <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm space-y-3">
+            <h4 className="font-bold text-sm text-[#042C53] flex items-center gap-2">
+              <Route className="h-4 w-4 text-[#185FA5]" />
+              Xaritadan manzil tanlash (A → B)
+            </h4>
+            <TruckRoutePicker
+              originLat={truckCoords.originLat}
+              originLng={truckCoords.originLng}
+              destLat={truckCoords.destLat}
+              destLng={truckCoords.destLng}
+              onChange={(c) => setTruckCoords(c)}
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Yetkazib berish manzili</label>
-            <input 
-              required 
-              name="destination"
-              defaultValue={initialData?.destination}
-              className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20"
-            />
-          </div>
+
+          {/* Yandex Maps Route Preview — uses coordinates if available, else text */}
+          {((truckCoords.originLat && truckCoords.destLat) || (truckOrigin.length > 2 && truckDest.length > 2)) && transportMode === 'truck' && (
+            <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm space-y-3">
+              <h4 className="font-bold text-sm text-[#042C53] flex items-center gap-2">
+                <Route className="h-4 w-4 text-[#185FA5]" />
+                Avtomobil marshruti (Yandex Maps)
+              </h4>
+              <div className="h-[350px] w-full rounded-xl overflow-hidden border border-gray-200">
+                <iframe
+                  key={truckCoords.originLat && truckCoords.destLat 
+                    ? `${truckCoords.originLat},${truckCoords.originLng}__${truckCoords.destLat},${truckCoords.destLng}` 
+                    : `${truckOrigin}__${truckDest}`}
+                  src={truckCoords.originLat && truckCoords.originLng && truckCoords.destLat && truckCoords.destLng
+                    ? `https://yandex.com/map-widget/v1/?rtext=${truckCoords.originLat},${truckCoords.originLng}~${truckCoords.destLat},${truckCoords.destLng}&rtt=auto&z=6`
+                    : `https://yandex.com/map-widget/v1/?rtext=${encodeURIComponent(truckOrigin)}~${encodeURIComponent(truckDest)}&rtt=auto&z=6`}
+                  width="100%"
+                  height="100%"
+                  frameBorder="0"
+                  allowFullScreen
+                  style={{ border: 0 }}
+                />
+              </div>
+              <p className="text-[11px] text-gray-500">
+                ☝️ Marshrut Yandex Maps tomonidan haqiqiy yo&apos;llar va chegara postlari hisobga olingan holda chizilgan.
+              </p>
+            </div>
+          )}
         </div>
       )}
 
@@ -483,6 +636,14 @@ export function ShipmentForm({ initialData, allWagons = [] }: { initialData: any
                 const totalCapacity = selectedWagonObjects.reduce((sum, wg) => sum + wg.capacity, 0);
                 if (w > totalCapacity) {
                   setWeightError(`⚠️ Yuk og'irligi (${w}t) vagonlar sig'imidan (${totalCapacity}t) oshdi.`);
+                } else {
+                  setWeightError('');
+                }
+              } else if (transportMode === 'truck' && selectedTruckIds.length > 0 && w) {
+                const selectedTruckObjects = allTrucks.filter(tr => selectedTruckIds.includes(tr.id));
+                const totalCapacity = selectedTruckObjects.reduce((sum, tr) => sum + tr.capacity, 0);
+                if (w > totalCapacity) {
+                  setWeightError(`⚠️ Yuk og'irligi (${w}t) avtomobillar sig'imidan (${totalCapacity}t) oshdi.`);
                 } else {
                   setWeightError('');
                 }

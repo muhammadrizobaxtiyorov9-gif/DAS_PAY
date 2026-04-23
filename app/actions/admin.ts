@@ -142,8 +142,13 @@ export async function createShipment(data: {
   revenue?: number;
   currency?: string;
   wagonIds?: number[];
+  truckIds?: number[];
   cargoType?: string;
   assignedToId?: number;
+  originLat?: number;
+  originLng?: number;
+  destinationLat?: number;
+  destinationLng?: number;
 }) {
   try {
     const session = await getAdminSession();
@@ -164,38 +169,27 @@ export async function createShipment(data: {
         include: { shipments: { where: { status: { notIn: ['delivered', 'unloaded'] } }, select: { id: true } } }
       });
 
-      // 1. Check availability
       const busyWagons = selectedWagons.filter(w => w.shipments.length > 0);
-      if (busyWagons.length > 0) {
-        const nums = busyWagons.map(w => w.number).join(', ');
-        return { success: false, error: `Vagon(lar) band: ${nums}. Yuk yetkazilmaguncha boshqa yukka biriktirib bo'lmaydi.` };
-      }
+      if (busyWagons.length > 0) return { success: false, error: `Vagon(lar) band.` };
 
-      // 2. Check wagon status (only 'available' can be assigned)
       const unavailable = selectedWagons.filter(w => w.status !== 'available');
-      if (unavailable.length > 0) {
-        const nums = unavailable.map(w => `${w.number} (${w.status})`).join(', ');
-        return { success: false, error: `Vagon(lar) tayyor emas: ${nums}. Faqat "Bo'sh" holatdagi vagonlar biriktiriladi.` };
-      }
-
-      // 3. Cargo type ↔ wagon type compatibility
-      if (data.cargoType) {
-        const { isWagonCompatible } = await import('@/lib/cargo-wagon-compatibility');
-        const incompatible = selectedWagons.filter(w => !isWagonCompatible(w.type, data.cargoType!));
-        if (incompatible.length > 0) {
-          const nums = incompatible.map(w => `${w.number} (${w.type})`).join(', ');
-          return { success: false, error: `Vagon(lar) yuk turiga mos emas: ${nums}. "${data.cargoType}" turi uchun boshqa vagon tanlang.` };
-        }
-      }
-
-      // 4. Weight vs total capacity
-      if (data.weight && data.weight > 0) {
-        const totalCapacity = selectedWagons.reduce((sum, w) => sum + w.capacity, 0);
-        if (data.weight > totalCapacity) {
-          return { success: false, error: `Yuk og'irligi (${data.weight}t) vagonlar sig'imidan (${totalCapacity}t) oshib ketdi.` };
-        }
-      }
+      if (unavailable.length > 0) return { success: false, error: `Vagon(lar) tayyor emas.` };
     }
+
+    // Server-side truck validation
+    if (data.truckIds && data.truckIds.length > 0) {
+      const selectedTrucks = await prisma.truck.findMany({
+        where: { id: { in: data.truckIds } },
+        include: { shipments: { where: { status: { notIn: ['delivered', 'unloaded'] } }, select: { id: true } } }
+      });
+
+      const busyTrucks = selectedTrucks.filter(t => t.shipments.length > 0);
+      if (busyTrucks.length > 0) return { success: false, error: `Avtomobil(lar) band.` };
+
+      const unavailable = selectedTrucks.filter(t => t.status !== 'available');
+      if (unavailable.length > 0) return { success: false, error: `Avtomobil(lar) tayyor emas.` };
+    }
+
 
     const distanceKm = data.routeSegments ? totalSegmentDistanceKm(data.routeSegments) : 0;
     const etaAt = distanceKm > 0
@@ -211,9 +205,13 @@ export async function createShipment(data: {
        lastStatusUpdate: new Date(),
        wagons: data.wagonIds && data.wagonIds.length > 0 ? {
          connect: data.wagonIds.map(id => ({ id }))
+       } : undefined,
+       trucks: data.truckIds && data.truckIds.length > 0 ? {
+         connect: data.truckIds.map(id => ({ id }))
        } : undefined
     };
     delete dataWithUser.wagonIds;
+    delete dataWithUser.truckIds;
 
     const created = await prisma.shipment.create({
       data: dataWithUser as any,
@@ -228,7 +226,6 @@ export async function createShipment(data: {
     // Lock wagons to this shipment
     if (data.wagonIds && data.wagonIds.length > 0) {
       if (mappedWagonStatus === 'available') {
-        // Just free them if shipment is instantly completed (edge case)
         await prisma.wagon.updateMany({
           where: { id: { in: data.wagonIds } },
           data: { status: 'available', lockedByShipmentId: null, lockedAt: null, lockedByUserId: null },
@@ -236,12 +233,22 @@ export async function createShipment(data: {
       } else {
         await prisma.wagon.updateMany({
           where: { id: { in: data.wagonIds } },
-          data: {
-            status: mappedWagonStatus,
-            lockedByShipmentId: created.id,
-            lockedAt: new Date(),
-            lockedByUserId: session?.userId || null,
-          },
+          data: { status: mappedWagonStatus, lockedByShipmentId: created.id, lockedAt: new Date(), lockedByUserId: session?.userId || null },
+        });
+      }
+    }
+
+    // Lock trucks to this shipment
+    if (data.truckIds && data.truckIds.length > 0) {
+      if (mappedWagonStatus === 'available') {
+        await prisma.truck.updateMany({
+          where: { id: { in: data.truckIds } },
+          data: { status: 'available', lockedByShipmentId: null, lockedAt: null, lockedByUserId: null },
+        });
+      } else {
+        await prisma.truck.updateMany({
+          where: { id: { in: data.truckIds } },
+          data: { status: mappedWagonStatus, lockedByShipmentId: created.id, lockedAt: new Date(), lockedByUserId: session?.userId || null },
         });
       }
     }
@@ -270,8 +277,13 @@ export async function updateShipment(id: number, data: {
   revenue?: number;
   currency?: string;
   wagonIds?: number[];
+  truckIds?: number[];
   cargoType?: string;
   assignedToId?: number;
+  originLat?: number;
+  originLng?: number;
+  destinationLat?: number;
+  destinationLng?: number;
 }) {
   try {
     const session = await getAdminSession();
@@ -287,7 +299,7 @@ export async function updateShipment(id: number, data: {
 
     const existing = await prisma.shipment.findUnique({
       where: { id },
-      include: { wagons: { select: { id: true } } }
+      include: { wagons: { select: { id: true } }, trucks: { select: { id: true } } }
     });
     if (!existing) return { success: false, error: 'Yuk topilmadi' };
 
@@ -296,10 +308,14 @@ export async function updateShipment(id: number, data: {
     const newWagonIds = data.wagonIds || [];
     const wagonsChanged = JSON.stringify(existingWagonIds.sort()) !== JSON.stringify([...newWagonIds].sort());
 
-    if (wagonsChanged && existing.status !== 'pending' && session?.role !== 'SUPERADMIN') {
+    const existingTruckIds = (existing as any).trucks?.map((t: any) => t.id) || [];
+    const newTruckIds = data.truckIds || [];
+    const trucksChanged = JSON.stringify(existingTruckIds.sort()) !== JSON.stringify([...newTruckIds].sort());
+
+    if ((wagonsChanged || trucksChanged) && existing.status !== 'pending' && session?.role !== 'SUPERADMIN') {
       return {
         success: false,
-        error: 'Yuk "Ariza qabul qilindi" holatidan keyingi bosqichlarda faqat SuperAdmin vagonlarni o\'zgartira oladi.',
+        error: 'Yuk "Ariza qabul qilindi" holatidan keyingi bosqichlarda faqat SuperAdmin transport vositalarini o\'zgartira oladi.',
       };
     }
 
@@ -335,6 +351,23 @@ export async function updateShipment(id: number, data: {
         }
       }
     }
+    // Server-side truck validation for update
+    if (data.truckIds && data.truckIds.length > 0) {
+      const selectedTrucks = await prisma.truck.findMany({
+        where: { id: { in: data.truckIds } },
+        include: { shipments: { where: { id: { not: id }, status: { notIn: ['delivered', 'unloaded'] } }, select: { id: true } } }
+      });
+
+      const busyTrucks = selectedTrucks.filter(t => t.shipments.length > 0);
+      if (busyTrucks.length > 0) {
+        return { success: false, error: `Avtomobil(lar) band.` };
+      }
+
+      const unavailable = selectedTrucks.filter(t => t.status !== 'available' && !existingTruckIds.includes(t.id));
+      if (unavailable.length > 0) {
+        return { success: false, error: `Avtomobil(lar) tayyor emas.` };
+      }
+    }
 
     const distanceKm = data.routeSegments ? totalSegmentDistanceKm(data.routeSegments) : 0;
 
@@ -354,9 +387,13 @@ export async function updateShipment(id: number, data: {
       lastStatusUpdate: new Date(),
       wagons: data.wagonIds ? {
         set: data.wagonIds.map(wid => ({ id: wid }))
+      } : undefined,
+      trucks: data.truckIds ? {
+        set: data.truckIds.map(tid => ({ id: tid }))
       } : undefined
     };
     delete updatePayload.wagonIds;
+    delete updatePayload.truckIds;
 
     const updated = await prisma.shipment.update({
       where: { id },
@@ -400,6 +437,40 @@ export async function updateShipment(id: number, data: {
       } else {
          // Update status of all locked wagons
          await prisma.wagon.updateMany({
+            where: { lockedByShipmentId: id },
+            data: { status: mappedWagonStatus },
+         });
+      }
+    }
+    // Manage truck locks on change
+    if (trucksChanged) {
+      // Unlock removed trucks
+      const removedIds = existingTruckIds.filter((tid: number) => !newTruckIds.includes(tid));
+      if (removedIds.length > 0) {
+        await prisma.truck.updateMany({
+          where: { id: { in: removedIds } },
+          data: { status: 'available', lockedByShipmentId: null, lockedAt: null, lockedByUserId: null },
+        });
+      }
+      // Lock newly added trucks
+      const addedIds = newTruckIds.filter((tid: number) => !existingTruckIds.includes(tid));
+      if (addedIds.length > 0) {
+        await prisma.truck.updateMany({
+          where: { id: { in: addedIds } },
+          data: { status: mappedWagonStatus, lockedByShipmentId: id, lockedAt: new Date(), lockedByUserId: session?.userId || null },
+        });
+      }
+    }
+
+    // Sync status for ALL current trucks belonging to this shipment
+    if (data.truckIds && data.truckIds.length > 0) {
+      if (mappedWagonStatus === 'available') {
+         await prisma.truck.updateMany({
+            where: { lockedByShipmentId: id },
+            data: { status: 'available', lockedByShipmentId: null, lockedAt: null, lockedByUserId: null },
+         });
+      } else {
+         await prisma.truck.updateMany({
             where: { lockedByShipmentId: id },
             data: { status: mappedWagonStatus },
          });

@@ -127,6 +127,7 @@ model Shipment {
   invoices        Invoice[]
   feedback        Feedback?
   wagons          Wagon[]
+  trucks          Truck[]
 
   @@index([trackingCode])
   @@index([status])
@@ -275,7 +276,7 @@ model User {
   username  String   @unique
   password  String
   name      String?
-  role        String   @default("ADMIN") // SUPERADMIN, ADMIN, ACCOUNTANT or DIRECTOR
+  role        String   @default("ADMIN") // SUPERADMIN, ADMIN, ACCOUNTANT, DIRECTOR, DRIVER
   status      String   @default("ACTIVE")
   permissions Json?    @default("[]")
   createdAt   DateTime @default(now())
@@ -290,6 +291,8 @@ model User {
   invoicesCreated Invoice[]  @relation("InvoicesCreated")
   wagonsAssigned  Wagon[]    @relation("WagonAssignedTo")
   wagonStatusChanges WagonStatusLog[] @relation("WagonStatusChanges")
+  trucksDriven    Truck[]    @relation("TruckDriver")
+  truckStatusChanges TruckStatusLog[] @relation("TruckStatusChanges")
   slaViolations   SlaViolation[] @relation("SlaViolations")
 
   @@index([username])
@@ -452,6 +455,7 @@ model Station {
   leadsFrom   Lead[]   @relation("LeadFromStation")
   leadsTo     Lead[]   @relation("LeadToStation")
   wagonsAtStation Wagon[] @relation("WagonAtStation")
+  trucksAtStation Truck[] @relation("TruckAtStation")
 
   @@index([code])
   @@index([country])
@@ -547,5 +551,82 @@ model SlaViolation {
   createdAt   DateTime @default(now())
 
   @@index([userId])
+  @@index([createdAt])
+}
+
+/// Road Trucks with full lifecycle tracking
+model Truck {
+  id        Int      @id @default(autoincrement())
+  plateNumber String   @unique
+  model      String
+  capacity  Float
+  /// Lifecycle status: available, assigned, in_transit, at_station, returning, maintenance, needs_repair
+  status    String   @default("available")
+  
+  /// Current location tracking
+  currentLat  Float?
+  currentLng  Float?
+  lastLocationUpdate DateTime?
+  
+  /// Current station (if at a station)
+  currentStationId Int?
+  currentStation   Station? @relation("TruckAtStation", fields: [currentStationId], references: [id])
+  
+  /// Assigned Driver
+  driverId     Int?
+  driver       User?  @relation("TruckDriver", fields: [driverId], references: [id])
+  
+  /// Lock info: prevents reassignment without SuperAdmin
+  lockedByShipmentId Int?
+  lockedAt           DateTime?
+  lockedByUserId     Int?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  shipments  Shipment[]
+  statusLogs TruckStatusLog[]
+  locationLogs TruckLocationLog[]
+
+  @@index([plateNumber])
+  @@index([status])
+  @@index([driverId])
+  @@index([currentStationId])
+}
+
+/// Truck status change history
+model TruckStatusLog {
+  id          Int      @id @default(autoincrement())
+  truckId     Int
+  truck       Truck    @relation(fields: [truckId], references: [id], onDelete: Cascade)
+  fromStatus  String
+  toStatus    String
+  lat         Float?
+  lng         Float?
+  note        String?
+  changedById Int?
+  changedBy   User?    @relation("TruckStatusChanges", fields: [changedById], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@index([truckId])
+  @@index([createdAt])
+}
+
+/// Continuous location tracking for Yandex.Dostavka style map
+model TruckLocationLog {
+  id          Int      @id @default(autoincrement())
+  truckId     Int
+  truck       Truck    @relation(fields: [truckId], references: [id], onDelete: Cascade)
+  shipmentId  Int?     // Optional, ties the log to a specific shipment
+  
+  lat         Float
+  lng         Float
+  speed       Float?   // km/h
+  isStop      Boolean  @default(false) // True if speed is low for a sustained period
+  
+  createdAt   DateTime @default(now())
+
+  @@index([truckId])
+  @@index([shipmentId])
   @@index([createdAt])
 }

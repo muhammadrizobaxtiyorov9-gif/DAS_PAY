@@ -9,6 +9,7 @@ const ROLE_STYLES: Record<string, { label: string; bg: string; text: string }> =
   ADMIN:      { label: 'Xodim (Admin)', bg: 'bg-blue-100', text: 'text-blue-700' },
   DIRECTOR:   { label: 'Rahbar (Director)', bg: 'bg-amber-100', text: 'text-amber-700' },
   ACCOUNTANT: { label: 'Buxgalter', bg: 'bg-emerald-100', text: 'text-emerald-700' },
+  DRIVER:     { label: 'Haydovchi', bg: 'bg-slate-100', text: 'text-slate-700' },
 };
 
 const MODULES = [
@@ -275,6 +276,7 @@ export default function UsersAdminPage() {
                 <select value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})} className="w-full border border-gray-200 rounded-lg px-4 py-2 bg-gray-50 outline-none">
                   <option value="ADMIN">ADMIN (Oddiy Xodim)</option>
                   <option value="ACCOUNTANT">ACCOUNTANT (Buxgalter)</option>
+                  <option value="DRIVER">DRIVER (Haydovchi)</option>
                   <option value="DIRECTOR">DIRECTOR (Rahbar)</option>
                   <option value="SUPERADMIN">SUPERADMIN (Boshqaruvchi)</option>
                 </select>

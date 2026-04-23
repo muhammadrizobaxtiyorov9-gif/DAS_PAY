@@ -31,6 +31,7 @@ type Shipment = {
   destinationLng?: number | null;
   currentLat?: number | null;
   currentLng?: number | null;
+  transportMode?: string | null;
 };
 
 type TileStyle = 'streets' | 'satellite' | 'light';
@@ -310,109 +311,133 @@ export default function ShipmentMap({ shipment }: ShipmentMapProps) {
         </div>
       )}
 
-      <MapContainer
-        center={
-          originSegment
-            ? [originSegment.lat, originSegment.lng]
-            : [41.3022, 69.3285]
-        }
-        zoom={5}
-        zoomControl={false}
-        scrollWheelZoom
-        className="h-full w-full"
-      >
-        <TileLayer url={tile.url} attribution={tile.attribution} subdomains={tile.subdomains ?? []} />
-        <ZoomControl position="bottomright" />
-        <FitBounds segments={segments} />
+      {shipment.transportMode === 'truck' ? (
+        <div className="h-full w-full relative z-[100] mt-16 sm:mt-20">
+          <iframe
+            key={`${shipment.originLat || shipment.origin}__${shipment.currentLat}__${shipment.destinationLat || shipment.destination}`}
+            src={
+              shipment.originLat && shipment.originLng && shipment.destinationLat && shipment.destinationLng
+                ? shipment.currentLat && shipment.currentLng
+                  ? `https://yandex.com/map-widget/v1/?rtext=${shipment.originLat},${shipment.originLng}~${shipment.currentLat},${shipment.currentLng}~${shipment.destinationLat},${shipment.destinationLng}&rtt=auto&z=6`
+                  : `https://yandex.com/map-widget/v1/?rtext=${shipment.originLat},${shipment.originLng}~${shipment.destinationLat},${shipment.destinationLng}&rtt=auto&z=6`
+                : shipment.origin && shipment.destination
+                  ? shipment.currentLat && shipment.currentLng
+                    ? `https://yandex.com/map-widget/v1/?rtext=${encodeURIComponent(shipment.origin)}~${shipment.currentLat},${shipment.currentLng}~${encodeURIComponent(shipment.destination)}&rtt=auto&z=6`
+                    : `https://yandex.com/map-widget/v1/?rtext=${encodeURIComponent(shipment.origin)}~${encodeURIComponent(shipment.destination)}&rtt=auto&z=6`
+                  : 'about:blank'
+            }
+            width="100%"
+            height="100%"
+            frameBorder="0"
+            allowFullScreen
+            style={{ border: 0, minHeight: '420px' }}
+          />
+        </div>
+      ) : (
+        <MapContainer
+          center={
+            originSegment
+              ? [originSegment.lat, originSegment.lng]
+              : [41.3022, 69.3285]
+          }
+          zoom={5}
+          zoomControl={false}
+          scrollWheelZoom
+          className="h-full w-full"
+        >
+          <TileLayer url={tile.url} attribution={tile.attribution} subdomains={tile.subdomains ?? []} />
+          <ZoomControl position="bottomright" />
+          <FitBounds segments={segments} />
 
-        {fullPath.length > 1 && (
-          <>
-            <Polyline
-              positions={remainingPath}
-              pathOptions={{
-                color: vehicleMode === 'train' ? '#c4b5fd' : '#cbd5e1',
-                weight: 6,
-                opacity: 0.9,
-                dashArray: vehicleMode === 'train' ? '2 10' : '12 10',
-                lineCap: 'round',
-                lineJoin: 'round',
-                className: isDelivered ? undefined : 'daspay-route-flow',
-              }}
-            />
-            <Polyline
-              positions={traveledPath}
-              pathOptions={{
-                color: vehicleMode === 'train' ? '#7c3aed' : '#185FA5',
-                weight: 6,
-                opacity: 1,
-                lineCap: 'round',
-                lineJoin: 'round',
-              }}
-            />
-          </>
-        )}
+          {fullPath.length > 1 && (
+            <>
+              <Polyline
+                positions={remainingPath}
+                pathOptions={{
+                  color: vehicleMode === 'train' ? '#c4b5fd' : '#cbd5e1',
+                  weight: 6,
+                  opacity: 0.9,
+                  dashArray: vehicleMode === 'train' ? '2 10' : '12 10',
+                  lineCap: 'round',
+                  lineJoin: 'round',
+                  className: isDelivered ? undefined : 'daspay-route-flow',
+                }}
+              />
+              <Polyline
+                positions={traveledPath}
+                pathOptions={{
+                  color: vehicleMode === 'train' ? '#7c3aed' : '#185FA5',
+                  weight: 6,
+                  opacity: 1,
+                  lineCap: 'round',
+                  lineJoin: 'round',
+                }}
+              />
+            </>
+          )}
 
-        {originSegment && (
-          <Marker position={[originSegment.lat, originSegment.lng]} icon={originIcon}>
-            <Popup>
-              <div className="space-y-1">
-                <div className="font-semibold text-[#042C53]">Boshlang'ich nuqta</div>
-                {shipment.origin && <div className="text-xs text-slate-600">{shipment.origin}</div>}
-              </div>
-            </Popup>
-          </Marker>
-        )}
-
-        {waypoints.map((seg, i) => (
-          <Marker key={seg.id ?? `wp-${i}`} position={[seg.lat, seg.lng]} icon={waypointIcon}>
-            <Popup>
-              <div className="text-xs">
-                <div className="font-semibold">Tranzit nuqtasi #{i + 1}</div>
-                <div className="text-slate-500">
-                  {seg.mode === 'train' ? 'Temir yo‘l' : 'Avtomobil'}
+          {originSegment && (
+            <Marker position={[originSegment.lat, originSegment.lng]} icon={originIcon}>
+              <Popup>
+                <div className="space-y-1">
+                  <div className="font-semibold text-[#042C53]">Boshlang'ich nuqta</div>
+                  {shipment.origin && <div className="text-xs text-slate-600">{shipment.origin}</div>}
                 </div>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
+              </Popup>
+            </Marker>
+          )}
 
-        {destinationSegment && destinationSegment !== originSegment && (
-          <Marker
-            position={[destinationSegment.lat, destinationSegment.lng]}
-            icon={isDelivered ? deliveredIcon : destinationIcon}
-          >
-            <Popup>
-              <div className="space-y-1">
-                <div className="font-semibold text-[#042C53]">
-                  {isDelivered ? 'Yetkazildi' : 'Manzil'}
+          {waypoints.map((seg, i) => (
+            <Marker key={seg.id ?? `wp-${i}`} position={[seg.lat, seg.lng]} icon={waypointIcon}>
+              <Popup>
+                <div className="text-xs">
+                  <div className="font-semibold">Tranzit nuqtasi #{i + 1}</div>
+                  <div className="text-slate-500">
+                    {seg.mode === 'train' ? 'Temir yo‘l' : 'Avtomobil'}
+                  </div>
                 </div>
-                {shipment.destination && (
-                  <div className="text-xs text-slate-600">{shipment.destination}</div>
-                )}
-              </div>
-            </Popup>
-          </Marker>
-        )}
+              </Popup>
+            </Marker>
+          ))}
 
-        {!isDelivered && fullPath.length > 1 && (
-          <Marker
-            position={vehiclePosition.point}
-            icon={vehicleIcon(vehicleMode, vehiclePosition.bearing)}
-            zIndexOffset={1000}
-          >
-            <Popup>
-              <div className="space-y-1">
-                <div className="font-semibold text-[#042C53]">
-                  {vehicleMode === 'train' ? 'Temir yo‘l' : 'Yuk mashinasi'}
+          {destinationSegment && destinationSegment !== originSegment && (
+            <Marker
+              position={[destinationSegment.lat, destinationSegment.lng]}
+              icon={isDelivered ? deliveredIcon : destinationIcon}
+            >
+              <Popup>
+                <div className="space-y-1">
+                  <div className="font-semibold text-[#042C53]">
+                    {isDelivered ? 'Yetkazildi' : 'Manzil'}
+                  </div>
+                  {shipment.destination && (
+                    <div className="text-xs text-slate-600">{shipment.destination}</div>
+                  )}
                 </div>
-                <div className="text-xs text-slate-600">
-                  {progressPercent}% • {kmRemaining.toFixed(0)} km qoldi
+              </Popup>
+            </Marker>
+          )}
+
+          {!isDelivered && fullPath.length > 1 && (
+            <Marker
+              position={vehiclePosition.point}
+              icon={vehicleIcon(vehicleMode, vehiclePosition.bearing)}
+              zIndexOffset={1000}
+            >
+              <Popup>
+                <div className="space-y-1">
+                  <div className="font-semibold text-[#042C53]">
+                    {vehicleMode === 'train' ? 'Temir yo‘l' : 'Yuk mashinasi'}
+                  </div>
+                  <div className="text-xs text-slate-600">
+                    {progressPercent}% • {kmRemaining.toFixed(0)} km qoldi
+                  </div>
                 </div>
-              </div>
-            </Popup>
-          </Marker>
-        )}
-      </MapContainer>
+              </Popup>
+            </Marker>
+          )}
+        </MapContainer>
+      )}
 
       {!isDelivered && fullPath.length > 1 && (
         <div className="pointer-events-none absolute bottom-3 left-3 z-[400] hidden sm:flex">

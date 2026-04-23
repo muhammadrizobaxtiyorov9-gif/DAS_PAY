@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ShipmentForm } from './ShipmentForm';
 import { ShipmentTimelineEditor } from './ShipmentTimelineEditor';
 import { FinancialsCard } from './FinancialsCard';
+import AdminShipmentMap from './AdminShipmentMap';
 import { notFound } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
@@ -21,7 +22,7 @@ export default async function ShipmentEditPage({
   if (!isNew) {
     shipment = await prisma.shipment.findUnique({
       where: { id: parseInt(id) },
-      include: { wagons: true }
+      include: { wagons: true, trucks: true }
     });
     if (!shipment) notFound();
 
@@ -33,6 +34,17 @@ export default async function ShipmentEditPage({
       hasClientTelegram = !!client?.telegramId;
     }
   }
+
+  const logs = !isNew ? await prisma.truckLocationLog.findMany({
+    where: { shipmentId: parseInt(id) },
+    orderBy: { createdAt: 'asc' },
+    select: { lat: true, lng: true, speed: true, isStop: true, createdAt: true }
+  }) : [];
+
+  const serializedLogs = logs.map(l => ({
+    ...l,
+    createdAt: l.createdAt.toISOString()
+  }));
 
   const events = shipment && Array.isArray(shipment.events)
     ? (shipment.events as unknown[]).map((e) => e as {
@@ -49,6 +61,19 @@ export default async function ShipmentEditPage({
   const allWagons = await prisma.wagon.findMany({
     where: { status: { notIn: ['maintenance'] } },
     orderBy: { number: 'asc' },
+    include: {
+      shipments: {
+        where: {
+          status: { notIn: ['delivered', 'unloaded'] }
+        },
+        select: { id: true, trackingCode: true, status: true }
+      }
+    }
+  });
+
+  const allTrucks = await prisma.truck.findMany({
+    where: { status: { notIn: ['maintenance'] } },
+    orderBy: { plateNumber: 'asc' },
     include: {
       shipments: {
         where: {
@@ -86,8 +111,17 @@ export default async function ShipmentEditPage({
       </div>
 
       <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm md:p-8">
-        <ShipmentForm initialData={shipment} allWagons={allWagons} />
+        <ShipmentForm initialData={shipment} allWagons={allWagons} allTrucks={allTrucks} />
       </div>
+
+      {!isNew && shipment && serializedLogs.length > 0 && (
+        <AdminShipmentMap 
+          shipmentId={shipment.id} 
+          logs={serializedLogs}
+          origin={shipment.origin}
+          destination={shipment.destination}
+        />
+      )}
 
       {!isNew && shipment && (
         <FinancialsCard

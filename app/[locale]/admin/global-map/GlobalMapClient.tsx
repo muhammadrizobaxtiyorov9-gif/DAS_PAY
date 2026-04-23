@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
-import { Loader2, Search, X, Package, Train, MapPin } from 'lucide-react';
+import { Loader2, Search, X, Package, Train, MapPin, Truck } from 'lucide-react';
 import { wagonStatusMeta } from '@/lib/wagon-status';
 
 const MapComponent = dynamic(() => import('./MapComponent'), {
@@ -20,11 +20,13 @@ const MapComponent = dynamic(() => import('./MapComponent'), {
 export default function GlobalMapClient({
   initialShipments,
   initialWagons = [],
+  trucks = [],
 }: {
   initialShipments: any[];
   initialWagons?: any[];
+  trucks?: any[];
 }) {
-  const [activeTab, setActiveTab] = useState<'shipments' | 'wagons'>('wagons');
+  const [activeTab, setActiveTab] = useState<'shipments' | 'wagons' | 'trucks'>('wagons');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClient, setSelectedClient] = useState('');
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
@@ -44,6 +46,10 @@ export default function GlobalMapClient({
     return w.number.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
+  const filteredTrucks = trucks.filter(t => {
+    return t.plateNumber.toLowerCase().includes(searchTerm.toLowerCase());
+  });
+
   return (
     <div className="flex h-[calc(100vh-140px)] w-full flex-col md:flex-row overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
       {/* Sidebar Controls */}
@@ -56,6 +62,12 @@ export default function GlobalMapClient({
               className={`flex-1 flex items-center justify-center gap-2 py-1.5 text-sm font-medium rounded-md transition-colors ${activeTab === 'wagons' ? 'bg-white text-[#185FA5] shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
             >
               <Train className="w-4 h-4" /> Vagonlar
+            </button>
+            <button
+              onClick={() => setActiveTab('trucks')}
+              className={`flex-1 flex items-center justify-center gap-2 py-1.5 text-sm font-medium rounded-md transition-colors ${activeTab === 'trucks' ? 'bg-white text-[#185FA5] shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+            >
+              <Truck className="w-4 h-4" /> Yuk mashinalar
             </button>
             <button
               onClick={() => setActiveTab('shipments')}
@@ -126,7 +138,7 @@ export default function GlobalMapClient({
                 ))}
               </div>
             )
-          ) : (
+          ) : activeTab === 'wagons' ? (
             filteredWagons.length === 0 ? (
               <div className="text-center py-8 text-sm text-gray-500">Joylashuvi kiritilgan vagonlar yo'q</div>
             ) : (
@@ -158,6 +170,38 @@ export default function GlobalMapClient({
                 })}
               </div>
             )
+          ) : (
+            filteredTrucks.length === 0 ? (
+              <div className="text-center py-8 text-sm text-gray-500">Joylashuvi kiritilgan yuk mashinalari yo'q</div>
+            ) : (
+              <div className="space-y-1">
+                {filteredTrucks.map(t => {
+                  const s = wagonStatusMeta(t.status);
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => setActiveItemId(`t_${t.id}`)}
+                      className={`w-full text-left p-3 rounded-xl transition-all ${
+                        activeItemId === `t_${t.id}` 
+                          ? 'bg-blue-50 border border-blue-200 shadow-sm' 
+                          : 'hover:bg-gray-50 border border-transparent'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="font-semibold text-slate-900 bg-gray-50 border border-gray-200 px-1 rounded">{t.plateNumber}</div>
+                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${s.pill}`}>
+                          {s.labelText}
+                        </span>
+                      </div>
+                      <div className="text-xs text-slate-500 flex items-center gap-1 mt-1 truncate">
+                        <MapPin className="w-3 h-3" />
+                        {t.currentStation?.nameUz || `${t.currentLat?.toFixed(4)}, ${t.currentLng?.toFixed(4)}`}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )
           )}
         </div>
       </div>
@@ -167,6 +211,7 @@ export default function GlobalMapClient({
         <MapComponent 
           shipments={activeTab === 'shipments' ? filteredShipments : []} 
           wagons={activeTab === 'wagons' ? filteredWagons : []}
+          trucks={activeTab === 'trucks' ? filteredTrucks : []}
           activeItemId={activeItemId}
           onMarkerClick={setActiveItemId}
           activeTab={activeTab}
