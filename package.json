@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "dev:bot": "npx tsx bot/dev.ts",
-    "dev:all": "concurrently --names next,bot --prefix-colors blue,green \"next dev --turbopack\" \"npx tsx bot/dev.ts\"",
-    "build": "next build --turbopack",
+    "dev:all": "concurrently --names next,bot --prefix-colors blue,green \"next dev\" \"npx tsx bot/dev.ts\"",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint ."
   },

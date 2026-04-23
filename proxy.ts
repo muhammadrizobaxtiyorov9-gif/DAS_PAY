@@ -33,23 +33,23 @@ function parsePreferredLocale(acceptLanguage: string): Locale {
 /**
  * Generate a cryptographically-strong nonce for CSP.
  * Uses Web Crypto (Edge-runtime safe).
- */
-function generateNonce(): string {
-  const bytes = new Uint8Array(16);
-  crypto.getRandomValues(bytes);
-  let bin = '';
-  for (const b of bytes) bin += String.fromCharCode(b);
-  return btoa(bin);
-}
+//  */
+// function generateNonce(): string {
+//   const bytes = new Uint8Array(16);
+//   crypto.getRandomValues(bytes);
+//   let bin = '';
+//   for (const b of bytes) bin += String.fromCharCode(b);
+//   return btoa(bin);
+// }
 
-/**
- * Build a permissive-but-hardened CSP. We allow `'unsafe-inline'` on
- * script-src because Next.js hydration emits inline bootstrap scripts that
- * can't currently be nonce-only without breaking the framework. The nonce is
- * still advertised so nonce-aware scripts we add later can tighten this.
- * We pair it with `frame-ancestors 'none'` and `object-src 'none'` to close
- * the most commonly-exploited surfaces (clickjacking, plugin injection).
- */
+// /**
+//  * Build a permissive-but-hardened CSP. We allow `'unsafe-inline'` on
+//  * script-src because Next.js hydration emits inline bootstrap scripts that
+//  * can't currently be nonce-only without breaking the framework. The nonce is
+//  * still advertised so nonce-aware scripts we add later can tighten this.
+//  * We pair it with `frame-ancestors 'none'` and `object-src 'none'` to close
+//  * the most commonly-exploited surfaces (clickjacking, plugin injection).
+//  */
 function buildCsp(nonce: string): string {
   return [
     `default-src 'self'`,
@@ -71,7 +71,7 @@ function buildCsp(nonce: string): string {
     .join('; ');
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const firstSegment = pathname.split('/', 2)[1] ?? '';
@@ -130,10 +130,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const nonce = generateNonce();
+  // const nonce = generateNonce();
   const response = NextResponse.next();
   // response.headers.set('Content-Security-Policy', buildCsp(nonce));
-  response.headers.set('x-nonce', nonce);
+  // response.headers.set('x-nonce', nonce);
 
   return response;
 }
