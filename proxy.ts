@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { locales, defaultLocale, type Locale } from '@/lib/i18n';
 import { jwtVerify } from 'jose';
+import { adminTokenSecret } from '@/lib/secrets';
 
 const LOCALE_SET = new Set<string>(locales);
-const ADMIN_SECRET = new TextEncoder().encode(
-  process.env.ADMIN_TOKEN_SECRET || 'daspay_secure_key_2026'
-);
 
 const IS_PROD = process.env.NODE_ENV === 'production';
 
@@ -101,7 +99,7 @@ export async function proxy(request: NextRequest) {
     }
 
     try {
-      const { payload } = await jwtVerify(adminToken, ADMIN_SECRET);
+      const { payload } = await jwtVerify(adminToken, adminTokenSecret());
       const role = payload.role;
       if (role !== 'ADMIN' && role !== 'SUPERADMIN' && role !== 'DIRECTOR' && role !== 'admin' && role !== 'ACCOUNTANT') {
         throw new Error('Invalid Role');

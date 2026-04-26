@@ -26,6 +26,8 @@ export default function CalculatorPage() {
   
   const [quote, setQuote] = useState<QuoteResult | null>(null);
   const [calculating, setCalculating] = useState(false);
+  const [comparison, setComparison] = useState<{ rail: QuoteResult | null; auto: QuoteResult | null } | null>(null);
+  const [comparing, setComparing] = useState(false);
 
   const [phone, setPhone] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -67,6 +69,30 @@ export default function CalculatorPage() {
       toast.error('Narxni hisoblashda xatolik');
     } finally {
       setCalculating(false);
+    }
+  };
+
+  const handleCompare = async () => {
+    if (!origin || !destination || !weight) {
+      toast.error('Avval Qayerdan, Qayerga va Og\'irlikni kiriting');
+      return;
+    }
+    const w = parseFloat(weight);
+    if (isNaN(w) || w <= 0) {
+      toast.error('Og\'irlik xato');
+      return;
+    }
+    setComparing(true);
+    try {
+      const [rail, auto] = await Promise.all([
+        getQuote({ originCountry: origin, destCountry: destination, mode: 'train', weightTon: w }),
+        getQuote({ originCountry: origin, destCountry: destination, mode: 'truck', weightTon: w }),
+      ]);
+      setComparison({ rail, auto });
+    } catch {
+      toast.error('Taqqoslashda xatolik');
+    } finally {
+      setComparing(false);
     }
   };
 
@@ -196,7 +222,67 @@ export default function CalculatorPage() {
                 {calculating ? <Loader2 className="mr-2 w-5 h-5 animate-spin" /> : null}
                 Hisoblash <ArrowRight className="ml-2 w-5 h-5"/>
               </Button>
+
+              <Button
+                type="button"
+                onClick={handleCompare}
+                disabled={comparing}
+                variant="outline"
+                size="lg"
+                className="w-full h-12 text-base font-semibold"
+              >
+                {comparing ? <Loader2 className="mr-2 w-5 h-5 animate-spin" /> : <Train className="mr-2 w-5 h-5" />}
+                Avto va Temir yo&apos;lni solishtirish
+              </Button>
             </form>
+
+            {comparison && (
+              <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {(['rail', 'auto'] as const).map((kind) => {
+                  const q = kind === 'rail' ? comparison.rail : comparison.auto;
+                  if (!q) return null;
+                  const isCheaper =
+                    q.price > 0 &&
+                    !q.noTariffFound &&
+                    ((kind === 'rail' && comparison.auto && comparison.auto.price > 0 && q.price <= comparison.auto.price) ||
+                      (kind === 'auto' && comparison.rail && comparison.rail.price > 0 && q.price < comparison.rail.price));
+                  return (
+                    <div
+                      key={kind}
+                      className={`rounded-xl border p-4 ${
+                        isCheaper ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200 bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        {kind === 'rail' ? <Train className="w-4 h-4" /> : <Truck className="w-4 h-4" />}
+                        <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                          {kind === 'rail' ? "Temir yo'l" : 'Avtomobil'}
+                        </span>
+                        {isCheaper && (
+                          <span className="ml-auto rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-bold text-white">
+                            ARZONROQ
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-2">
+                        {q.noTariffFound ? (
+                          <p className="text-sm text-slate-500">Tarif yo'q — menejer hisoblaydi</p>
+                        ) : (
+                          <>
+                            <p className="text-2xl font-black text-slate-900">
+                              {formatMoney(q.price, q.currency)}
+                            </p>
+                            {q.transitDays && (
+                              <p className="mt-0.5 text-xs text-slate-500">~{q.transitDays} kun</p>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </motion.div>
 
           {/* Results & Lead Form */}

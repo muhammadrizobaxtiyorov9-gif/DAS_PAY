@@ -15,6 +15,12 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://das-pay.com'),
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'DasPay',
+  },
   title: {
     default: 'DasPay - Xalqaro Logistika Xizmatlari | International Logistics',
     template: '%s | DasPay',

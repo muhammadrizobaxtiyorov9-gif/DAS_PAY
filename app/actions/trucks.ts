@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { getAdminSession } from '@/lib/adminAuth';
+import { branchWhere } from '@/lib/branch';
 import { revalidatePath } from 'next/cache';
 
 export async function getTrucks() {
@@ -10,6 +11,7 @@ export async function getTrucks() {
     if (!session) return { trucks: [], error: 'unauthorized' };
 
     const trucks = await prisma.truck.findMany({
+      where: branchWhere(session),
       orderBy: { createdAt: 'desc' },
       include: {
         driver: { select: { id: true, name: true, username: true } },
@@ -54,6 +56,7 @@ export async function createTruck(data: {
         currentLng: data.currentLng,
         currentStationId: data.currentStationId,
         lastLocationUpdate: data.currentLat ? new Date() : undefined,
+        branchId: session.branchId ?? null,
       },
     });
 

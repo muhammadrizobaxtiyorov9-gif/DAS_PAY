@@ -12,6 +12,8 @@ node_modules/
 out/
 build/
 dist/
+tsconfig.tsbuildinfo
+*.tsbuildinfo
 
 # === Environment & Secrets ===
 .env
@@ -57,3 +59,6 @@ coverage/
 # === OS Files ===
 *.DS_Store
 desktop.ini
+
+# === User uploads (served from /public/uploads at runtime) ===
+public/uploads/

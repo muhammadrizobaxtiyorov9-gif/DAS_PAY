@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
+import { adminTokenSecret } from '@/lib/secrets';
 
 export const KPI_POINTS = {
   CREATE_SHIPMENT: 5,
@@ -13,12 +14,11 @@ export const KPI_POINTS = {
 export async function getAdminIdFromToken(): Promise<number | null> {
   const token = (await cookies()).get('admin_token')?.value;
   if (!token) return null;
-  
+
   try {
-    const secret = new TextEncoder().encode(process.env.ADMIN_TOKEN_SECRET || 'daspay_secure_key_2026');
-    const { payload } = await jwtVerify(token, secret);
+    const { payload } = await jwtVerify(token, adminTokenSecret());
     return payload.userId as number;
-  } catch (error) {
+  } catch {
     return null;
   }
 }

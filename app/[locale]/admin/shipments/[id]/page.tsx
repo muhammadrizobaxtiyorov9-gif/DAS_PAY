@@ -1,11 +1,14 @@
 import { prisma } from '@/lib/prisma';
-import { Package, FileSignature } from 'lucide-react';
+import { Package, FileSignature, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { ShipmentForm } from './ShipmentForm';
 import { ShipmentTimelineEditor } from './ShipmentTimelineEditor';
 import { FinancialsCard } from './FinancialsCard';
 import AdminShipmentMap from './AdminShipmentMap';
+import { ShipmentDocuments } from '@/components/shared/ShipmentDocuments';
 import { notFound } from 'next/navigation';
+import { getAdminSession } from '@/lib/adminAuth';
+import { branchWhere } from '@/lib/branch';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,54 +38,59 @@ export default async function ShipmentEditPage({
     }
   }
 
-  const logs = !isNew ? await prisma.truckLocationLog.findMany({
-    where: { shipmentId: parseInt(id) },
-    orderBy: { createdAt: 'asc' },
-    select: { lat: true, lng: true, speed: true, isStop: true, createdAt: true }
-  }) : [];
+  const session = await getAdminSession();
+  const branchScope = session ? branchWhere(session) : {};
 
-  const serializedLogs = logs.map(l => ({
+  const [logs, allWagons, allTrucks] = await Promise.all([
+    !isNew
+      ? prisma.truckLocationLog.findMany({
+          where: { shipmentId: parseInt(id) },
+          orderBy: { createdAt: 'asc' },
+          select: { lat: true, lng: true, speed: true, isStop: true, createdAt: true },
+        })
+      : Promise.resolve([]),
+    prisma.wagon.findMany({
+      where: { ...branchScope, status: { notIn: ['maintenance'] } },
+      orderBy: { number: 'asc' },
+      include: {
+        shipments: {
+          where: { status: { notIn: ['delivered', 'unloaded'] } },
+          select: { id: true, trackingCode: true, status: true },
+        },
+      },
+    }),
+    prisma.truck.findMany({
+      where: { ...branchScope, status: { notIn: ['maintenance'] } },
+      orderBy: { plateNumber: 'asc' },
+      include: {
+        shipments: {
+          where: { status: { notIn: ['delivered', 'unloaded'] } },
+          select: { id: true, trackingCode: true, status: true },
+        },
+      },
+    }),
+  ]);
+
+  const serializedLogs = logs.map((l) => ({
     ...l,
-    createdAt: l.createdAt.toISOString()
+    createdAt: l.createdAt.toISOString(),
   }));
 
-  const events = shipment && Array.isArray(shipment.events)
-    ? (shipment.events as unknown[]).map((e) => e as {
-        status: string | { uz?: string; ru?: string; en?: string };
-        location?: string;
-        date?: string;
-        note?: string;
-        lat?: number;
-        lng?: number;
-        addedBy?: string;
-      })
-    : [];
-
-  const allWagons = await prisma.wagon.findMany({
-    where: { status: { notIn: ['maintenance'] } },
-    orderBy: { number: 'asc' },
-    include: {
-      shipments: {
-        where: {
-          status: { notIn: ['delivered', 'unloaded'] }
-        },
-        select: { id: true, trackingCode: true, status: true }
-      }
-    }
-  });
-
-  const allTrucks = await prisma.truck.findMany({
-    where: { status: { notIn: ['maintenance'] } },
-    orderBy: { plateNumber: 'asc' },
-    include: {
-      shipments: {
-        where: {
-          status: { notIn: ['delivered', 'unloaded'] }
-        },
-        select: { id: true, trackingCode: true, status: true }
-      }
-    }
-  });
+  const events =
+    shipment && Array.isArray(shipment.events)
+      ? (shipment.events as unknown[]).map(
+          (e) =>
+            e as {
+              status: string | { uz?: string; ru?: string; en?: string };
+              location?: string;
+              date?: string;
+              note?: string;
+              lat?: number;
+              lng?: number;
+              addedBy?: string;
+            },
+        )
+      : [];
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -101,12 +109,21 @@ export default async function ShipmentEditPage({
           </p>
         </div>
         {!isNew && shipment && (
-          <Link
-            href={`/uz/admin/invoices/new?shipmentId=${shipment.id}`}
-            className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
-          >
-            <FileSignature className="h-4 w-4" /> Invoys yaratish
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href={`/uz/admin/waybill/${shipment.trackingCode}`}
+              target="_blank"
+              className="inline-flex items-center gap-2 rounded-lg bg-slate-700 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+            >
+              <FileText className="h-4 w-4" /> CMR / Waybill
+            </Link>
+            <Link
+              href={`/uz/admin/invoices/new?shipmentId=${shipment.id}`}
+              className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+            >
+              <FileSignature className="h-4 w-4" /> Invoys yaratish
+            </Link>
+          </div>
         )}
       </div>
 
@@ -145,6 +162,10 @@ export default async function ShipmentEditPage({
           events={events}
           hasClientTelegram={hasClientTelegram}
         />
+      )}
+
+      {!isNew && shipment && (
+        <ShipmentDocuments shipmentId={shipment.id} defaultKind="cmr" />
       )}
     </div>
   );

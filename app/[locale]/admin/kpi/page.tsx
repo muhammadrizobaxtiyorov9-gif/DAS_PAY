@@ -3,6 +3,7 @@ import { Shield, TrendingUp, Award, UserCheck } from 'lucide-react';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { redirect } from 'next/navigation';
+import { adminTokenSecret } from '@/lib/secrets';
 
 export default async function KPIAdminPage() {
   const adminToken = (await cookies()).get('admin_token')?.value;
@@ -10,10 +11,9 @@ export default async function KPIAdminPage() {
 
   let role = 'ADMIN';
   try {
-    const secret = new TextEncoder().encode(process.env.ADMIN_TOKEN_SECRET || 'daspay_secure_key_2026');
-    const { payload } = await jwtVerify(adminToken, secret);
+    const { payload } = await jwtVerify(adminToken, adminTokenSecret());
     role = payload.role as string;
-  } catch (e) {
+  } catch {
     redirect('/uz/admin-login');
   }
 

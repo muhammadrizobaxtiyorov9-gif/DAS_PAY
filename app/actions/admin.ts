@@ -94,6 +94,7 @@ export async function convertLeadToShipment(leadId: number) {
       description: lead.message || null,
       clientPhone: client?.phone || null,
       createdById: session?.userId,
+      branchId: session?.branchId ?? null,
       events: [initialEvent],
     },
   });
@@ -202,6 +203,7 @@ export async function createShipment(data: {
        etaAt,
        createdById: session?.userId || null,
        assignedToId: data.assignedToId || session?.userId || null,
+       branchId: session?.branchId ?? null,
        lastStatusUpdate: new Date(),
        wagons: data.wagonIds && data.wagonIds.length > 0 ? {
          connect: data.wagonIds.map(id => ({ id }))

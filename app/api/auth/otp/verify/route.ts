@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { SignJWT } from 'jose';
 import { rateLimit, getClientIp, rateLimitHeaders } from '@/lib/rate-limit';
-
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'super-secret-key-for-daspay-client-2026');
+import { clientJwtSecret } from '@/lib/secrets';
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
@@ -63,7 +62,7 @@ export async function POST(request: NextRequest) {
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt()
       .setExpirationTime('30d')
-      .sign(JWT_SECRET);
+      .sign(clientJwtSecret());
 
     // Set HTTP Only Cookie
     const response = NextResponse.json({ success: true, redirectUrl: '/uz/cabinet' });

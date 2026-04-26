@@ -4,16 +4,22 @@ import Link from 'next/link';
 import { ShipmentsTable } from './ShipmentsTable';
 
 import { getAdminSession } from '@/lib/adminAuth';
+import { branchWhere } from '@/lib/branch';
 
 export const revalidate = 0;
 
 export default async function ShipmentsAdminPage() {
   const session = await getAdminSession();
+  if (!session) {
+    return null;
+  }
 
-  const queryFilter =
-    session?.role === 'SUPERADMIN' || session?.role === 'admin'
+  const queryFilter = {
+    ...branchWhere(session),
+    ...(session.role === 'SUPERADMIN' || session.role === 'DIRECTOR' || session.role === 'ADMIN'
       ? {}
-      : { createdById: session?.userId || -1 };
+      : { createdById: session.userId }),
+  };
 
   const shipments = await prisma.shipment.findMany({
     where: queryFilter,

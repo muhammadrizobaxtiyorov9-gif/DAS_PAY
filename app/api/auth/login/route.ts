@@ -4,8 +4,8 @@ import { SignJWT } from 'jose';
 import bcrypt from 'bcryptjs';
 import { Bot } from 'grammy';
 import { rateLimit, getClientIp, rateLimitHeaders } from '@/lib/rate-limit';
+import { clientJwtSecret } from '@/lib/secrets';
 
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'super-secret-key-for-daspay-client-2026');
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 
 export async function POST(request: NextRequest) {
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt()
       .setExpirationTime('30d')
-      .sign(JWT_SECRET);
+      .sign(clientJwtSecret());
 
     const response = NextResponse.json({ success: true, redirectUrl: '/uz/cabinet' });
     response.cookies.set({

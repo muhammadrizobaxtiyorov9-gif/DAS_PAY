@@ -4,6 +4,9 @@ import { prisma } from '@/lib/prisma';
 import { getAdminSession } from '@/lib/adminAuth';
 import { revalidatePath } from 'next/cache';
 import { haversine } from '@/lib/map-utils';
+import { sendPushToClient } from '@/lib/push';
+import { createNotification } from '@/lib/notifications';
+import { publish } from '@/lib/events';
 
 export async function getDriverDashboardData() {
   const session = await getAdminSession();
@@ -144,6 +147,37 @@ export async function updateShipmentStatusByDriver(shipmentId: number, status: s
   revalidatePath('/[locale]/driver', 'page');
   revalidatePath('/[locale]/admin/global-map', 'page');
   revalidatePath('/[locale]/admin/shipments', 'page');
+
+  // Real-time SSE
+  publish(status === 'delivered' ? 'shipment.delivered' : 'shipment.statusChanged', {
+    id: shipmentId,
+    trackingCode: shipment.trackingCode,
+    status,
+  });
+
+  // Notification + Push: admins (broadcast) + client (Web Push only)
+  const title = `Yuk ${shipment.trackingCode} — yangi holat`;
+  const body = `Holat: ${status}`;
+  createNotification({
+    userId: null,
+    type: 'shipment',
+    title,
+    message: body,
+    link: `/uz/admin/shipments/${shipmentId}`,
+    pushTag: `shipment-${shipmentId}`,
+  }).catch((e) => console.error('[notify] driver-status', e));
+
+  if (shipment.clientPhone) {
+    const client = await prisma.client.findUnique({ where: { phone: shipment.clientPhone } });
+    if (client) {
+      sendPushToClient(client.id, {
+        title,
+        body,
+        url: `/uz/cabinet`,
+        tag: `shipment-${shipmentId}`,
+      }).catch((e) => console.error('[push] driver-status client', e));
+    }
+  }
 
   return { success: true };
 }

@@ -5,6 +5,8 @@ import { sendContactEmail } from '@/lib/email';
 import prisma from '@/lib/prisma';
 import { pickNextAssignee } from '@/lib/lead-assign';
 import { rateLimit, getClientIp, rateLimitHeaders } from '@/lib/rate-limit';
+import { createNotification } from '@/lib/notifications';
+import { publish } from '@/lib/events';
 
 /**
  * POST /api/contact
@@ -68,7 +70,7 @@ export async function POST(request: NextRequest) {
 
     // Save to database using Prisma (auto-assign to staff in round-robin)
     const assignedToId = await pickNextAssignee();
-    await prisma.lead.create({
+    const lead = await prisma.lead.create({
       data: {
         name,
         phone,
@@ -84,7 +86,26 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ 
+    // Notification + Web Push: assigned admin or broadcast
+    createNotification({
+      userId: assignedToId ?? null,
+      type: 'lead',
+      title: 'Yangi mijoz arizasi',
+      message: `${name} — ${phone}${service ? ` · ${service}` : ''}`,
+      link: `/uz/admin/leads`,
+      pushTag: `lead-${lead.id}`,
+    }).catch((e) => console.error('[notify] lead', e));
+
+    // Real-time stream
+    publish('lead.created', {
+      id: lead.id,
+      name,
+      phone,
+      service: service ?? null,
+      assignedToId: assignedToId ?? null,
+    });
+
+    return NextResponse.json({
       success: true,
       message: 'Form submitted successfully',
     });

@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { jwtVerify } from 'jose';
+import { adminTokenSecret } from '@/lib/secrets';
 
 async function checkSuperAdmin(req: NextRequest) {
   const adminToken = req.cookies.get('admin_token')?.value;
   if (!adminToken) return false;
-  
+
   try {
-    const secret = new TextEncoder().encode(process.env.ADMIN_TOKEN_SECRET || 'daspay_secure_key_2026');
-    const { payload } = await jwtVerify(adminToken, secret);
+    const { payload } = await jwtVerify(adminToken, adminTokenSecret());
     return payload.role === 'SUPERADMIN';
   } catch {
     return false;
@@ -29,8 +29,8 @@ export async function PUT(
       return NextResponse.json({ error: 'Noto\'g\'ri ID' }, { status: 400 });
     }
 
-    const { username, password, name, role, permissions } = await req.json();
-    
+    const { username, password, name, role, permissions, branchId } = await req.json();
+
     // Check if updating another user's username to an existing one
     const existing = await prisma.user.findUnique({ where: { username } });
     if (existing && existing.id !== userId) {
@@ -42,6 +42,7 @@ export async function PUT(
       name,
       role: role || 'ADMIN',
       permissions: permissions ? JSON.stringify(permissions) : '[]',
+      branchId: typeof branchId === 'number' ? branchId : null,
     };
 
     if (password) {

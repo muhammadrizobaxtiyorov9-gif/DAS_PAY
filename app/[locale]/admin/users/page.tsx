@@ -37,21 +37,27 @@ const MODULES = [
 
 export default function UsersAdminPage() {
   const [users, setUsers] = useState<any[]>([]);
+  const [branches, setBranches] = useState<Array<{ id: number; code: string; name: string; active: boolean }>>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
-  
+
   const [editingUserId, setEditingUserId] = useState<number | null>(null);
-  const [formData, setFormData] = useState<{username: string; password?: string; name: string; role: string; permissions: string[]}>({ 
-    username: '', 
-    password: '', 
-    name: '', 
+  const [formData, setFormData] = useState<{username: string; password?: string; name: string; role: string; permissions: string[]; branchId: number | null}>({
+    username: '',
+    password: '',
+    name: '',
     role: 'ADMIN',
-    permissions: []
+    permissions: [],
+    branchId: null,
   });
 
   useEffect(() => {
     fetchUsers();
+    fetch('/api/admin/branches', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : { branches: [] }))
+      .then((d) => setBranches(d.branches || []))
+      .catch(() => null);
   }, []);
 
   const fetchUsers = async () => {
@@ -71,7 +77,7 @@ export default function UsersAdminPage() {
 
   const openAddModal = () => {
     setEditingUserId(null);
-    setFormData({ username: '', password: '', name: '', role: 'ADMIN', permissions: [] });
+    setFormData({ username: '', password: '', name: '', role: 'ADMIN', permissions: [], branchId: null });
     setShowModal(true);
   };
 
@@ -82,12 +88,13 @@ export default function UsersAdminPage() {
       if (typeof user.permissions === 'string') perms = JSON.parse(user.permissions);
       else if (Array.isArray(user.permissions)) perms = user.permissions;
     } catch {}
-    setFormData({ 
-      username: user.username, 
+    setFormData({
+      username: user.username,
       password: '', // blank for edit
-      name: user.name || '', 
+      name: user.name || '',
       role: user.role,
-      permissions: perms
+      permissions: perms,
+      branchId: user.branchId ?? null,
     });
     setShowModal(true);
   };
@@ -178,6 +185,7 @@ export default function UsersAdminPage() {
               <th className="px-6 py-4 font-medium text-gray-900">Ism(Name)</th>
               <th className="px-6 py-4 font-medium text-gray-900">Login(Username)</th>
               <th className="px-6 py-4 font-medium text-gray-900">Rol</th>
+              <th className="px-6 py-4 font-medium text-gray-900">Filial</th>
               <th className="px-6 py-4 font-medium text-gray-900">Status</th>
               <th className="px-6 py-4 font-medium text-gray-900 text-right">Amallar</th>
             </tr>
@@ -193,6 +201,17 @@ export default function UsersAdminPage() {
                     <span className={`px-2.5 py-1 text-xs rounded-full font-medium ${roleStyle.bg} ${roleStyle.text}`}>
                       {roleStyle.label}
                     </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    {u.branch ? (
+                      <span className="inline-flex items-center gap-1 rounded bg-purple-50 px-2 py-0.5 text-[11px] font-semibold text-purple-700">
+                        <span className="font-mono">{u.branch.code}</span>
+                        <span className="text-purple-500/70">·</span>
+                        <span>{u.branch.name}</span>
+                      </span>
+                    ) : (
+                      <span className="text-xs text-slate-400">— hammasi —</span>
+                    )}
                   </td>
                   <td className="px-6 py-4">
                     <span className={`flex items-center gap-1.5 ${u.status === 'ACTIVE' ? 'text-green-600' : 'text-red-500'}`}>
@@ -280,6 +299,25 @@ export default function UsersAdminPage() {
                   <option value="DIRECTOR">DIRECTOR (Rahbar)</option>
                   <option value="SUPERADMIN">SUPERADMIN (Boshqaruvchi)</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Filial {(formData.role === 'SUPERADMIN' || formData.role === 'DIRECTOR') && <span className="text-gray-400 font-normal">(ixtiyoriy)</span>}
+                </label>
+                <select
+                  value={formData.branchId ?? ''}
+                  onChange={e => setFormData({...formData, branchId: e.target.value ? Number(e.target.value) : null})}
+                  className="w-full border border-gray-200 rounded-lg px-4 py-2 bg-gray-50 outline-none"
+                >
+                  <option value="">— Tanlanmagan —</option>
+                  {branches.filter(b => b.active).map(b => (
+                    <option key={b.id} value={b.id}>{b.code} · {b.name}</option>
+                  ))}
+                </select>
+                <p className="mt-1 text-[11px] text-gray-400">
+                  Bu xodim faqat shu filial yuklari/avtomobillarini ko&apos;radi. SUPERADMIN/DIRECTOR uchun bo&apos;sh qoldirilsa — barcha filiallarni ko&apos;radi.
+                </p>
               </div>
 
               {formData.role !== 'SUPERADMIN' && (

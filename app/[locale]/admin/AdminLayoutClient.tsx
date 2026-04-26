@@ -26,14 +26,24 @@ import {
   Globe2,
   Handshake,
   Truck as TruckIcon,
+  MessageCircle,
+  AlertTriangle,
+  CalendarRange,
+  Building2,
 } from 'lucide-react';
+import { PushButton } from '@/components/shared/PushButton';
+import { NotificationBell } from '@/components/shared/NotificationBell';
+import { LiveActivityFeed } from '@/components/shared/LiveActivityFeed';
 
 const navigation = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard, description: 'Umumiy ko\'rish', roles: ['SUPERADMIN', 'ADMIN', 'DIRECTOR', 'ACCOUNTANT'] },
   { name: 'Analitika', href: '/admin/analytics', icon: BarChart3, description: 'KPI va tendensiyalar', roles: ['SUPERADMIN', 'DIRECTOR'] },
+  { name: 'Kengaytirilgan analitika', href: '/admin/analytics/advanced', icon: BarChart3, description: 'Voronka, samaradorlik, heatmap', roles: ['SUPERADMIN', 'DIRECTOR'] },
   { name: 'Global Xarita', href: '/admin/global-map', icon: Globe2, description: 'Barcha yuklar xaritasi', roles: ['SUPERADMIN', 'ADMIN', 'DIRECTOR'] },
   { name: 'Topshiriqlar', href: '/admin/tasks', icon: ClipboardList, description: 'Hodimlar vazifalari', roles: ['SUPERADMIN', 'ADMIN'] },
+  { name: 'Chat', href: '/admin/chat', icon: MessageCircle, description: 'Xodim ↔ Haydovchi xabarlar', roles: ['SUPERADMIN', 'ADMIN', 'DRIVER', 'DIRECTOR'] },
   { name: 'Kalendar', href: '/admin/calendar', icon: CalendarDays, description: 'Kunlik rejalar', roles: ['SUPERADMIN', 'ADMIN'] },
+  { name: 'Dispatching', href: '/admin/dispatch', icon: CalendarRange, description: 'Avtomobil bandligi (Gantt)', roles: ['SUPERADMIN', 'ADMIN', 'DIRECTOR'] },
   { name: 'Xodimlar (KPI)', href: '/admin/kpi', icon: Users, description: 'KPI reytingi', roles: ['SUPERADMIN', 'DIRECTOR'] },
   { name: 'Mijozlar', href: '/admin/clients', icon: UserCircle, description: "Mijoz 360° profili", roles: ['SUPERADMIN', 'ADMIN', 'DIRECTOR'] },
   { name: 'Yuklar', href: '/admin/shipments', icon: PackageSearch, description: 'Tracking boshqaruvi', roles: ['SUPERADMIN', 'ADMIN'] },
@@ -48,6 +58,8 @@ const navigation = [
   { name: 'Shartnomalar', href: '/admin/contracts', icon: FileSignature, description: 'Kontrakt arxivi', roles: ['SUPERADMIN', 'ADMIN', 'DIRECTOR'] },
   { name: 'Hamkorlar', href: '/admin/partners', icon: Handshake, description: 'Hamkorlar ro\'yxati', roles: ['SUPERADMIN'] },
   { name: 'Adminlar', href: '/admin/users', icon: Shield, description: 'Xodimlar boshqaruvi', roles: ['SUPERADMIN'] },
+  { name: 'Filiallar', href: '/admin/branches', icon: Building2, description: 'Multi-tenant boshqaruvi', roles: ['SUPERADMIN', 'DIRECTOR'] },
+  { name: 'Anomaliyalar', href: '/admin/anomalies', icon: AlertTriangle, description: "GPS, geofence, ETA xatolari", roles: ['SUPERADMIN', 'ADMIN', 'DIRECTOR'] },
   { name: 'Audit Log', href: '/admin/audit', icon: ScrollText, description: 'Tizim harakatlari tarixi', roles: ['SUPERADMIN'] },
 ];
 
@@ -55,10 +67,12 @@ export default function AdminLayoutClient({
   children,
   userRole,
   userPermissions = [],
+  branchLabel = null,
 }: {
   children: React.ReactNode;
   userRole: string;
   userPermissions?: string[];
+  branchLabel?: string | null;
 }) {
   const pathname = usePathname();
   const locale = pathname.split('/')[1] || 'uz';
@@ -231,6 +245,28 @@ export default function AdminLayoutClient({
           </div>
 
           <div className="flex items-center gap-3">
+            {branchLabel ? (
+              <span
+                className="hidden items-center gap-1.5 rounded-full bg-purple-50 px-2.5 py-1 text-[11px] font-semibold text-purple-700 ring-1 ring-purple-200 sm:inline-flex"
+                title="Sizning filialingiz"
+              >
+                <Building2 className="h-3 w-3" />
+                {branchLabel}
+              </span>
+            ) : (
+              userRole === 'SUPERADMIN' && (
+                <span
+                  className="hidden items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700 ring-1 ring-amber-200 sm:inline-flex"
+                  title="Filial scope yo'q — barcha filiallar ko'rinadi"
+                >
+                  <Building2 className="h-3 w-3" />
+                  Hammasi
+                </span>
+              )
+            )}
+            <LiveActivityFeed />
+            <NotificationBell />
+            <PushButton compact />
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#042C53] to-[#185FA5] text-xs font-bold text-white shadow-sm">
               A
             </div>

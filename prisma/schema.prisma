@@ -116,11 +116,24 @@ model Shipment {
 
   /// Cargo type: bulk, container, liquid, perishable, oversized, general
   cargoType       String?
+  /// One-time secret token used to scope QR-confirmation deep link
+  receiveToken    String?  @unique
+  /// Receiver's typed name on the QR confirmation page (digital signature)
+  receivedSignature String?
+  /// When the receiver scanned + confirmed delivery
+  receivedAt      DateTime?
+  /// Geolocation captured at confirmation
+  receivedLat     Float?
+  receivedLng     Float?
   /// Assigned employee responsible for status updates
   assignedToId    Int?
   assignedTo      User?    @relation("ShipmentAssignedTo", fields: [assignedToId], references: [id])
   /// Last time status was updated (for SLA monitoring)
   lastStatusUpdate DateTime?
+
+  /// Multi-tenant branch scope
+  branchId        Int?
+  branch          Branch?  @relation(fields: [branchId], references: [id])
 
   createdById     Int?
   createdBy       User?    @relation("ShipmentsCreated", fields: [createdById], references: [id])
@@ -128,12 +141,14 @@ model Shipment {
   feedback        Feedback?
   wagons          Wagon[]
   trucks          Truck[]
+  documents       ShipmentDocument[]
 
   @@index([trackingCode])
   @@index([status])
   @@index([createdById])
   @@index([clientPhone])
   @@index([assignedToId])
+  @@index([branchId])
 }
 
 /// Rate limiting for forms
@@ -279,9 +294,12 @@ model User {
   role        String   @default("ADMIN") // SUPERADMIN, ADMIN, ACCOUNTANT, DIRECTOR, DRIVER
   status      String   @default("ACTIVE")
   permissions Json?    @default("[]")
+  /// Multi-tenant branch scope. Null = unscoped (SUPERADMIN or pre-migration legacy)
+  branchId    Int?
+  branch      Branch?  @relation(fields: [branchId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   actions   UserAction[]
   leads     Lead[]       @relation("UserLeads")
   tasksCreated  Task[] @relation("TasksCreated")
@@ -294,6 +312,8 @@ model User {
   trucksDriven    Truck[]    @relation("TruckDriver")
   truckStatusChanges TruckStatusLog[] @relation("TruckStatusChanges")
   slaViolations   SlaViolation[] @relation("SlaViolations")
+  chatMessagesFrom ChatMessage[]   @relation("ChatFrom")
+  chatMessagesTo   ChatMessage[]   @relation("ChatTo")
 
   @@index([username])
 }
@@ -506,7 +526,11 @@ model Wagon {
   lockedByShipmentId Int?
   lockedAt           DateTime?
   lockedByUserId     Int?
-  
+
+  /// Multi-tenant branch scope
+  branchId  Int?
+  branch    Branch?  @relation(fields: [branchId], references: [id])
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -517,6 +541,7 @@ model Wagon {
   @@index([status])
   @@index([assignedToId])
   @@index([currentStationId])
+  @@index([branchId])
 }
 
 /// Wagon status change history
@@ -580,7 +605,11 @@ model Truck {
   lockedByShipmentId Int?
   lockedAt           DateTime?
   lockedByUserId     Int?
-  
+
+  /// Multi-tenant branch scope
+  branchId  Int?
+  branch    Branch?  @relation(fields: [branchId], references: [id])
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -592,6 +621,7 @@ model Truck {
   @@index([status])
   @@index([driverId])
   @@index([currentStationId])
+  @@index([branchId])
 }
 
 /// Truck status change history
@@ -629,4 +659,164 @@ model TruckLocationLog {
   @@index([truckId])
   @@index([shipmentId])
   @@index([createdAt])
+}
+
+/// In-app notifications for admin/driver users
+model Notification {
+  id          Int      @id @default(autoincrement())
+  /// Target user (null = broadcast to all admins)
+  userId      Int?
+  /// 'lead' | 'shipment' | 'invoice' | 'sla' | 'driver' | 'system'
+  type        String
+  /// Short title
+  title       String
+  /// Detail message
+  message     String
+  /// Optional link to navigate to
+  link        String?
+  /// Whether the user has read this notification
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@index([type])
+}
+
+/// Anomaly events detected by background watchdog (geofence, GPS-loss, prolonged stop, etc.)
+model AnomalyAlert {
+  id          Int      @id @default(autoincrement())
+  /// 'gps_lost' | 'long_stop' | 'off_route' | 'late_eta' | 'speed_limit'
+  kind        String
+  /// Primary entity types: 'shipment' | 'truck' | 'wagon'
+  entityType  String
+  entityId    Int
+  /// Human-readable title
+  title       String
+  /// Body / context
+  message     String
+  /// JSON details (lat, lng, durationMin, distanceKm, etc.)
+  meta        Json     @default("{}")
+  /// 'open' | 'resolved' | 'snoozed'
+  status      String   @default("open")
+  /// Severity: 1=info, 2=warning, 3=critical
+  severity    Int      @default(2)
+  resolvedAt  DateTime?
+  resolvedById Int?
+  createdAt   DateTime @default(now())
+
+  @@index([kind])
+  @@index([status])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+/// Internal chat between admins/dispatchers and drivers (optionally tied to a shipment)
+model ChatMessage {
+  id          Int      @id @default(autoincrement())
+  /// Author user (admin or driver)
+  fromUserId  Int
+  fromUser    User     @relation("ChatFrom", fields: [fromUserId], references: [id])
+  /// Recipient user (admin or driver). 0 = none, but always set in 1-on-1 chats
+  toUserId    Int
+  toUser      User     @relation("ChatTo", fields: [toUserId], references: [id])
+  /// Optional shipment context — chats tied to a specific shipment
+  shipmentId  Int?
+  /// Plain-text message body (max 2000 chars)
+  body        String
+  /// Optional attachment URL (uses /uploads/...)
+  attachmentUrl String?
+  /// Has the recipient seen this message?
+  isRead      Boolean  @default(false)
+  readAt      DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([fromUserId, toUserId])
+  @@index([toUserId, isRead])
+  @@index([shipmentId])
+  @@index([createdAt])
+}
+
+/// Files attached to shipments — photos (loading/unloading) or scanned documents (CMR, TIR, TTN)
+model ShipmentDocument {
+  id          Int      @id @default(autoincrement())
+  shipmentId  Int
+  shipment    Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  /// 'photo' | 'cmr' | 'tir' | 'ttn' | 'invoice' | 'other'
+  kind        String   @default("photo")
+  /// Original file name as uploaded
+  originalName String
+  /// MIME type (image/jpeg, application/pdf, ...)
+  mimeType    String
+  /// Bytes
+  size        Int
+  /// Public URL or storage key
+  url         String
+  /// Optional caption
+  caption     String?
+
+  /// Who uploaded (admin/driver) or null = client-side
+  uploadedById Int?
+  /// Where the upload happened: 'driver' | 'admin' | 'client' | 'system'
+  source       String   @default("admin")
+
+  createdAt    DateTime @default(now())
+
+  @@index([shipmentId])
+  @@index([kind])
+  @@index([createdAt])
+}
+
+/// Filial (branch) — multi-tenant scope unit. SUPERADMIN sees all; others see their own.
+model Branch {
+  id          Int      @id @default(autoincrement())
+  /// Short code: TAS, BUX, SAM, etc.
+  code        String   @unique
+  /// Display name
+  name        String
+  /// City name
+  city        String
+  /// Optional address
+  address     String?
+  /// Branch contact phone
+  phone       String?
+  /// Branch manager user id (for routing)
+  managerId   Int?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users       User[]
+  trucks      Truck[]
+  wagons      Wagon[]
+  shipments   Shipment[]
+
+  @@index([code])
+  @@index([active])
+}
+
+/// Web Push subscriptions (PWA notifications)
+model PushSubscription {
+  id          Int      @id @default(autoincrement())
+  /// Owner: admin/driver user OR client (one of must be set)
+  userId      Int?
+  clientId    Int?
+  /// Browser endpoint URL (unique per device)
+  endpoint    String   @unique
+  /// p256dh public key from PushSubscription
+  p256dh      String
+  /// auth secret from PushSubscription
+  auth        String
+  /// User agent for debugging/listing devices
+  userAgent   String?
+  createdAt   DateTime @default(now())
+  /// Last time a push attempt succeeded
+  lastSuccess DateTime?
+  /// Failure count (auto-prune at 5)
+  failures    Int      @default(0)
+
+  @@index([userId])
+  @@index([clientId])
 }

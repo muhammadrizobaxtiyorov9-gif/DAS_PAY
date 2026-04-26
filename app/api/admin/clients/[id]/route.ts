@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { jwtVerify } from 'jose';
+import { adminTokenSecret } from '@/lib/secrets';
 
 async function getAdminRole(req: NextRequest): Promise<string | null> {
   const adminToken = req.cookies.get('admin_token')?.value;
   if (!adminToken) return null;
 
   try {
-    const secret = new TextEncoder().encode(process.env.ADMIN_TOKEN_SECRET || 'daspay_secure_key_2026');
-    const { payload } = await jwtVerify(adminToken, secret);
+    const { payload } = await jwtVerify(adminToken, adminTokenSecret());
     return (payload.role as string) || null;
   } catch {
     return null;

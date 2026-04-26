@@ -2,8 +2,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { jwtVerify } from 'jose';
 import { prisma } from '@/lib/prisma';
-
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'super-secret-key-for-daspay-client-2026');
+import { clientJwtSecret } from '@/lib/secrets';
 
 export async function getAuthenticatedClient(locale: string = 'uz', searchParams?: { [key: string]: string | string[] | undefined }) {
   // Try telegram WebApp auth (query param)
@@ -24,7 +23,7 @@ export async function getAuthenticatedClient(locale: string = 'uz', searchParams
   }
 
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
+    const { payload } = await jwtVerify(token, clientJwtSecret());
     const telegramId = payload.sub as string;
     if (!telegramId) redirect(`/${locale}/login`);
     

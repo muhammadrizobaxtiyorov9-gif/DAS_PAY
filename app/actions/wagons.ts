@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { getAdminSession } from '@/lib/adminAuth';
+import { branchWhere } from '@/lib/branch';
 import { logAudit } from '@/lib/audit';
 import { revalidatePath } from 'next/cache';
 import { canTransitionWagon } from '@/lib/wagon-status';
@@ -33,6 +34,7 @@ export async function createWagon(data: {
         currentLng: data.currentLng,
         currentStationId: data.currentStationId,
         lastLocationUpdate: data.currentLat ? new Date() : undefined,
+        branchId: session.branchId ?? null,
       },
     });
 
@@ -338,7 +340,10 @@ export async function getWagons(search?: string) {
     if (!session) return { success: false, error: 'Ruxsat yo\'q', wagons: [] };
 
     const wagons = await prisma.wagon.findMany({
-      where: search ? { number: { contains: search, mode: 'insensitive' } } : undefined,
+      where: {
+        ...branchWhere(session),
+        ...(search ? { number: { contains: search, mode: 'insensitive' } } : {}),
+      },
       include: {
         shipments: {
           where: { status: { notIn: ['delivered', 'unloaded'] } },

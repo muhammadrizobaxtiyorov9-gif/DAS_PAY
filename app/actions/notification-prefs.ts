@@ -4,16 +4,13 @@ import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { revalidatePath } from 'next/cache';
-
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'super-secret-key-for-daspay-client-2026',
-);
+import { clientJwtSecret } from '@/lib/secrets';
 
 async function getAuthClientId(): Promise<number> {
   const cookieStore = await cookies();
   const token = cookieStore.get('daspay_client_token')?.value;
   if (!token) throw new Error('Avtorizatsiya talab qilinadi');
-  const { payload } = await jwtVerify(token, JWT_SECRET);
+  const { payload } = await jwtVerify(token, clientJwtSecret());
   const telegramId = payload.sub as string;
   if (!telegramId) throw new Error('Yaroqsiz token');
   const client = await prisma.client.findUnique({

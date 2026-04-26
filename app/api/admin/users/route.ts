@@ -2,16 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { jwtVerify } from 'jose';
+import { adminTokenSecret } from '@/lib/secrets';
 
 async function checkSuperAdmin(req: NextRequest) {
   const adminToken = req.cookies.get('admin_token')?.value;
   if (!adminToken) return false;
-  
+
   try {
-    const secret = new TextEncoder().encode(process.env.ADMIN_TOKEN_SECRET || 'daspay_secure_key_2026');
-    const { payload } = await jwtVerify(adminToken, secret);
+    const { payload } = await jwtVerify(adminToken, adminTokenSecret());
     return payload.role === 'SUPERADMIN';
-  } catch (e) {
+  } catch {
     return false;
   }
 }
@@ -29,6 +29,8 @@ export async function GET(req: NextRequest) {
         role: true,
         permissions: true,
         status: true,
+        branchId: true,
+        branch: { select: { id: true, code: true, name: true } },
         createdAt: true,
       },
       orderBy: { createdAt: 'desc' }
@@ -44,8 +46,8 @@ export async function POST(req: NextRequest) {
   if (!isSuper) return NextResponse.json({ error: 'Ruxsat yo\'q' }, { status: 403 });
 
   try {
-    const { username, password, name, role, permissions } = await req.json();
-    
+    const { username, password, name, role, permissions, branchId } = await req.json();
+
     const existing = await prisma.user.findUnique({ where: { username } });
     if (existing) {
       return NextResponse.json({ error: 'Bu login band' }, { status: 400 });
@@ -61,6 +63,7 @@ export async function POST(req: NextRequest) {
         name,
         role: role || 'ADMIN',
         permissions: permissions ? JSON.stringify(permissions) : '[]',
+        branchId: typeof branchId === 'number' ? branchId : null,
       },
       select: { id: true, username: true, role: true }
     });

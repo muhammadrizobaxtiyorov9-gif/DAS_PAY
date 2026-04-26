@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { cronSecret } from '@/lib/secrets';
 
 /**
  * SLA Check Cron Endpoint
@@ -12,9 +13,7 @@ import { prisma } from '@/lib/prisma';
 export async function GET(req: NextRequest) {
   // Verify cron secret to prevent unauthorized access
   const secret = req.nextUrl.searchParams.get('secret');
-  const cronSecret = process.env.CRON_SECRET || 'daspay_cron_2026';
-  
-  if (secret !== cronSecret) {
+  if (secret !== cronSecret()) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

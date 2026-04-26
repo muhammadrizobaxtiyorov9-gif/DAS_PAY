@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import GlobalMapClient from './GlobalMapClient';
 import { Globe2 } from 'lucide-react';
+import { branchWhere } from '@/lib/branch';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,58 +14,58 @@ export default async function GlobalMapPage({
 }) {
   const { locale } = await params;
   const session = await getAdminSession();
-  
+
   if (!session) {
     redirect(`/${locale}/admin-login`);
   }
 
-  // Fetch active shipments
-  const activeShipments = await prisma.shipment.findMany({
-    where: {
-      status: {
-        notIn: ['delivered', 'cancelled'],
-      }
-    },
-    include: {
-      client: { select: { name: true } },
-      wagons: { select: { number: true } }
-    },
-    orderBy: { updatedAt: 'desc' }
-  });
+  const branchScope = branchWhere(session);
 
-  // Fetch wagons with location data
-  const wagons = await prisma.wagon.findMany({
-    where: {
-      OR: [
-        { currentLat: { not: null }, currentLng: { not: null } },
-        { currentStationId: { not: null } }
-      ]
-    },
-    include: {
-      shipments: {
-        where: { status: { notIn: ['delivered', 'unloaded'] } },
-        select: { trackingCode: true }
+  const [activeShipments, wagons, trucks] = await Promise.all([
+    prisma.shipment.findMany({
+      where: {
+        ...branchScope,
+        status: { notIn: ['delivered', 'cancelled'] },
       },
-      currentStation: { select: { nameUz: true, lat: true, lng: true } }
-    }
-  });
-
-  // Fetch trucks with location data
-  const trucks = await prisma.truck.findMany({
-    where: {
-      OR: [
-        { currentLat: { not: null }, currentLng: { not: null } },
-        { currentStationId: { not: null } }
-      ]
-    },
-    include: {
-      shipments: {
-        where: { status: { notIn: ['delivered', 'unloaded'] } },
-        select: { trackingCode: true }
+      include: {
+        client: { select: { name: true } },
+        wagons: { select: { number: true } },
       },
-      currentStation: { select: { nameUz: true, lat: true, lng: true } }
-    }
-  });
+      orderBy: { updatedAt: 'desc' },
+    }),
+    prisma.wagon.findMany({
+      where: {
+        ...branchScope,
+        OR: [
+          { currentLat: { not: null }, currentLng: { not: null } },
+          { currentStationId: { not: null } },
+        ],
+      },
+      include: {
+        shipments: {
+          where: { status: { notIn: ['delivered', 'unloaded'] } },
+          select: { trackingCode: true },
+        },
+        currentStation: { select: { nameUz: true, lat: true, lng: true } },
+      },
+    }),
+    prisma.truck.findMany({
+      where: {
+        ...branchScope,
+        OR: [
+          { currentLat: { not: null }, currentLng: { not: null } },
+          { currentStationId: { not: null } },
+        ],
+      },
+      include: {
+        shipments: {
+          where: { status: { notIn: ['delivered', 'unloaded'] } },
+          select: { trackingCode: true },
+        },
+        currentStation: { select: { nameUz: true, lat: true, lng: true } },
+      },
+    }),
+  ]);
 
   return (
     <div className="space-y-6">

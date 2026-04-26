@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { redirect } from 'next/navigation';
+import { adminTokenSecret } from '@/lib/secrets';
 import {
   ClipboardList,
   Filter,
@@ -56,8 +57,7 @@ export default async function AuditLogPage({ searchParams }: PageProps) {
   const adminToken = (await cookies()).get('admin_token')?.value;
   if (!adminToken) redirect('/uz/admin-login');
   try {
-    const secret = new TextEncoder().encode(process.env.ADMIN_TOKEN_SECRET || 'daspay_secure_key_2026');
-    await jwtVerify(adminToken, secret);
+    await jwtVerify(adminToken, adminTokenSecret());
   } catch {
     redirect('/uz/admin-login');
   }
