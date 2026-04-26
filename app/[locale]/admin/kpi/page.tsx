@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { redirect } from 'next/navigation';
 import { adminTokenSecret } from '@/lib/secrets';
+import { AnalyticsTabs } from '../analytics/AnalyticsTabs';
 
 export default async function KPIAdminPage() {
   const adminToken = (await cookies()).get('admin_token')?.value;
@@ -46,6 +47,8 @@ export default async function KPIAdminPage() {
           <p className="text-gray-500 mt-1">Ishchilar faoliyatini va ish unumdorligini nazorat qilish (Top 100 amallar)</p>
         </div>
       </div>
+
+      <AnalyticsTabs />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {leaderboard.map((user, index) => (

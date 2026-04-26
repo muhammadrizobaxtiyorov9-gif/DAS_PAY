@@ -52,16 +52,20 @@ export function AnomaliesClient({ initialAlerts }: { initialAlerts: Alert[] }) {
     }
   };
 
+  const [checking, setChecking] = useState(false);
   const triggerCheck = async () => {
-    const secret = prompt('CRON_SECRET ni kiriting (sinov uchun):');
-    if (!secret) return;
-    const res = await fetch(`/api/cron/anomaly-check?secret=${encodeURIComponent(secret)}`);
-    if (res.ok) {
-      const data = await res.json();
-      toast.success(`Tekshirildi: ${data.checked}, ${data.created} yangi alert`);
-      window.location.reload();
-    } else {
-      toast.error('Tekshirib bo\'lmadi');
+    setChecking(true);
+    try {
+      const res = await fetch('/api/anomalies/check', { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        toast.success(`Tekshirildi: ${data.checked}, ${data.created} yangi alert`);
+        window.location.reload();
+      } else {
+        toast.error("Tekshirib bo'lmadi");
+      }
+    } finally {
+      setChecking(false);
     }
   };
 
@@ -75,9 +79,10 @@ export function AnomaliesClient({ initialAlerts }: { initialAlerts: Alert[] }) {
         <button
           type="button"
           onClick={triggerCheck}
-          className="rounded-lg bg-slate-700 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+          disabled={checking}
+          className="rounded-lg bg-slate-700 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-slate-800 disabled:opacity-50"
         >
-          Hozir tekshirish
+          {checking ? 'Tekshirilmoqda…' : 'Hozir tekshirish'}
         </button>
       </header>
 

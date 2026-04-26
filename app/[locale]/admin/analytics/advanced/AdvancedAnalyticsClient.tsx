@@ -17,6 +17,7 @@ import {
   YAxis,
 } from 'recharts';
 import { TrendingUp, Users, MapPin, Target, Award } from 'lucide-react';
+import { AnalyticsTabs } from '../AnalyticsTabs';
 
 type Trend = { month: string; revenue: number; cost: number; count: number };
 type FunnelStep = { status: string; label: string; count: number };
@@ -87,6 +88,8 @@ export function AdvancedAnalyticsClient({
           Daromad tendensiyalari, konversiya va xodimlar samaradorligi (oxirgi 6 oy / 90 kun)
         </p>
       </header>
+
+      <AnalyticsTabs />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard

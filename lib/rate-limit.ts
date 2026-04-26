@@ -1,13 +1,14 @@
 import type { NextRequest } from 'next/server';
+import { redis } from './redis';
+import { log } from './logger';
 
 /**
- * In-memory sliding-window rate limiter. Not distributed — if you run >1
- * instance, swap to Redis/Upstash via the same interface. Enough for the
- * single-node deployment we target today.
+ * Sliding-window rate limiter. Backed by Redis (atomic INCR + EXPIRE) when
+ * REDIS_URL is set so multiple Node workers share one counter; falls back to
+ * an in-memory Map for single-instance dev.
  *
- * Why this exists: without a shared helper, every route grew its own Map and
- * drift-prone defaults. One definition, one eviction policy, one place to
- * swap in a distributed backend.
+ * The function is async — every caller awaits the result. The shape of
+ * RateLimitResult is unchanged so existing header/response code keeps working.
  */
 
 interface Bucket {
@@ -24,7 +25,6 @@ function evictIfNeeded() {
   for (const [key, bucket] of BUCKETS) {
     if (bucket.resetAt <= now) BUCKETS.delete(key);
   }
-  // Hard-cap: if still too many, drop the oldest 10%.
   if (BUCKETS.size > MAX_BUCKETS) {
     const excess = Math.ceil(MAX_BUCKETS * 0.1);
     let i = 0;
@@ -52,11 +52,7 @@ export interface RateLimitOptions {
   windowMs: number;
 }
 
-/**
- * Consume 1 token for the (key, identifier) pair. Returns the outcome and
- * rate-limit headers the caller should include in the response.
- */
-export function rateLimit(identifier: string, opts: RateLimitOptions): RateLimitResult {
+function inProcess(identifier: string, opts: RateLimitOptions): RateLimitResult {
   const now = Date.now();
   const bucketKey = `${opts.key}:${identifier}`;
   const existing = BUCKETS.get(bucketKey);
@@ -93,6 +89,61 @@ export function rateLimit(identifier: string, opts: RateLimitOptions): RateLimit
   };
 }
 
+async function viaRedis(identifier: string, opts: RateLimitOptions): Promise<RateLimitResult> {
+  const r = redis();
+  if (!r) return inProcess(identifier, opts);
+
+  const bucketKey = `rl:${opts.key}:${identifier}`;
+  const ttlSec = Math.max(1, Math.ceil(opts.windowMs / 1000));
+
+  try {
+    // INCR returns the new count; on first hit it's 1 and we set the TTL.
+    // PTTL gives us the precise remaining ms for the resetAt header.
+    const pipe = r.multi();
+    pipe.incr(bucketKey);
+    pipe.pttl(bucketKey);
+    const res = (await pipe.exec()) ?? [];
+    const count = Number((res[0] as [Error | null, number])?.[1] ?? 0);
+    let pttl = Number((res[1] as [Error | null, number])?.[1] ?? -1);
+
+    if (count === 1 || pttl < 0) {
+      await r.pexpire(bucketKey, opts.windowMs);
+      pttl = opts.windowMs;
+    }
+
+    const now = Date.now();
+    const resetAt = now + pttl;
+
+    if (count > opts.limit) {
+      return {
+        ok: false,
+        remaining: 0,
+        limit: opts.limit,
+        resetAt,
+        retryAfterSec: Math.max(1, Math.ceil(pttl / 1000)),
+      };
+    }
+    return {
+      ok: true,
+      remaining: Math.max(0, opts.limit - count),
+      limit: opts.limit,
+      resetAt,
+      retryAfterSec: 0,
+    };
+  } catch (err) {
+    log.warn('ratelimit.redis_failed_fallback', { err });
+    return inProcess(identifier, opts);
+  }
+}
+
+/** Consume 1 token. Async because the Redis backend round-trips. */
+export async function rateLimit(
+  identifier: string,
+  opts: RateLimitOptions,
+): Promise<RateLimitResult> {
+  return viaRedis(identifier, opts);
+}
+
 /**
  * Resolve the client IP from common forwarded-for headers with a safe fallback.
  */
@@ -108,9 +159,7 @@ export function getClientIp(req: NextRequest | Request): string {
   );
 }
 
-/**
- * Shape a rate-limit result into standard response headers.
- */
+/** Shape a rate-limit result into standard response headers. */
 export function rateLimitHeaders(result: RateLimitResult): HeadersInit {
   return {
     'X-RateLimit-Limit': String(result.limit),

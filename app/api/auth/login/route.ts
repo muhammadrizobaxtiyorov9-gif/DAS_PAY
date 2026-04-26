@@ -10,7 +10,7 @@ const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
-  const rl = rateLimit(ip, { key: 'client:login', limit: 10, windowMs: 10 * 60 * 1000 });
+  const rl = await rateLimit(ip, { key: 'client:login', limit: 10, windowMs: 10 * 60 * 1000 });
   if (!rl.ok) {
     return NextResponse.json(
       { success: false, error: "Juda ko'p urinish. Keyinroq qayta urining." },

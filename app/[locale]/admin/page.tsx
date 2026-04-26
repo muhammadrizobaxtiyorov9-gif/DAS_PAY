@@ -262,8 +262,8 @@ export default async function AdminDashboardPage({
                 <Activity className="h-4 w-4 text-emerald-600" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-700">Ma'lumotlar bazasi (Prisma)</p>
-                <p className="text-xs text-gray-400">PostgreSQL</p>
+                <p className="text-sm font-medium text-gray-700">Ma'lumotlar bazasi</p>
+                <p className="text-xs text-gray-400">Barcha yozuvlar saqlanmoqda</p>
               </div>
             </div>
             <span className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-600">
@@ -278,7 +278,7 @@ export default async function AdminDashboardPage({
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-700">Xavfsizlik tizimi</p>
-                <p className="text-xs text-gray-400">JWT (jose) orqali himoyalangan</p>
+                <p className="text-xs text-gray-400">Sessiya shifrlangan</p>
               </div>
             </div>
             <span className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-600">

@@ -30,37 +30,87 @@ import {
   AlertTriangle,
   CalendarRange,
   Building2,
+  MapPin,
+  FileText,
+  Trophy,
+  Inbox,
 } from 'lucide-react';
-import { PushButton } from '@/components/shared/PushButton';
 import { NotificationBell } from '@/components/shared/NotificationBell';
 import { LiveActivityFeed } from '@/components/shared/LiveActivityFeed';
 
-const navigation = [
-  { name: 'Dashboard', href: '/admin', icon: LayoutDashboard, description: 'Umumiy ko\'rish', roles: ['SUPERADMIN', 'ADMIN', 'DIRECTOR', 'ACCOUNTANT'] },
-  { name: 'Analitika', href: '/admin/analytics', icon: BarChart3, description: 'KPI va tendensiyalar', roles: ['SUPERADMIN', 'DIRECTOR'] },
-  { name: 'Kengaytirilgan analitika', href: '/admin/analytics/advanced', icon: BarChart3, description: 'Voronka, samaradorlik, heatmap', roles: ['SUPERADMIN', 'DIRECTOR'] },
-  { name: 'Global Xarita', href: '/admin/global-map', icon: Globe2, description: 'Barcha yuklar xaritasi', roles: ['SUPERADMIN', 'ADMIN', 'DIRECTOR'] },
-  { name: 'Topshiriqlar', href: '/admin/tasks', icon: ClipboardList, description: 'Hodimlar vazifalari', roles: ['SUPERADMIN', 'ADMIN'] },
-  { name: 'Chat', href: '/admin/chat', icon: MessageCircle, description: 'Xodim ↔ Haydovchi xabarlar', roles: ['SUPERADMIN', 'ADMIN', 'DRIVER', 'DIRECTOR'] },
-  { name: 'Kalendar', href: '/admin/calendar', icon: CalendarDays, description: 'Kunlik rejalar', roles: ['SUPERADMIN', 'ADMIN'] },
-  { name: 'Dispatching', href: '/admin/dispatch', icon: CalendarRange, description: 'Avtomobil bandligi (Gantt)', roles: ['SUPERADMIN', 'ADMIN', 'DIRECTOR'] },
-  { name: 'Xodimlar (KPI)', href: '/admin/kpi', icon: Users, description: 'KPI reytingi', roles: ['SUPERADMIN', 'DIRECTOR'] },
-  { name: 'Mijozlar', href: '/admin/clients', icon: UserCircle, description: "Mijoz 360° profili", roles: ['SUPERADMIN', 'ADMIN', 'DIRECTOR'] },
-  { name: 'Yuklar', href: '/admin/shipments', icon: PackageSearch, description: 'Tracking boshqaruvi', roles: ['SUPERADMIN', 'ADMIN'] },
-  { name: 'Tariflar', href: '/admin/tariffs', icon: Banknote, description: 'Narx katalogi', roles: ['SUPERADMIN', 'ADMIN', 'ACCOUNTANT'] },
-  { name: 'Stansiyalar', href: '/admin/stations', icon: Train, description: "Temir yo'l stansiyalari", roles: ['SUPERADMIN', 'ADMIN'] },
-  { name: 'Vagonlar', href: '/admin/wagons', icon: Train, description: "Vagonlar bazasi", roles: ['SUPERADMIN', 'ADMIN'] },
-  { name: 'Avtomobillar', href: '/admin/trucks', icon: TruckIcon, description: "Yuk avtomobillari", roles: ['SUPERADMIN', 'ADMIN'] },
-  { name: 'Invoyslar', href: '/admin/invoices', icon: FileSignature, description: 'Hisob-fakturalar', roles: ['SUPERADMIN', 'DIRECTOR', 'ACCOUNTANT'] },
-  { name: 'Maqolalar', href: '/admin/blog', icon: Newspaper, description: 'Blog & yangiliklar', roles: ['SUPERADMIN'] },
-  { name: 'Arizalar', href: '/admin/leads', icon: Users, description: 'Mijoz so\'rovlari', roles: ['SUPERADMIN', 'ADMIN'] },
-  { name: 'NPS fikrlar', href: '/admin/feedback', icon: Star, description: "Yetkazib berilgandan keyin baholash", roles: ['SUPERADMIN'] },
-  { name: 'Shartnomalar', href: '/admin/contracts', icon: FileSignature, description: 'Kontrakt arxivi', roles: ['SUPERADMIN', 'ADMIN', 'DIRECTOR'] },
-  { name: 'Hamkorlar', href: '/admin/partners', icon: Handshake, description: 'Hamkorlar ro\'yxati', roles: ['SUPERADMIN'] },
-  { name: 'Adminlar', href: '/admin/users', icon: Shield, description: 'Xodimlar boshqaruvi', roles: ['SUPERADMIN'] },
-  { name: 'Filiallar', href: '/admin/branches', icon: Building2, description: 'Multi-tenant boshqaruvi', roles: ['SUPERADMIN', 'DIRECTOR'] },
-  { name: 'Anomaliyalar', href: '/admin/anomalies', icon: AlertTriangle, description: "GPS, geofence, ETA xatolari", roles: ['SUPERADMIN', 'ADMIN', 'DIRECTOR'] },
-  { name: 'Audit Log', href: '/admin/audit', icon: ScrollText, description: 'Tizim harakatlari tarixi', roles: ['SUPERADMIN'] },
+interface NavItem {
+  name: string;
+  href: string;
+  icon: typeof LayoutDashboard;
+  description: string;
+  roles: string[];
+}
+
+interface NavSection {
+  label: string;
+  items: NavItem[];
+}
+
+const navSections: NavSection[] = [
+  {
+    label: 'Operatsion',
+    items: [
+      { name: 'Dashboard', href: '/admin', icon: LayoutDashboard, description: "Umumiy ko'rish", roles: ['SUPERADMIN', 'ADMIN', 'DIRECTOR', 'ACCOUNTANT'] },
+      { name: 'Yuklar', href: '/admin/shipments', icon: PackageSearch, description: 'Tracking boshqaruvi', roles: ['SUPERADMIN', 'ADMIN'] },
+      { name: 'Topshiriqlar', href: '/admin/tasks', icon: ClipboardList, description: 'Hodimlar vazifalari', roles: ['SUPERADMIN', 'ADMIN'] },
+      { name: 'Dispatching', href: '/admin/dispatch', icon: CalendarRange, description: 'Avtomobil bandligi (Gantt)', roles: ['SUPERADMIN', 'ADMIN', 'DIRECTOR'] },
+      { name: 'Kalendar', href: '/admin/calendar', icon: CalendarDays, description: 'Kunlik rejalar', roles: ['SUPERADMIN', 'ADMIN'] },
+      { name: 'Global Xarita', href: '/admin/global-map', icon: Globe2, description: 'Barcha yuklar xaritasi', roles: ['SUPERADMIN', 'ADMIN', 'DIRECTOR'] },
+      { name: 'Chat', href: '/admin/chat', icon: MessageCircle, description: 'Xodim ↔ Haydovchi xabarlar', roles: ['SUPERADMIN', 'ADMIN', 'DRIVER', 'DIRECTOR'] },
+    ],
+  },
+  {
+    label: 'Resurslar',
+    items: [
+      { name: 'Vagonlar', href: '/admin/wagons', icon: Train, description: 'Vagonlar bazasi', roles: ['SUPERADMIN', 'ADMIN'] },
+      { name: 'Avtomobillar', href: '/admin/trucks', icon: TruckIcon, description: 'Yuk avtomobillari', roles: ['SUPERADMIN', 'ADMIN'] },
+      { name: 'Stansiyalar', href: '/admin/stations', icon: MapPin, description: "Temir yo'l stansiyalari", roles: ['SUPERADMIN', 'ADMIN'] },
+      { name: 'Tariflar', href: '/admin/tariffs', icon: Banknote, description: 'Narx katalogi', roles: ['SUPERADMIN', 'ADMIN', 'ACCOUNTANT'] },
+    ],
+  },
+  {
+    label: 'Sotuv & Mijozlar',
+    items: [
+      { name: 'Arizalar', href: '/admin/leads', icon: Inbox, description: "Mijoz so'rovlari", roles: ['SUPERADMIN', 'ADMIN'] },
+      { name: 'Mijozlar', href: '/admin/clients', icon: UserCircle, description: 'Mijoz 360° profili', roles: ['SUPERADMIN', 'ADMIN', 'DIRECTOR'] },
+      { name: 'NPS fikrlar', href: '/admin/feedback', icon: Star, description: 'Yetkazib berilgandan keyin baholash', roles: ['SUPERADMIN'] },
+      { name: 'Hamkorlar', href: '/admin/partners', icon: Handshake, description: "Hamkorlar ro'yxati", roles: ['SUPERADMIN'] },
+    ],
+  },
+  {
+    label: 'Moliya',
+    items: [
+      { name: 'Invoyslar', href: '/admin/invoices', icon: FileSignature, description: 'Hisob-fakturalar', roles: ['SUPERADMIN', 'DIRECTOR', 'ACCOUNTANT'] },
+      { name: 'Shartnomalar', href: '/admin/contracts', icon: FileText, description: 'Kontrakt arxivi', roles: ['SUPERADMIN', 'ADMIN', 'DIRECTOR'] },
+    ],
+  },
+  {
+    label: 'Tahlil',
+    items: [
+      { name: 'Analitika', href: '/admin/analytics', icon: BarChart3, description: 'KPI, voronka, heatmap', roles: ['SUPERADMIN', 'DIRECTOR'] },
+      { name: 'Xodimlar reytingi', href: '/admin/kpi', icon: Trophy, description: 'KPI reytingi', roles: ['SUPERADMIN', 'DIRECTOR'] },
+    ],
+  },
+  {
+    label: 'Mazmun',
+    items: [
+      { name: 'Maqolalar', href: '/admin/blog', icon: Newspaper, description: 'Blog & yangiliklar', roles: ['SUPERADMIN'] },
+    ],
+  },
+  {
+    label: 'Tizim',
+    items: [
+      { name: 'Adminlar', href: '/admin/users', icon: Shield, description: 'Xodimlar boshqaruvi', roles: ['SUPERADMIN'] },
+      { name: 'Filiallar', href: '/admin/branches', icon: Building2, description: 'Multi-tenant boshqaruvi', roles: ['SUPERADMIN', 'DIRECTOR'] },
+      { name: 'Anomaliyalar', href: '/admin/anomalies', icon: AlertTriangle, description: 'GPS, geofence, ETA xatolari', roles: ['SUPERADMIN', 'ADMIN', 'DIRECTOR'] },
+      { name: 'Audit Log', href: '/admin/audit', icon: ScrollText, description: 'Tizim harakatlari tarixi', roles: ['SUPERADMIN'] },
+    ],
+  },
 ];
 
 export default function AdminLayoutClient({
@@ -94,7 +144,16 @@ export default function AdminLayoutClient({
     window.location.href = `/${locale}/admin-login`;
   };
 
-  const currentPage = navigation.find(n => isActive(n.href));
+  const allItems = navSections.flatMap((s) => s.items);
+  const currentPage = allItems.find((n) => isActive(n.href));
+
+  const canSee = (item: NavItem) => {
+    if (userRole === 'SUPERADMIN') return true;
+    if (userPermissions.length > 0) {
+      return userPermissions.some((perm) => perm.includes(item.href));
+    }
+    return item.roles.includes(userRole);
+  };
 
   if (!mounted) return null;
 
@@ -146,61 +205,61 @@ export default function AdminLayoutClient({
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto px-4 py-6">
-          <p className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-widest text-gray-400">
-            Boshqaruv
-          </p>
-          <div className="space-y-1">
-            {navigation
-              .filter((item) => {
-                if (userRole === 'SUPERADMIN') return true;
-                if (userPermissions && userPermissions.length > 0) {
-                  return userPermissions.some(perm => perm.includes(item.href));
-                }
-                return item.roles.includes(userRole);
-              })
-              .map((item) => {
-              const active = isActive(item.href);
-              return (
-                <Link
-                  key={item.name}
-                  href={getHref(item.href)}
-                  onClick={() => setSidebarOpen(false)}
-                  className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
-                    active
-                      ? 'bg-gradient-to-r from-blue-50 to-blue-50/50 text-[#185FA5] shadow-sm shadow-blue-100'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  }`}
-                >
-                  {active && (
-                    <motion.div
-                      layoutId="active-indicator"
-                      className="absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full bg-[#185FA5]"
-                      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                    />
-                  )}
-                  <div
-                    className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${
-                      active
-                        ? 'bg-[#185FA5]/10 text-[#185FA5]'
-                        : 'bg-gray-100 text-gray-500 group-hover:bg-gray-200 group-hover:text-gray-700'
-                    }`}
-                  >
-                    <item.icon className="h-[18px] w-[18px]" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span>{item.name}</span>
-                    <span className={`text-[11px] ${active ? 'text-blue-400' : 'text-gray-400'}`}>
-                      {item.description}
-                    </span>
-                  </div>
-                  {active && (
-                    <ChevronRight className="ml-auto h-4 w-4 text-blue-300" />
-                  )}
-                </Link>
-              );
-            })}
-          </div>
+        <nav className="flex-1 overflow-y-auto px-4 py-4">
+          {navSections.map((section) => {
+            const visible = section.items.filter(canSee);
+            if (visible.length === 0) return null;
+            return (
+              <div key={section.label} className="mb-4">
+                <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-gray-400">
+                  {section.label}
+                </p>
+                <div className="space-y-1">
+                  {visible.map((item) => {
+                    const active = isActive(item.href);
+                    return (
+                      <Link
+                        key={item.name}
+                        href={getHref(item.href)}
+                        onClick={() => setSidebarOpen(false)}
+                        className={`group relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200 ${
+                          active
+                            ? 'bg-gradient-to-r from-blue-50 to-blue-50/50 text-[#185FA5] shadow-sm shadow-blue-100'
+                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        }`}
+                      >
+                        {active && (
+                          <motion.div
+                            layoutId="active-indicator"
+                            className="absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full bg-[#185FA5]"
+                            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                          />
+                        )}
+                        <div
+                          className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+                            active
+                              ? 'bg-[#185FA5]/10 text-[#185FA5]'
+                              : 'bg-gray-100 text-gray-500 group-hover:bg-gray-200 group-hover:text-gray-700'
+                          }`}
+                        >
+                          <item.icon className="h-[16px] w-[16px]" />
+                        </div>
+                        <div className="flex min-w-0 flex-col">
+                          <span className="truncate">{item.name}</span>
+                          <span className={`truncate text-[10px] ${active ? 'text-blue-400' : 'text-gray-400'}`}>
+                            {item.description}
+                          </span>
+                        </div>
+                        {active && (
+                          <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-blue-300" />
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
         </nav>
 
         {/* Footer */}
@@ -266,7 +325,6 @@ export default function AdminLayoutClient({
             )}
             <LiveActivityFeed />
             <NotificationBell />
-            <PushButton compact />
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#042C53] to-[#185FA5] text-xs font-bold text-white shadow-sm">
               A
             </div>

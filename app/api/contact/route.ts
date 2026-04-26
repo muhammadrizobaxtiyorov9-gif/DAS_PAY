@@ -15,7 +15,7 @@ import { publish } from '@/lib/events';
 export async function POST(request: NextRequest) {
   try {
     const ip = getClientIp(request);
-    const rl = rateLimit(ip, { key: 'contact', limit: 3, windowMs: 60 * 60 * 1000 });
+    const rl = await rateLimit(ip, { key: 'contact', limit: 3, windowMs: 60 * 60 * 1000 });
     if (!rl.ok) {
       return NextResponse.json(
         { error: 'Too many requests. Please try again later.' },

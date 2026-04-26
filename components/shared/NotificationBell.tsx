@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Bell, Check, Filter, Loader2 } from 'lucide-react';
+import { Bell, BellOff, BellRing, Check, Filter, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { usePushSubscription } from '@/hooks/usePushSubscription';
 
 interface NotificationItem {
   id: number;
@@ -59,6 +61,22 @@ export function NotificationBell() {
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<string | null>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
+  const push = usePushSubscription();
+
+  const togglePush = async () => {
+    if (push.subscribed) {
+      const ok = await push.unsubscribe();
+      if (ok) toast.success("Brauzer bildirishnomalari o'chirildi");
+    } else {
+      const ok = await push.subscribe();
+      if (ok) toast.success('Brauzer bildirishnomalari yoqildi');
+      else if (push.permission === 'denied') {
+        toast.error('Brauzer sozlamalarida ruxsat bering');
+      } else {
+        toast.error("Yoqib bo'lmadi. Qayta urining.");
+      }
+    }
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -245,6 +263,33 @@ export function NotificationBell() {
               );
             })}
           </div>
+
+          {push.supported && (
+            <footer className="flex items-center justify-between border-t border-slate-100 bg-slate-50/60 px-4 py-2.5">
+              <div className="flex items-center gap-2 text-xs text-slate-600">
+                {push.subscribed ? (
+                  <BellRing className="h-3.5 w-3.5 text-blue-600" />
+                ) : (
+                  <BellOff className="h-3.5 w-3.5 text-slate-400" />
+                )}
+                <span>
+                  {push.subscribed ? 'Brauzer bildirishnomalari yoqilgan' : 'Brauzer bildirishnomalari'}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={togglePush}
+                disabled={push.busy}
+                className={`rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors disabled:opacity-50 ${
+                  push.subscribed
+                    ? 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
+              >
+                {push.subscribed ? "O'chirish" : 'Yoqish'}
+              </button>
+            </footer>
+          )}
         </div>
       )}
     </div>

@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
-import { Activity, Wifi, WifiOff } from 'lucide-react';
 import { useDashboardStream } from '@/hooks/useDashboardStream';
 
 const LABELS: Record<string, string> = {
@@ -51,20 +50,16 @@ export function LiveActivityFeed({ silent = false }: Props) {
   }, [events, silent]);
 
   return (
-    <div className="inline-flex items-center gap-1.5 rounded-full bg-slate-50 px-2.5 py-1 text-[11px] font-medium">
-      {connected ? (
-        <>
-          <Wifi className="h-3 w-3 text-emerald-500" />
-          <span className="text-emerald-700">Live</span>
-        </>
-      ) : (
-        <>
-          <WifiOff className="h-3 w-3 text-slate-400" />
-          <span className="text-slate-500">Offline</span>
-        </>
-      )}
-      <Activity className="h-3 w-3 text-slate-400" />
-      <span className="text-slate-500">{events.length}</span>
-    </div>
+    <span
+      title={connected ? `Live (${events.length} ta hodisa)` : 'Ulanish uzilgan'}
+      className="inline-flex items-center gap-1.5 rounded-full bg-slate-50 px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-slate-500"
+    >
+      <span
+        className={`h-1.5 w-1.5 rounded-full ${
+          connected ? 'animate-pulse bg-emerald-500' : 'bg-slate-300'
+        }`}
+      />
+      {connected ? 'Live' : 'Offline'}
+    </span>
   );
 }

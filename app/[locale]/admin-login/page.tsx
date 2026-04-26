@@ -148,7 +148,7 @@ export default function AdminLoginPage() {
 
         {/* Trust badge */}
         <p className="mt-6 text-center text-xs text-gray-400">
-          🔒 JWT kriptografik himoya bilan ta'minlangan
+          🔒 Ulanish shifrlangan kanal orqali himoyalangan
         </p>
       </motion.div>
     </div>

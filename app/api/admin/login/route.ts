@@ -7,7 +7,7 @@ import { adminTokenSecret } from '@/lib/secrets';
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
-  const rl = rateLimit(ip, { key: 'admin:login', limit: 8, windowMs: 10 * 60 * 1000 });
+  const rl = await rateLimit(ip, { key: 'admin:login', limit: 8, windowMs: 10 * 60 * 1000 });
   if (!rl.ok) {
     return NextResponse.json(
       { error: 'Juda ko\'p urinish. Keyinroq qayta urining.' },

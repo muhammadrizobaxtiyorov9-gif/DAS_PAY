@@ -7,7 +7,7 @@ const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
-  const ipRl = rateLimit(ip, { key: 'otp:send:ip', limit: 5, windowMs: 10 * 60 * 1000 });
+  const ipRl = await rateLimit(ip, { key: 'otp:send:ip', limit: 5, windowMs: 10 * 60 * 1000 });
   if (!ipRl.ok) {
     return NextResponse.json(
       { success: false, error: 'Juda ko\'p so\'rov. Keyinroq qayta urining.' },
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     const cleanPhone = phone.replace(/\D/g, '');
 
     // Per-phone limit: 3 OTPs per 15 min regardless of IP
-    const phoneRl = rateLimit(cleanPhone, { key: 'otp:send:phone', limit: 3, windowMs: 15 * 60 * 1000 });
+    const phoneRl = await rateLimit(cleanPhone, { key: 'otp:send:phone', limit: 3, windowMs: 15 * 60 * 1000 });
     if (!phoneRl.ok) {
       return NextResponse.json(
         { success: false, error: 'Ushbu raqamga juda ko\'p kod yuborildi. Keyinroq qayta urining.' },

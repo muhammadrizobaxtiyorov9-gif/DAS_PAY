@@ -1,9 +1,13 @@
 import 'server-only';
+import { redis, pubsub } from './redis';
+import { log } from './logger';
 
 /**
- * Lightweight in-process pub/sub for SSE.
- * Single-instance only (Node process). For multi-instance deploy, swap with Redis.
+ * Cross-instance pub/sub for SSE. Backed by Redis when REDIS_URL is set so
+ * every Node worker sees every event. Falls back to an in-process Set when
+ * Redis is unavailable (single-instance dev).
  */
+
 export type EventName =
   | 'lead.created'
   | 'shipment.statusChanged'
@@ -20,20 +24,67 @@ interface BusEvent<T = unknown> {
 
 type Listener = (event: BusEvent) => void;
 
-const listenersGlobal: Set<Listener> = ((globalThis as unknown as { __DASPAY_LISTENERS__?: Set<Listener> }).__DASPAY_LISTENERS__ ??= new Set());
+const CHANNEL = 'daspay:events';
+
+interface State {
+  listeners: Set<Listener>;
+  subscribed: boolean;
+}
+
+const g = globalThis as unknown as { __DASPAY_BUS__?: State };
+const state: State = (g.__DASPAY_BUS__ ??= { listeners: new Set(), subscribed: false });
+
+function ensureRedisSubscribed(): void {
+  if (state.subscribed) return;
+  const sub = pubsub();
+  if (!sub) return;
+  state.subscribed = true;
+  sub.subscribe(CHANNEL).catch((err) => {
+    state.subscribed = false;
+    log.error('events.subscribe_failed', { err });
+  });
+  sub.on('message', (channel, payload) => {
+    if (channel !== CHANNEL) return;
+    let evt: BusEvent;
+    try {
+      evt = JSON.parse(payload) as BusEvent;
+    } catch (err) {
+      log.warn('events.parse_failed', { err });
+      return;
+    }
+    for (const fn of state.listeners) {
+      try {
+        fn(evt);
+      } catch (err) {
+        log.error('events.listener_error', { err });
+      }
+    }
+  });
+}
 
 export function publish<T>(name: EventName, data: T): void {
   const event: BusEvent<T> = { name, data, ts: Date.now() };
-  for (const fn of listenersGlobal) {
+  const r = redis();
+  if (r) {
+    r.publish(CHANNEL, JSON.stringify(event)).catch((err) => {
+      log.error('events.publish_failed', { name, err });
+    });
+    return;
+  }
+  // Fallback: deliver synchronously to local listeners.
+  for (const fn of state.listeners) {
     try {
       fn(event);
     } catch (err) {
-      console.error('[bus] listener error', err);
+      log.error('events.listener_error', { err });
     }
   }
 }
 
 export function subscribe(fn: Listener): () => void {
-  listenersGlobal.add(fn);
-  return () => listenersGlobal.delete(fn);
+  ensureRedisSubscribed();
+  state.listeners.add(fn);
+  return () => {
+    state.listeners.delete(fn);
+  };
 }

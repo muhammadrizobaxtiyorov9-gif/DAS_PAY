@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { TrendingUp, Package, Clock, CheckCircle2, AlertTriangle, Target, Users, DollarSign, Wallet } from 'lucide-react';
 import Link from 'next/link';
 import { formatMoney } from '@/lib/money';
+import { AnalyticsTabs } from './AnalyticsTabs';
 
 export const dynamic = 'force-dynamic';
 
@@ -162,6 +163,8 @@ export default async function AdminAnalyticsPage({
         <h1 className="text-2xl font-bold text-gray-900">Operatsion Analitika</h1>
         <p className="mt-1 text-sm text-gray-500">Oxirgi 30 kunlik ko'rsatkichlar va tendensiyalar</p>
       </div>
+
+      <AnalyticsTabs />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard

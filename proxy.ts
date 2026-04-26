@@ -29,25 +29,26 @@ function parsePreferredLocale(acceptLanguage: string): Locale {
 }
 
 /**
- * Generate a cryptographically-strong nonce for CSP.
- * Uses Web Crypto (Edge-runtime safe).
-//  */
-// function generateNonce(): string {
-//   const bytes = new Uint8Array(16);
-//   crypto.getRandomValues(bytes);
-//   let bin = '';
-//   for (const b of bytes) bin += String.fromCharCode(b);
-//   return btoa(bin);
-// }
+ * Cryptographically-strong nonce for CSP. Web Crypto is Edge-runtime safe.
+ */
+function generateNonce(): string {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  let bin = '';
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin);
+}
 
-// /**
-//  * Build a permissive-but-hardened CSP. We allow `'unsafe-inline'` on
-//  * script-src because Next.js hydration emits inline bootstrap scripts that
-//  * can't currently be nonce-only without breaking the framework. The nonce is
-//  * still advertised so nonce-aware scripts we add later can tighten this.
-//  * We pair it with `frame-ancestors 'none'` and `object-src 'none'` to close
-//  * the most commonly-exploited surfaces (clickjacking, plugin injection).
-//  */
+/**
+ * Build CSP. We keep `'unsafe-inline'` on script-src because Next.js
+ * hydration emits inline bootstrap chunks; the nonce is still advertised so
+ * we can tighten incrementally. `frame-ancestors 'none'` and
+ * `object-src 'none'` close clickjacking and plugin-injection surfaces.
+ *
+ * CSP is shipped as Report-Only first so violations land in logs without
+ * breaking real traffic. Switch to enforce mode (`Content-Security-Policy`)
+ * once the report tail is clean.
+ */
 function buildCsp(nonce: string): string {
   return [
     `default-src 'self'`,
@@ -67,6 +68,18 @@ function buildCsp(nonce: string): string {
   ]
     .filter(Boolean)
     .join('; ');
+}
+
+function applySecurityHeaders(response: NextResponse, nonce: string): void {
+  // Static headers (X-Frame-Options, Permissions-Policy, HSTS, COOP, COEP) are
+  // declared once in next.config.ts:headers() so every route — including ones
+  // that bypass middleware — gets them. Here we only add what must vary
+  // per-request: a fresh CSP nonce and the CSP itself.
+  response.headers.set('x-nonce', nonce);
+  if (IS_PROD) {
+    // Report-Only first; promote to `Content-Security-Policy` when audited.
+    response.headers.set('Content-Security-Policy-Report-Only', buildCsp(nonce));
+  }
 }
 
 export async function proxy(request: NextRequest) {
@@ -111,28 +124,16 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  // --- Per-request CSP (prod only) -----------------------------------------
-  // Turbopack dev uses dynamic chunk loading + eval patterns that clash with
-  // any CSP, even Report-Only ones that mutate the request header object.
-  // We only attach CSP in production where chunks are stable hashes.
-  if (!IS_PROD) {
-    return NextResponse.next();
-  }
-
+  // --- Security headers (HTML documents only) ------------------------------
   const secFetchDest = request.headers.get('sec-fetch-dest');
   const isHtmlDocument =
     !pathname.startsWith('/api') &&
     (secFetchDest === 'document' || secFetchDest === null);
 
-  if (!isHtmlDocument) {
-    return NextResponse.next();
-  }
-
-  // const nonce = generateNonce();
   const response = NextResponse.next();
-  // response.headers.set('Content-Security-Policy', buildCsp(nonce));
-  // response.headers.set('x-nonce', nonce);
-
+  if (isHtmlDocument) {
+    applySecurityHeaders(response, generateNonce());
+  }
   return response;
 }
 
