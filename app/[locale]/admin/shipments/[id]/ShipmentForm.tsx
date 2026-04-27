@@ -8,6 +8,8 @@ import { SHIPMENT_STATUSES, ShipmentStatusKey } from '@/lib/shipment-status';
 import { StationAutocomplete } from '@/components/forms/StationAutocomplete';
 import { resolveRouteGeometry } from '@/lib/map-utils';
 import { CARGO_TYPES, isWagonCompatible } from '@/lib/cargo-wagon-compatibility';
+import { OcrScanButton } from '@/components/shared/OcrScanButton';
+import type { CmrFields } from '@/lib/ocr';
 import dynamic from 'next/dynamic';
 
 const LazyLocationPicker = lazy(() => import('./LocationPickerMap'));
@@ -232,9 +234,51 @@ export function ShipmentForm({ initialData, allWagons = [], allTrucks = [] }: { 
     }
   }
 
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Auto-fill from CMR scan. Sets uncontrolled inputs by name + the controlled
+  // state we own here. Uses native input setter so React re-runs onChange.
+  const applyCmrFields = (fields: CmrFields) => {
+    const setUncontrolled = (name: string, value: string | undefined) => {
+      if (!value || !formRef.current) return;
+      const el = formRef.current.querySelector<HTMLInputElement | HTMLTextAreaElement>(
+        `[name="${name}"]`,
+      );
+      if (!el) return;
+      const setter = Object.getOwnPropertyDescriptor(
+        Object.getPrototypeOf(el),
+        'value',
+      )?.set;
+      setter?.call(el, value);
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+    setUncontrolled('senderName', fields.senderName);
+    setUncontrolled('receiverName', fields.receiverName);
+    setUncontrolled('clientPhone', undefined); // CMR rarely has client phone
+    setUncontrolled('description', fields.cargoDescription);
+    if (fields.weightTons !== undefined) {
+      setWeightStr(String(fields.weightTons));
+    }
+    if (transportMode === 'truck') {
+      if (fields.origin) setTruckOrigin(fields.origin);
+      if (fields.destination) setTruckDest(fields.destination);
+    } else {
+      if (fields.origin) setFromStation(fields.origin);
+      if (fields.destination) setToStation(fields.destination);
+    }
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
       {error && <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm">{error}</div>}
+
+      <div className="rounded-xl border border-blue-100 bg-blue-50/40 p-3 flex items-center justify-between gap-3">
+        <div className="text-sm text-slate-600">
+          <span className="font-semibold text-slate-800">Hujjatdan avto-to&apos;ldirish.</span>{' '}
+          CMR yoki yo&apos;l xatini skanlang — maydonlar to&apos;ldiriladi.
+        </div>
+        <OcrScanButton<CmrFields> kind="cmr" onExtracted={applyCmrFields} />
+      </div>
 
       <div className="grid md:grid-cols-2 gap-5">
         <div>

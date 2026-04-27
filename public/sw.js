@@ -1,10 +1,19 @@
-/* DasPay Service Worker — Web Push + offline shell */
-const CACHE_NAME = 'daspay-v1';
-const OFFLINE_URLS = ['/'];
+/* DasPay Service Worker — Web Push + offline shell + driver page caching */
+const CACHE_NAME = 'daspay-v2';
+const OFFLINE_URLS = ['/', '/uz/driver', '/ru/driver', '/en/driver'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(OFFLINE_URLS)).catch(() => null),
+    caches.open(CACHE_NAME).then((cache) =>
+      // addAll fails the entire install if any URL 404s, so try them one by one.
+      Promise.all(
+        OFFLINE_URLS.map((url) =>
+          cache.add(url).catch((err) => {
+            console.warn('[sw] precache failed', url, err.message);
+          }),
+        ),
+      ),
+    ),
   );
   self.skipWaiting();
 });
@@ -56,13 +65,38 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
+/**
+ * Network-first for navigations + driver pages, fall back to cache when
+ * offline. Static assets fall through to the browser's HTTP cache.
+ */
 self.addEventListener('fetch', (event) => {
-  // Only GETs through the cache; ignore everything else
-  if (event.request.method !== 'GET') return;
-  const url = new URL(event.request.url);
-  // Skip API + Next internals
+  const req = event.request;
+  if (req.method !== 'GET') return;
+
+  const url = new URL(req.url);
+  // Skip API + Next data + cross-origin
+  if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith('/api') || url.pathname.startsWith('/_next/data')) return;
+
+  // Only intercept document navigations and known driver routes — leaves
+  // hashed JS/CSS/image bundles to Next's own caching.
+  const isDocument = req.mode === 'navigate' || req.destination === 'document';
+  const isDriverRoute = /\/[a-z]{2}\/driver(\/|$)/.test(url.pathname);
+
+  if (!isDocument && !isDriverRoute) return;
+
   event.respondWith(
-    fetch(event.request).catch(() => caches.match(event.request).then((r) => r || caches.match('/'))),
+    fetch(req)
+      .then((res) => {
+        // Clone before caching — Response bodies are read-once streams.
+        if (res.ok) {
+          const copy = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(req, copy)).catch(() => null);
+        }
+        return res;
+      })
+      .catch(() =>
+        caches.match(req).then((cached) => cached || caches.match('/')),
+      ),
   );
 });

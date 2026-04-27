@@ -275,6 +275,11 @@ model Invoice {
   sentAt       DateTime?
   paidAt       DateTime?
 
+  /// Reminder cadence tracking — see lib/invoice-reminders.ts
+  /// 0=none, 1=upcoming, 2=due-day, 3=overdue, 4=escalated
+  lastReminderStage Int      @default(0)
+  lastReminderAt    DateTime?
+
   createdById  Int?
   createdBy    User?    @relation("InvoicesCreated", fields: [createdById], references: [id])
   payments     Payment[]

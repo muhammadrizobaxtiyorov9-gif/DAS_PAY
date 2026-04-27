@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { Truck, LogOut, MessageCircle } from 'lucide-react';
 import Link from 'next/link';
 import { PushButton } from '@/components/shared/PushButton';
+import { PwaInstallPrompt } from '@/components/shared/PwaInstallPrompt';
 
 export default async function DriverLayout({
   children,
@@ -54,6 +55,7 @@ export default async function DriverLayout({
       <main className="flex-1 w-full max-w-5xl mx-auto relative">
         {children}
       </main>
+      <PwaInstallPrompt />
     </div>
   );
 }

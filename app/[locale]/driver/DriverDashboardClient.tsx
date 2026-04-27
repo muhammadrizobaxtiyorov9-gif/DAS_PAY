@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { updateDriverLocation, updateShipmentStatusByDriver } from '@/app/actions/driver';
-import { MapPin, Navigation, Package, Phone, CheckCircle2, ChevronRight, Truck, Gauge, Route, ExternalLink } from 'lucide-react';
+import { MapPin, Navigation, Package, Phone, CheckCircle2, ChevronRight, Truck, Gauge, Route, ExternalLink, WifiOff, Wifi } from 'lucide-react';
 import { toast } from 'sonner';
 import { haversine } from '@/lib/map-utils';
 import { ShipmentDocuments } from '@/components/shared/ShipmentDocuments';
+import { enqueuePing, drainQueue, queueSize, type QueuedPing } from '@/lib/offline-queue';
 
 const DRIVER_STATUS_FLOW = [
   { status: 'pending', actionLabel: 'Tasdiqlash', nextStatus: 'confirmed', icon: CheckCircle2, color: 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/30' },
@@ -37,16 +38,65 @@ export default function DriverDashboardClient({ truck }: { truck: any }) {
   const [speed, setSpeed] = useState<number>(0);
   const [distanceRemaining, setDistanceRemaining] = useState<number | null>(null);
   const lastSentRef = useRef<number>(0);
+  const [isOnline, setIsOnline] = useState(true);
+  const [queued, setQueued] = useState(0);
 
-  // GPS tracking with throttled backend updates (every 15 seconds)
+  // Register the service worker once. The PWA shell + push handler live in
+  // /public/sw.js and we want it active even before the user installs.
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+    navigator.serviceWorker.register('/sw.js').catch((err) =>
+      console.error('[sw] register failed', err),
+    );
+  }, []);
+
+  // Sends a ping to the server; falls back to the offline queue on failure.
+  // Returns true on success so the queue drainer can decide whether to keep going.
+  const sendPing = async (ping: QueuedPing): Promise<boolean> => {
+    try {
+      const res = await updateDriverLocation(ping.lat, ping.lng);
+      // Server actions return an object on error; treat any non-null `error` as failure.
+      if (res && (res as { error?: string }).error) return false;
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  // Watch online/offline transitions. When we come back online, drain the queue.
+  useEffect(() => {
+    const update = () => {
+      const online = navigator.onLine;
+      setIsOnline(online);
+      if (online) {
+        drainQueue(sendPing).then(({ drained, remaining }) => {
+          setQueued(remaining);
+          if (drained > 0) {
+            toast.success(`${drained} ta GPS yozuvi serverga yuborildi`);
+          }
+        });
+      }
+    };
+    setIsOnline(navigator.onLine);
+    setQueued(queueSize());
+    window.addEventListener('online', update);
+    window.addEventListener('offline', update);
+    return () => {
+      window.removeEventListener('online', update);
+      window.removeEventListener('offline', update);
+    };
+  }, []);
+
+  // GPS tracking with throttled backend updates (every 15 seconds).
+  // When offline, pings go into the queue instead of being lost.
   useEffect(() => {
     if (!activeShipment || activeShipment.status === 'delivered') return;
 
     if ('geolocation' in navigator) {
       const watchId = navigator.geolocation.watchPosition(
-        (pos) => {
+        async (pos) => {
           const { latitude, longitude, speed: gpsSpeed } = pos.coords;
-          
+
           if (gpsSpeed !== null && gpsSpeed > 0) {
             setSpeed(Math.round(gpsSpeed * 3.6));
           } else if (currentLat && currentLng) {
@@ -57,16 +107,30 @@ export default function DriverDashboardClient({ truck }: { truck: any }) {
           setCurrentLat(latitude);
           setCurrentLng(longitude);
 
-          // Calculate remaining distance (straight line to destination)
           if (activeShipment?.destinationLat && activeShipment?.destinationLng) {
-            setDistanceRemaining(haversine([latitude, longitude], [activeShipment.destinationLat, activeShipment.destinationLng]));
+            setDistanceRemaining(
+              haversine(
+                [latitude, longitude],
+                [activeShipment.destinationLat, activeShipment.destinationLng],
+              ),
+            );
           }
 
           // Throttle backend updates to every 15 seconds
           const now = Date.now();
           if (now - lastSentRef.current > 15000) {
             lastSentRef.current = now;
-            updateDriverLocation(latitude, longitude).catch(console.error);
+            const ping: QueuedPing = { lat: latitude, lng: longitude, ts: now };
+            if (!navigator.onLine) {
+              enqueuePing(ping);
+              setQueued(queueSize());
+              return;
+            }
+            const ok = await sendPing(ping);
+            if (!ok) {
+              enqueuePing(ping);
+              setQueued(queueSize());
+            }
           }
         },
         (err) => {
@@ -144,6 +208,29 @@ export default function DriverDashboardClient({ truck }: { truck: any }) {
 
   return (
     <div className="pb-28">
+      {/* Connection status banner — only shown when offline or queue has items */}
+      {(!isOnline || queued > 0) && (
+        <div
+          className={`mx-4 mt-4 lg:mx-0 lg:mt-6 mb-3 flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold ${
+            !isOnline
+              ? 'bg-amber-50 text-amber-800 border border-amber-200'
+              : 'bg-blue-50 text-blue-800 border border-blue-200'
+          }`}
+        >
+          {!isOnline ? (
+            <>
+              <WifiOff className="h-4 w-4 shrink-0" />
+              <span>Offline rejimda — GPS yozuvlari saqlanmoqda ({queued})</span>
+            </>
+          ) : (
+            <>
+              <Wifi className="h-4 w-4 shrink-0" />
+              <span>{queued} ta GPS yozuvi yuborilishi kutilmoqda</span>
+            </>
+          )}
+        </div>
+      )}
+
       {/* Route Info Badge (Moved out of map so it doesn't overlap) */}
       <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200 mb-4 mx-4 mt-4 lg:mx-0 lg:mt-6">
         <div className="flex items-center gap-3">

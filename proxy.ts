@@ -88,8 +88,17 @@ export async function proxy(request: NextRequest) {
   const firstSegment = pathname.split('/', 2)[1] ?? '';
   const pathnameHasLocale = LOCALE_SET.has(firstSegment);
 
+  // --- Public short-link routes (locale-agnostic) --------------------------
+  // /t/<code> is the share-friendly tracking URL: it owns its own page +
+  // OG image and resolves locale internally, so we let it through without
+  // redirecting.
+  const isPublicShortLink = pathname.startsWith('/t/') || pathname === '/t';
+
   // --- Locale redirect -----------------------------------------------------
-  if (pathname === '/' || (!pathnameHasLocale && !pathname.startsWith('/api'))) {
+  if (
+    pathname === '/' ||
+    (!pathnameHasLocale && !pathname.startsWith('/api') && !isPublicShortLink)
+  ) {
     const locale = parsePreferredLocale(request.headers.get('accept-language') || '');
     const url = request.nextUrl.clone();
     url.pathname = pathname === '/' ? `/${locale}` : `/${locale}${pathname}`;

@@ -62,3 +62,8 @@ desktop.ini
 
 # === User uploads (served from /public/uploads at runtime) ===
 public/uploads/
+
+# === Internal planning docs (kept local, not shipped) ===
+plan.md
+notes.md
+TODO.local.md
