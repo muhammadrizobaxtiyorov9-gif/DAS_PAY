@@ -134,10 +134,12 @@ jobs:
             fi
             echo "::endgroup::"
 
-            echo "::group::Prisma migrate + generate"
-            # Use migrate deploy so prisma/migrations/* are applied in order
-            # (safer than `db push --accept-data-loss` which can drop columns).
-            npx prisma migrate deploy
+            echo "::group::Prisma db push + generate"
+            # `db push` (without --accept-data-loss) syncs the schema and
+            # refuses if a change would drop data — safer than the original
+            # `--accept-data-loss` flag. Migration history isn't tracked,
+            # which matches the project's current workflow.
+            npx prisma db push --skip-generate
             npx prisma generate
             echo "::endgroup::"
 
