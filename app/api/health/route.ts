@@ -1,7 +1,8 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { redis, isRedisEnabled } from '@/lib/redis';
 import { log } from '@/lib/logger';
+import { getAdminSession } from '@/lib/adminAuth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -9,10 +10,16 @@ export const dynamic = 'force-dynamic';
 /**
  * GET /api/health
  *
- * Liveness + readiness probe for load balancers and uptime monitors.
- * Returns 200 only when every required dependency is reachable. Optional
- * subsystems (Redis, VAPID, Telegram, OpenAI) are reported as `enabled:false`
- * but never fail the check, so missing-but-not-required setups don't page.
+ * Two response shapes depending on caller authority:
+ *
+ * - **Anonymous** (load balancers, uptime monitors): minimal payload —
+ *   only `{ ok, status, timestamp }`. The HTTP status (200/503) carries
+ *   the real signal; we deliberately do not leak which subsystems are
+ *   wired up so the public can't fingerprint our stack.
+ *
+ * - **Trusted** (admin session cookie OR `?token=<HEALTH_TOKEN>`): full
+ *   detailed payload with per-subsystem latency and status. Use this from
+ *   internal monitoring or while debugging.
  */
 
 interface CheckResult {
@@ -55,7 +62,15 @@ function checkTelegram(): CheckResult {
   return { ok: true, status: process.env.TELEGRAM_BOT_TOKEN ? 'up' : 'disabled' };
 }
 
-export async function GET() {
+async function isTrustedCaller(req: NextRequest): Promise<boolean> {
+  const token = req.nextUrl.searchParams.get('token');
+  const expected = process.env.HEALTH_TOKEN;
+  if (expected && token && token === expected) return true;
+  const session = await getAdminSession();
+  return !!session;
+}
+
+export async function GET(req: NextRequest) {
   const t0 = Date.now();
   const [db, cache] = await Promise.all([checkDb(), checkRedis()]);
   const vapid = checkVapid();
@@ -63,6 +78,19 @@ export async function GET() {
 
   const required = [db, cache];
   const ok = required.every((c) => c.ok);
+  const trusted = await isTrustedCaller(req);
+
+  const headers = { 'Cache-Control': 'no-store, max-age=0' };
+  const status = ok ? 200 : 503;
+
+  if (!trusted) {
+    // Public response: status code carries the signal, body is intentionally
+    // minimal so attackers can't enumerate which subsystems are configured.
+    return NextResponse.json(
+      { ok, status: ok ? 'up' : 'down', timestamp: new Date().toISOString() },
+      { status, headers },
+    );
+  }
 
   const body = {
     ok,
@@ -78,8 +106,5 @@ export async function GET() {
     log.error('health.degraded', body);
   }
 
-  return NextResponse.json(body, {
-    status: ok ? 200 : 503,
-    headers: { 'Cache-Control': 'no-store, max-age=0' },
-  });
+  return NextResponse.json(body, { status, headers });
 }
