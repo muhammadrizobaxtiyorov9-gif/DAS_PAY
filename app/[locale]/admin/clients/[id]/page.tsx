@@ -43,6 +43,10 @@ export default async function ClientProfilePage({
         include: { shipment: { select: { trackingCode: true } } },
       },
       addresses: { orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }] },
+      clientMessages: {
+        orderBy: { createdAt: 'asc' },
+        include: { admin: { select: { name: true, username: true } } },
+      },
     },
   });
 
@@ -306,9 +310,24 @@ export default async function ClientProfilePage({
           </div>
         )}
       </section>
+
+      {/* Support Chat */}
+      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm flex flex-col" style={{ height: '600px' }}>
+        <div className="p-6 border-b border-slate-100 flex items-center gap-2">
+          <MessageCircleQuestion className="w-5 h-5 text-[#185FA5]" />
+          <h2 className="text-base font-bold text-gray-900">Mijoz bilan chat (Support)</h2>
+        </div>
+        <div className="flex-1 overflow-hidden relative">
+          <ClientSupportAdminChat clientId={client.id} initialMessages={client.clientMessages} />
+        </div>
+      </section>
     </div>
   );
 }
+
+// Needed for Chat import missing above
+import { MessageCircleQuestion } from 'lucide-react';
+import ClientSupportAdminChat from './ClientSupportAdminChat';
 
 function Kpi({
   icon: Icon,

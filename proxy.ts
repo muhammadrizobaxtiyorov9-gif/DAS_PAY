@@ -123,7 +123,7 @@ export async function proxy(request: NextRequest) {
     try {
       const { payload } = await jwtVerify(adminToken, adminTokenSecret());
       const role = payload.role;
-      if (role !== 'ADMIN' && role !== 'SUPERADMIN' && role !== 'DIRECTOR' && role !== 'admin' && role !== 'ACCOUNTANT') {
+      if (role !== 'ADMIN' && role !== 'SUPERADMIN' && role !== 'DIRECTOR' && role !== 'admin' && role !== 'ACCOUNTANT' && role !== 'DRIVER') {
         throw new Error('Invalid Role');
       }
     } catch {

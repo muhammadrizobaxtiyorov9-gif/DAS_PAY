@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { Send, Search, Loader2, MessageCircle } from 'lucide-react';
 
 interface Thread {
@@ -25,6 +25,9 @@ interface Message {
 export function ChatClient({ currentUserId }: { currentUserId: number }) {
   const sp = useSearchParams();
   const router = useRouter();
+  // Reuse the current pathname for the ?with= URL update so this component
+  // works at both /admin/chat and /driver/chat without redirecting.
+  const pathname = usePathname();
   const initialPartner = Number(sp.get('with')) || null;
 
   const [threads, setThreads] = useState<Thread[]>([]);
@@ -85,7 +88,7 @@ export function ChatClient({ currentUserId }: { currentUserId: number }) {
 
   const handleSelect = (partnerId: number) => {
     setActivePartner(partnerId);
-    router.replace(`/uz/admin/chat?with=${partnerId}`, { scroll: false });
+    router.replace(`${pathname}?with=${partnerId}`, { scroll: false });
   };
 
   const handleSend = async () => {

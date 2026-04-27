@@ -1079,11 +1079,82 @@ export async function updateInvoiceStatus(
     await logAudit(session?.userId, actionType as any, `Invoys ${updated.number}: ${status}`);
     revalidatePath('/[locale]/admin/invoices', 'page');
     revalidatePath(`/[locale]/admin/invoices/${id}`, 'page');
+
+    // --- Notify when invoice is marked as 'sent' ---
+    // Two recipients: (a) the internal admin chat for visibility, and (b) the
+    // *client* on Telegram so they actually get the invoice. The client send
+    // is best-effort — we don't fail the operation if their account isn't
+    // linked or Telegram is down.
+    if (status === 'sent') {
+      try {
+        const { sendTelegramMessage, sendTelegramToChat } = await import('@/lib/telegram');
+        const { CONTACTS } = await import('@/lib/contacts');
+        const { formatMoney } = await import('@/lib/money');
+
+        const invoice = await prisma.invoice.findUnique({
+          where: { id },
+          include: {
+            client: { select: { name: true, phone: true, telegramId: true, notifyInvoices: true } },
+            shipment: { select: { trackingCode: true, origin: true, destination: true } },
+          },
+        });
+        if (invoice) {
+          const dueStr = invoice.dueDate.toLocaleDateString('uz-UZ', { timeZone: 'Asia/Tashkent' });
+          const totalStr = formatMoney(invoice.total, invoice.currency);
+          const clientName = invoice.client?.name || "Noma'lum";
+          const clientPhoneStr = invoice.clientPhone ? `+${invoice.clientPhone}` : '—';
+          const shipmentInfo = invoice.shipment
+            ? `\n🚚 Yuk: <b>${invoice.shipment.trackingCode}</b> (${invoice.shipment.origin} → ${invoice.shipment.destination})`
+            : '';
+
+          // (a) Admin chat — operational visibility
+          const adminMsg =
+            `📄 <b>Yangi invoys yuborildi</b>\n\n` +
+            `📋 Raqam: <b>${invoice.number}</b>\n` +
+            `👤 Mijoz: <b>${clientName}</b>\n` +
+            `📞 Telefon: ${clientPhoneStr}${shipmentInfo}\n` +
+            `💰 Summa: <b>${totalStr}</b>\n` +
+            `📅 Muddat: <b>${dueStr}</b>\n` +
+            `👨‍💼 Yuboruvchi: ${session?.username || 'Admin'}`;
+          sendTelegramMessage(adminMsg).catch((e) =>
+            console.error('[invoice] admin telegram failed', e),
+          );
+
+          // (b) Client — only if they linked Telegram and didn't opt out
+          const client = invoice.client;
+          if (client?.telegramId && client.notifyInvoices !== false) {
+            const clientMsg =
+              `📄 <b>Sizga yangi hisob yuborildi</b>\n\n` +
+              `📋 Hisob raqami: <b>${invoice.number}</b>${shipmentInfo}\n` +
+              `💰 Summa: <b>${totalStr}</b>\n` +
+              `📅 To'lov muddati: <b>${dueStr}</b>\n\n` +
+              `Hisobni ko'rish va to'lov qilish uchun pastdagi tugmani bosing.`;
+
+            sendTelegramToChat(client.telegramId, clientMsg, {
+              replyMarkup: {
+                inline_keyboard: [
+                  [
+                    {
+                      text: '💳 Hisobni ochish',
+                      url: `${CONTACTS.web.url}/uz/cabinet/invoices`,
+                    },
+                  ],
+                ],
+              },
+            }).catch((e) => console.error('[invoice] client telegram failed', e));
+          }
+        }
+      } catch (telegramErr) {
+        console.error('[Invoice] Telegram notification failed:', telegramErr);
+      }
+    }
+
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message };
   }
 }
+
 
 export async function deleteInvoice(id: number) {
   try {

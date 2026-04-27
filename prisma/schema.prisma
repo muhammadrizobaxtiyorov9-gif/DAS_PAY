@@ -324,6 +324,7 @@ model User {
   slaViolations   SlaViolation[] @relation("SlaViolations")
   chatMessagesFrom ChatMessage[]   @relation("ChatFrom")
   chatMessagesTo   ChatMessage[]   @relation("ChatTo")
+  clientMessages   ClientMessage[]
 
   @@index([username])
 }
@@ -370,6 +371,7 @@ model Client {
   shipments  Shipment[]
   invoices   Invoice[]
   addresses  ClientAddress[]
+  clientMessages ClientMessage[]
 
   @@index([phone])
   @@index([telegramId])
@@ -748,6 +750,23 @@ model ChatMessage {
   @@index([fromUserId, toUserId])
   @@index([toUserId, isRead])
   @@index([shipmentId])
+  @@index([createdAt])
+}
+
+/// Support chat messages between Client and Admins
+model ClientMessage {
+  id          Int      @id @default(autoincrement())
+  clientId    Int
+  client      Client   @relation(fields: [clientId], references: [id])
+  /// Which admin is replying. Null if client sent it.
+  adminId     Int?
+  admin       User?    @relation(fields: [adminId], references: [id])
+  isFromClient Boolean @default(true)
+  body        String
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([clientId])
   @@index([createdAt])
 }
 

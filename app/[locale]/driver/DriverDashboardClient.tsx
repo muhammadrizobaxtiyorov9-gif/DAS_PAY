@@ -2,11 +2,13 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { updateDriverLocation, updateShipmentStatusByDriver } from '@/app/actions/driver';
-import { MapPin, Navigation, Package, Phone, CheckCircle2, ChevronRight, Truck, Gauge, Route, ExternalLink, WifiOff, Wifi } from 'lucide-react';
+import { MapPin, Navigation, Package, Phone, CheckCircle2, ChevronRight, Truck, Gauge, Route, ExternalLink, WifiOff, Wifi, MessageCircle, Bell, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 import { haversine } from '@/lib/map-utils';
 import { ShipmentDocuments } from '@/components/shared/ShipmentDocuments';
 import { enqueuePing, drainQueue, queueSize, type QueuedPing } from '@/lib/offline-queue';
+import Link from 'next/link';
+import { PushButton } from '@/components/shared/PushButton';
 
 const DRIVER_STATUS_FLOW = [
   { status: 'pending', actionLabel: 'Tasdiqlash', nextStatus: 'confirmed', icon: CheckCircle2, color: 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/30' },
@@ -27,7 +29,7 @@ const STATUS_LABELS: Record<string, string> = {
   delivered: "YETKAZILDI"
 };
 
-export default function DriverDashboardClient({ truck }: { truck: any }) {
+export default function DriverDashboardClient({ truck, username, locale }: { truck: any; username: string; locale: string }) {
   const [loading, setLoading] = useState(false);
   const activeShipment = truck?.lockedByShipmentId 
     ? truck.shipments?.find((s:any) => s.id === truck.lockedByShipmentId)
@@ -38,8 +40,13 @@ export default function DriverDashboardClient({ truck }: { truck: any }) {
   const [speed, setSpeed] = useState<number>(0);
   const [distanceRemaining, setDistanceRemaining] = useState<number | null>(null);
   const lastSentRef = useRef<number>(0);
+  // For computing speed when the GPS doesn't supply it directly. We track the
+  // previous reading's lat/lng + timestamp so the delta is real wall-clock time,
+  // not a hard-coded 10s assumption (which produced fake 1000+ km/h spikes).
+  const lastReadingRef = useRef<{ lat: number; lng: number; ts: number } | null>(null);
   const [isOnline, setIsOnline] = useState(true);
   const [queued, setQueued] = useState(0);
+  const [gpsReady, setGpsReady] = useState(false);
 
   // Register the service worker once. The PWA shell + push handler live in
   // /public/sw.js and we want it active even before the user installs.
@@ -87,62 +94,76 @@ export default function DriverDashboardClient({ truck }: { truck: any }) {
     };
   }, []);
 
-  // GPS tracking with throttled backend updates (every 15 seconds).
-  // When offline, pings go into the queue instead of being lost.
+  // GPS tracking — ALWAYS ON regardless of shipment status.
+  // Requests permission immediately and continuously tracks the driver's location.
   useEffect(() => {
-    if (!activeShipment || activeShipment.status === 'delivered') return;
-
-    if ('geolocation' in navigator) {
-      const watchId = navigator.geolocation.watchPosition(
-        async (pos) => {
-          const { latitude, longitude, speed: gpsSpeed } = pos.coords;
-
-          if (gpsSpeed !== null && gpsSpeed > 0) {
-            setSpeed(Math.round(gpsSpeed * 3.6));
-          } else if (currentLat && currentLng) {
-            const dist = haversine([currentLat, currentLng], [latitude, longitude]);
-            setSpeed(dist > 0.01 ? Math.round(dist / (10 / 3600)) : 0);
-          }
-
-          setCurrentLat(latitude);
-          setCurrentLng(longitude);
-
-          if (activeShipment?.destinationLat && activeShipment?.destinationLng) {
-            setDistanceRemaining(
-              haversine(
-                [latitude, longitude],
-                [activeShipment.destinationLat, activeShipment.destinationLng],
-              ),
-            );
-          }
-
-          // Throttle backend updates to every 15 seconds
-          const now = Date.now();
-          if (now - lastSentRef.current > 15000) {
-            lastSentRef.current = now;
-            const ping: QueuedPing = { lat: latitude, lng: longitude, ts: now };
-            if (!navigator.onLine) {
-              enqueuePing(ping);
-              setQueued(queueSize());
-              return;
-            }
-            const ok = await sendPing(ping);
-            if (!ok) {
-              enqueuePing(ping);
-              setQueued(queueSize());
-            }
-          }
-        },
-        (err) => {
-          console.error('GPS Xatolik:', err);
-          toast.error('GPS ruxsati berilmadi. Iltimos, joylashuvga ruxsat bering.');
-        },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 }
-      );
-      return () => navigator.geolocation.clearWatch(watchId);
-    } else {
+    if (!('geolocation' in navigator)) {
       toast.error("Sizning qurilmangiz GPS qo'llab-quvvatlamaydi.");
+      return;
     }
+
+    const watchId = navigator.geolocation.watchPosition(
+      async (pos) => {
+        const { latitude, longitude, speed: gpsSpeed } = pos.coords;
+        const now = Date.now();
+
+        if (!gpsReady) setGpsReady(true);
+
+        // Prefer GPS-supplied speed (m/s) when available — most reliable.
+        if (gpsSpeed !== null && gpsSpeed >= 0 && Number.isFinite(gpsSpeed)) {
+          setSpeed(Math.round(gpsSpeed * 3.6));
+        } else if (lastReadingRef.current) {
+          // Fall back to deriving speed from the actual time delta. Cap at
+          // 200 km/h so a single GPS jitter doesn't display 1000+ km/h.
+          const prev = lastReadingRef.current;
+          const dt = (now - prev.ts) / 1000; // seconds
+          if (dt > 0.5) {
+            const distKm = haversine([prev.lat, prev.lng], [latitude, longitude]);
+            const kmh = (distKm / dt) * 3600;
+            setSpeed(kmh < 200 && kmh >= 0 ? Math.round(kmh) : 0);
+          }
+        }
+        lastReadingRef.current = { lat: latitude, lng: longitude, ts: now };
+
+        setCurrentLat(latitude);
+        setCurrentLng(longitude);
+
+        if (activeShipment?.destinationLat && activeShipment?.destinationLng) {
+          setDistanceRemaining(
+            haversine(
+              [latitude, longitude],
+              [activeShipment.destinationLat, activeShipment.destinationLng],
+            ),
+          );
+        }
+
+        // Throttle backend updates to every 15 seconds
+        if (now - lastSentRef.current > 15000) {
+          lastSentRef.current = now;
+          const ping: QueuedPing = { lat: latitude, lng: longitude, ts: now };
+          if (!navigator.onLine) {
+            enqueuePing(ping);
+            setQueued(queueSize());
+            return;
+          }
+          const ok = await sendPing(ping);
+          if (!ok) {
+            enqueuePing(ping);
+            setQueued(queueSize());
+          }
+        }
+      },
+      (err) => {
+        console.error('GPS Xatolik:', err);
+        if (err.code === err.PERMISSION_DENIED) {
+          toast.error('GPS ruxsati berilmadi. Iltimos, joylashuvga ruxsat bering.', { duration: 10000 });
+        } else {
+          toast.error('GPS joylashuvini aniqlashda xatolik yuz berdi.');
+        }
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 }
+    );
+    return () => navigator.geolocation.clearWatch(watchId);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeShipment?.id]);
 
@@ -163,36 +184,89 @@ export default function DriverDashboardClient({ truck }: { truck: any }) {
     }
   }
 
+  function handleLogout() {
+    document.cookie = 'admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    window.location.href = `/${locale}/admin-login`;
+  }
+
+  // --- Inline Toolbar (replaces header) ---
+  const toolbar = (
+    <div className="flex items-center justify-between px-4 pt-4 pb-2 lg:px-0">
+      <div className="flex items-center gap-2">
+        <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-600/20">
+          <Truck className="w-4 h-4 text-white" />
+        </div>
+        <div>
+          <p className="font-bold text-sm text-slate-800 leading-tight">DasPay Driver</p>
+          <p className="text-[10px] font-semibold text-slate-500 uppercase">{username}</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <Link
+          href={`/${locale}/driver/chat`}
+          className="w-9 h-9 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors shadow-sm"
+          title="Dispetcher bilan chat"
+        >
+          <MessageCircle className="w-4 h-4" />
+        </Link>
+        <PushButton compact />
+        <button
+          onClick={handleLogout}
+          className="w-9 h-9 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors shadow-sm"
+          title="Chiqish"
+        >
+          <LogOut className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+
   if (!truck) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[70vh] p-6 text-center">
-        <div className="w-20 h-20 bg-slate-200 rounded-full flex items-center justify-center mb-4">
-          <Truck className="w-10 h-10 text-slate-400" />
+      <>
+        {toolbar}
+        <div className="flex flex-col items-center justify-center min-h-[70vh] p-6 text-center">
+          <div className="w-20 h-20 bg-slate-200 rounded-full flex items-center justify-center mb-4">
+            <Truck className="w-10 h-10 text-slate-400" />
+          </div>
+          <h2 className="text-xl font-bold text-slate-800">Mashina biriktirilmagan</h2>
+          <p className="text-slate-500 mt-2 text-sm">
+            Sizga hozircha hech qanday avtomobil biriktirilmagan. Iltimos, dispetcher bilan bog&apos;laning.
+          </p>
         </div>
-        <h2 className="text-xl font-bold text-slate-800">Mashina biriktirilmagan</h2>
-        <p className="text-slate-500 mt-2 text-sm">
-          Sizga hozircha hech qanday avtomobil biriktirilmagan. Iltimos, dispetcher bilan bog&apos;laning.
-        </p>
-      </div>
+      </>
     );
   }
 
   if (!activeShipment) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[70vh] p-6 text-center">
-        <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-green-100">
-          <CheckCircle2 className="w-12 h-12 text-green-500" />
+      <>
+        {toolbar}
+        <div className="flex flex-col items-center justify-center min-h-[70vh] p-6 text-center">
+          <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-green-100">
+            <CheckCircle2 className="w-12 h-12 text-green-500" />
+          </div>
+          <h2 className="text-2xl font-bold text-slate-800">Yangi buyurtma yo&apos;q</h2>
+          <p className="text-slate-500 mt-2">
+            Dam oling. Hozircha sizda faol yuk tashish marshruti mavjud emas.
+          </p>
+          <div className="mt-8 bg-white p-4 rounded-xl shadow-sm border border-slate-100 w-full text-left">
+            <div className="text-xs font-semibold text-slate-400 uppercase">Mashinangiz</div>
+            <div className="font-bold text-lg text-slate-800 mt-1">{truck.plateNumber}</div>
+            <div className="text-sm text-slate-500">{truck.model}</div>
+          </div>
+          {gpsReady && currentLat && currentLng && (
+            <div className="mt-4 bg-white p-3 rounded-xl shadow-sm border border-slate-100 w-full text-left">
+              <div className="text-xs font-semibold text-green-600 uppercase flex items-center gap-1">
+                <MapPin className="w-3 h-3" /> GPS faol
+              </div>
+              <div className="text-xs text-slate-500 mt-1">
+                {currentLat.toFixed(5)}, {currentLng.toFixed(5)}
+              </div>
+            </div>
+          )}
         </div>
-        <h2 className="text-2xl font-bold text-slate-800">Yangi buyurtma yo&apos;q</h2>
-        <p className="text-slate-500 mt-2">
-          Dam oling. Hozircha sizda faol yuk tashish marshruti mavjud emas.
-        </p>
-        <div className="mt-8 bg-white p-4 rounded-xl shadow-sm border border-slate-100 w-full text-left">
-          <div className="text-xs font-semibold text-slate-400 uppercase">Mashinangiz</div>
-          <div className="font-bold text-lg text-slate-800 mt-1">{truck.plateNumber}</div>
-          <div className="text-sm text-slate-500">{truck.model}</div>
-        </div>
-      </div>
+      </>
     );
   }
 
@@ -208,10 +282,13 @@ export default function DriverDashboardClient({ truck }: { truck: any }) {
 
   return (
     <div className="pb-28">
+      {/* Inline Toolbar */}
+      {toolbar}
+
       {/* Connection status banner — only shown when offline or queue has items */}
       {(!isOnline || queued > 0) && (
         <div
-          className={`mx-4 mt-4 lg:mx-0 lg:mt-6 mb-3 flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold ${
+          className={`mx-4 mt-2 lg:mx-0 mb-3 flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold ${
             !isOnline
               ? 'bg-amber-50 text-amber-800 border border-amber-200'
               : 'bg-blue-50 text-blue-800 border border-blue-200'
@@ -232,7 +309,7 @@ export default function DriverDashboardClient({ truck }: { truck: any }) {
       )}
 
       {/* Route Info Badge (Moved out of map so it doesn't overlap) */}
-      <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200 mb-4 mx-4 mt-4 lg:mx-0 lg:mt-6">
+      <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200 mb-4 mx-4 mt-2 lg:mx-0">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
             <Navigation className="w-5 h-5 text-blue-600" />

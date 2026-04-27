@@ -12,8 +12,9 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isAdminRoute = pathname.includes('/admin');
   const isCabinetRoute = pathname.includes('/cabinet');
+  const isDriverRoute = pathname.includes('/driver');
 
-  if (isAdminRoute || isCabinetRoute) {
+  if (isAdminRoute || isCabinetRoute || isDriverRoute) {
     return <>{children}</>;
   }
 
