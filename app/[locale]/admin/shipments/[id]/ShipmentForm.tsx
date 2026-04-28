@@ -14,9 +14,9 @@ import dynamic from 'next/dynamic';
 import { FormSection } from '@/components/forms/FormSection';
 
 const LazyLocationPicker = lazy(() => import('./LocationPickerMap'));
-const TruckRoutePicker = dynamic(() => import('./TruckRoutePickerMap'), {
+const YandexRoutePicker = dynamic(() => import('./YandexRoutePicker'), {
   ssr: false,
-  loading: () => <div className="h-[350px] w-full bg-gray-100 animate-pulse flex items-center justify-center rounded-xl border border-gray-200"><MapPin className="text-gray-400 w-8 h-8" /></div>
+  loading: () => <div className="h-[400px] w-full bg-gray-100 animate-pulse flex items-center justify-center rounded-xl border border-gray-200"><MapPin className="text-gray-400 w-8 h-8" /></div>
 });
 
 interface StationData {
@@ -697,18 +697,22 @@ export function ShipmentForm({ initialData, allWagons = [], allTrucks = [] }: { 
             </div>
           </div>
 
-          {/* Truck Route Picker Map */}
-          <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm space-y-3" style={{ zIndex: 0, isolation: 'isolate' }}>
+          {/* Yandex Maps Location Picker + Route */}
+          <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm space-y-3">
             <h4 className="font-bold text-sm text-[#042C53] flex items-center gap-2">
               <Route className="h-4 w-4 text-[#185FA5]" />
-              Xaritadan manzil tanlash (A → B)
+              Xaritadan manzil tanlash (Yandex Maps)
             </h4>
-            <TruckRoutePicker
+            <YandexRoutePicker
               originLat={truckCoords.originLat}
               originLng={truckCoords.originLng}
               destLat={truckCoords.destLat}
               destLng={truckCoords.destLng}
               onChange={(c) => setTruckCoords(c)}
+              onAddressResolved={(type, address) => {
+                if (type === 'origin' && address) setTruckOrigin(address);
+                if (type === 'dest' && address) setTruckDest(address);
+              }}
             />
           </div>
 

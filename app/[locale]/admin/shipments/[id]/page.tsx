@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { Package, FileSignature, FileText } from 'lucide-react';
+import { Package, FileSignature, FileText, Edit2, CalendarPlus, Eye } from 'lucide-react';
 import Link from 'next/link';
 import { ShipmentForm } from './ShipmentForm';
 import { ShipmentTimelineEditor } from './ShipmentTimelineEditor';
@@ -12,13 +12,25 @@ import { branchWhere } from '@/lib/branch';
 
 export const dynamic = 'force-dynamic';
 
+type Tab = 'edit' | 'events' | 'track';
+
+const TABS: { key: Tab; label: string; icon: React.ReactNode; color: string; activeColor: string }[] = [
+  { key: 'edit', label: 'Tahrirlash', icon: <Edit2 className="h-4 w-4" />, color: 'text-slate-500 hover:text-blue-600 hover:bg-blue-50', activeColor: 'text-blue-700 bg-blue-50 border-blue-600' },
+  { key: 'events', label: 'Voqealar', icon: <CalendarPlus className="h-4 w-4" />, color: 'text-slate-500 hover:text-amber-600 hover:bg-amber-50', activeColor: 'text-amber-700 bg-amber-50 border-amber-600' },
+  { key: 'track', label: 'Kuzatish', icon: <Eye className="h-4 w-4" />, color: 'text-slate-500 hover:text-emerald-600 hover:bg-emerald-50', activeColor: 'text-emerald-700 bg-emerald-50 border-emerald-600' },
+];
+
 export default async function ShipmentEditPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }) {
   const { id } = await params;
+  const sp = await searchParams;
   const isNew = id === 'new';
+  const tab: Tab = isNew ? 'edit' : (['edit', 'events', 'track'].includes(sp.tab || '') ? sp.tab as Tab : 'edit');
 
   let shipment = null;
   let hasClientTelegram = false;
@@ -41,34 +53,42 @@ export default async function ShipmentEditPage({
   const session = await getAdminSession();
   const branchScope = session ? branchWhere(session) : {};
 
+  // Only fetch wagons/trucks for edit tab, logs for track tab
+  const needsVehicles = isNew || tab === 'edit';
+  const needsLogs = !isNew && tab === 'track';
+
   const [logs, allWagons, allTrucks] = await Promise.all([
-    !isNew
+    needsLogs
       ? prisma.truckLocationLog.findMany({
           where: { shipmentId: parseInt(id) },
           orderBy: { createdAt: 'asc' },
           select: { lat: true, lng: true, speed: true, isStop: true, createdAt: true },
         })
       : Promise.resolve([]),
-    prisma.wagon.findMany({
-      where: { ...branchScope, status: { notIn: ['maintenance'] } },
-      orderBy: { number: 'asc' },
-      include: {
-        shipments: {
-          where: { status: { notIn: ['delivered', 'unloaded'] } },
-          select: { id: true, trackingCode: true, status: true },
-        },
-      },
-    }),
-    prisma.truck.findMany({
-      where: { ...branchScope, status: { notIn: ['maintenance'] } },
-      orderBy: { plateNumber: 'asc' },
-      include: {
-        shipments: {
-          where: { status: { notIn: ['delivered', 'unloaded'] } },
-          select: { id: true, trackingCode: true, status: true },
-        },
-      },
-    }),
+    needsVehicles
+      ? prisma.wagon.findMany({
+          where: { ...branchScope, status: { notIn: ['maintenance'] } },
+          orderBy: { number: 'asc' },
+          include: {
+            shipments: {
+              where: { status: { notIn: ['delivered', 'unloaded'] } },
+              select: { id: true, trackingCode: true, status: true },
+            },
+          },
+        })
+      : Promise.resolve([]),
+    needsVehicles
+      ? prisma.truck.findMany({
+          where: { ...branchScope, status: { notIn: ['maintenance'] } },
+          orderBy: { plateNumber: 'asc' },
+          include: {
+            shipments: {
+              where: { status: { notIn: ['delivered', 'unloaded'] } },
+              select: { id: true, trackingCode: true, status: true },
+            },
+          },
+        })
+      : Promise.resolve([]),
   ]);
 
   const serializedLogs = logs.map((l) => ({
@@ -92,20 +112,19 @@ export default async function ShipmentEditPage({
         )
       : [];
 
+  const pageTitle = isNew ? 'Yangi Yuk Kiritish' : `${shipment?.trackingCode} — ${tab === 'edit' ? 'Tahrirlash' : tab === 'events' ? 'Voqealar' : 'Kuzatish'}`;
+
   return (
     <div className="mx-auto max-w-5xl space-y-6">
+      {/* Header */}
       <div className="flex flex-wrap items-center gap-3 border-b pb-4">
         <div className="rounded-xl bg-blue-50 p-3 text-blue-600">
           <Package className="h-6 w-6" />
         </div>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-gray-900">
-            {isNew ? 'Yangi Yuk (Tracking) Kiritish' : "Tracking ma'lumotlarini tahrirlash"}
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-900">{pageTitle}</h1>
           <p className="text-sm text-gray-500">
-            {isNew
-              ? 'Mijoz uchun yangi logistika marshrutini oching.'
-              : "Yuk ma'lumotlari, marshrut va tarixni boshqaring."}
+            {isNew ? 'Mijoz uchun yangi logistika marshrutini oching.' : `Yuk: ${shipment?.origin} → ${shipment?.destination}`}
           </p>
         </div>
         {!isNew && shipment && (
@@ -127,34 +146,32 @@ export default async function ShipmentEditPage({
         )}
       </div>
 
-      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm md:p-8">
-        <ShipmentForm initialData={shipment} allWagons={allWagons} allTrucks={allTrucks} />
-      </div>
-
-      {!isNew && shipment && serializedLogs.length > 0 && (
-        <AdminShipmentMap 
-          shipmentId={shipment.id} 
-          logs={serializedLogs}
-          origin={shipment.origin}
-          destination={shipment.destination}
-        />
+      {/* Tab Navigation */}
+      {!isNew && shipment && (
+        <div className="flex gap-1 border-b border-slate-200">
+          {TABS.map((t) => (
+            <Link
+              key={t.key}
+              href={`/uz/admin/shipments/${id}?tab=${t.key}`}
+              className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-t-lg border-b-2 transition-all ${
+                tab === t.key ? t.activeColor : `${t.color} border-transparent`
+              }`}
+            >
+              {t.icon} {t.label}
+            </Link>
+          ))}
+        </div>
       )}
 
-      {!isNew && shipment && (
-        <FinancialsCard
-          shipmentId={shipment.id}
-          initial={{
-            revenue: (shipment as unknown as { revenue?: number }).revenue ?? 0,
-            cost: (shipment as unknown as { cost?: number }).cost ?? 0,
-            currency: (shipment as unknown as { currency?: string }).currency ?? 'USD',
-            transportMode: (shipment as unknown as { transportMode?: string | null }).transportMode ?? null,
-            distanceKm: (shipment as unknown as { distanceKm?: number | null }).distanceKm ?? null,
-            etaAt: (shipment as unknown as { etaAt?: Date | null }).etaAt?.toISOString() ?? null,
-          }}
-        />
+      {/* TAB: Edit */}
+      {tab === 'edit' && (
+        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm md:p-8">
+          <ShipmentForm initialData={shipment} allWagons={allWagons} allTrucks={allTrucks} />
+        </div>
       )}
 
-      {!isNew && shipment && (
+      {/* TAB: Events */}
+      {tab === 'events' && !isNew && shipment && (
         <ShipmentTimelineEditor
           shipmentId={shipment.id}
           trackingCode={shipment.trackingCode}
@@ -164,8 +181,41 @@ export default async function ShipmentEditPage({
         />
       )}
 
-      {!isNew && shipment && (
-        <ShipmentDocuments shipmentId={shipment.id} defaultKind="cmr" />
+      {/* TAB: Track */}
+      {tab === 'track' && !isNew && shipment && (
+        <>
+          {serializedLogs.length > 0 && (
+            <AdminShipmentMap 
+              shipmentId={shipment.id} 
+              logs={serializedLogs}
+              origin={shipment.origin}
+              destination={shipment.destination}
+            />
+          )}
+
+          <FinancialsCard
+            shipmentId={shipment.id}
+            initial={{
+              revenue: (shipment as unknown as { revenue?: number }).revenue ?? 0,
+              cost: (shipment as unknown as { cost?: number }).cost ?? 0,
+              currency: (shipment as unknown as { currency?: string }).currency ?? 'USD',
+              transportMode: (shipment as unknown as { transportMode?: string | null }).transportMode ?? null,
+              distanceKm: (shipment as unknown as { distanceKm?: number | null }).distanceKm ?? null,
+              etaAt: (shipment as unknown as { etaAt?: Date | null }).etaAt?.toISOString() ?? null,
+            }}
+          />
+
+          {/* Read-only timeline */}
+          <ShipmentTimelineEditor
+            shipmentId={shipment.id}
+            trackingCode={shipment.trackingCode}
+            currentStatus={shipment.status}
+            events={events}
+            hasClientTelegram={hasClientTelegram}
+          />
+
+          <ShipmentDocuments shipmentId={shipment.id} defaultKind="cmr" />
+        </>
       )}
     </div>
   );

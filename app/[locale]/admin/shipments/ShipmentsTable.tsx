@@ -13,6 +13,8 @@ import {
   Clock,
   AlertCircle,
   CheckCircle2,
+  Eye,
+  CalendarPlus,
 } from 'lucide-react';
 import { bulkShipmentAction, deleteShipment } from '@/app/actions/admin';
 import { SHIPMENT_STATUSES, shipmentStatusMeta, ShipmentStatusKey } from '@/lib/shipment-status';
@@ -242,13 +244,27 @@ export function ShipmentsTable({ shipments }: { shipments: Shipment[] }) {
                         })()}
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-end gap-1">
                           <Link
-                            href={`/uz/admin/shipments/${s.id}`}
+                            href={`/uz/admin/shipments/${s.id}?tab=edit`}
                             className="text-blue-500 hover:bg-blue-50 p-2 rounded-lg transition-colors"
                             title="Tahrirlash"
                           >
                             <Edit2 className="w-4 h-4" />
+                          </Link>
+                          <Link
+                            href={`/uz/admin/shipments/${s.id}?tab=events`}
+                            className="text-amber-500 hover:bg-amber-50 p-2 rounded-lg transition-colors"
+                            title="Voqea qo'shish"
+                          >
+                            <CalendarPlus className="w-4 h-4" />
+                          </Link>
+                          <Link
+                            href={`/uz/admin/shipments/${s.id}?tab=track`}
+                            className="text-emerald-500 hover:bg-emerald-50 p-2 rounded-lg transition-colors"
+                            title="Kuzatish"
+                          >
+                            <Eye className="w-4 h-4" />
                           </Link>
                           <button
                             onClick={() => handleSingleDelete(s.id)}
