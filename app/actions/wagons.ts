@@ -140,8 +140,22 @@ export async function deleteWagon(id: number) {
     if (wagon.shipments.length > 0) {
       return {
         success: false,
-        error: `Vagon aktiv yukka biriktirilgan (${wagon.shipments.length} ta). Avval yukni yetkazing yoki vagonni bo'shating.`,
+        error: `Vagon aktiv yukga biriktirilgan (${wagon.shipments.length} ta). Avval yukni yetkazing yoki vagonni bo'shating.`,
       };
+    }
+
+    // Clear stale lockedByShipmentId if the shipment no longer exists
+    if ((wagon as any).lockedByShipmentId) {
+      const shipment = await prisma.shipment.findUnique({
+        where: { id: (wagon as any).lockedByShipmentId },
+        select: { id: true }
+      });
+      if (!shipment) {
+        await prisma.wagon.update({
+          where: { id },
+          data: { lockedByShipmentId: null, lockedAt: null, lockedByUserId: null, status: 'available' }
+        });
+      }
     }
 
     await prisma.wagon.delete({ where: { id } });

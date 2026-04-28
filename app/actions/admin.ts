@@ -514,6 +514,16 @@ export async function bulkShipmentAction(input: {
     }
 
     if (input.action === 'delete') {
+      // Clear lockedByShipmentId on trucks/wagons that reference these shipments
+      await prisma.truck.updateMany({
+        where: { lockedByShipmentId: { in: ids } },
+        data: { status: 'available', lockedByShipmentId: null, lockedAt: null, lockedByUserId: null }
+      });
+      await prisma.wagon.updateMany({
+        where: { lockedByShipmentId: { in: ids } },
+        data: { status: 'available', lockedByShipmentId: null, lockedAt: null, lockedByUserId: null }
+      });
+
       const result = await prisma.shipment.deleteMany({ where: { id: { in: ids } } });
       await logAudit(
         session.userId,
@@ -521,6 +531,8 @@ export async function bulkShipmentAction(input: {
         `Bulk deleted ${result.count} shipments`,
       );
       revalidatePath('/[locale]/admin/shipments', 'page');
+      revalidatePath('/[locale]/admin/trucks', 'page');
+      revalidatePath('/[locale]/admin/wagons', 'page');
       return { success: true, count: result.count };
     }
 
@@ -575,12 +587,42 @@ export async function updateShipmentFinancials(id: number, data: {
 export async function deleteShipment(id: number) {
   try {
     const session = await getAdminSession();
-    const shipment = await prisma.shipment.findUnique({ where: { id }, select: { trackingCode: true } });
-    await prisma.shipment.delete({
-      where: { id }
+    const shipment = await prisma.shipment.findUnique({
+      where: { id },
+      include: { trucks: true, wagons: true }
     });
-    await logAudit(session?.userId, 'DELETE_SHIPMENT', `Deleted shipment ${shipment?.trackingCode || id}`);
+    if (!shipment) return { success: false, error: 'Yuk topilmadi' };
+
+    // Clear lockedByShipmentId + status on trucks linked to this shipment
+    if (shipment.trucks && shipment.trucks.length > 0) {
+      await prisma.truck.updateMany({
+        where: { id: { in: shipment.trucks.map((t: any) => t.id) } },
+        data: { status: 'available', lockedByShipmentId: null, lockedAt: null, lockedByUserId: null }
+      });
+    }
+    // Clear lockedByShipmentId + status on wagons linked to this shipment
+    if (shipment.wagons && shipment.wagons.length > 0) {
+      await prisma.wagon.updateMany({
+        where: { id: { in: shipment.wagons.map((w: any) => w.id) } },
+        data: { status: 'available', lockedByShipmentId: null, lockedAt: null, lockedByUserId: null }
+      });
+    }
+    // Also clear any trucks/wagons that reference this shipment by lockedByShipmentId (even if not in relation)
+    await prisma.truck.updateMany({
+      where: { lockedByShipmentId: id },
+      data: { status: 'available', lockedByShipmentId: null, lockedAt: null, lockedByUserId: null }
+    });
+    await prisma.wagon.updateMany({
+      where: { lockedByShipmentId: id },
+      data: { status: 'available', lockedByShipmentId: null, lockedAt: null, lockedByUserId: null }
+    });
+
+    await prisma.shipment.delete({ where: { id } });
+    await logAudit(session?.userId, 'DELETE_SHIPMENT', `Deleted shipment ${shipment.trackingCode || id}`);
+
     revalidatePath('/[locale]/admin/shipments', 'page');
+    revalidatePath('/[locale]/admin/trucks', 'page');
+    revalidatePath('/[locale]/admin/wagons', 'page');
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message };

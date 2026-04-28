@@ -143,7 +143,19 @@ export async function deleteTruck(id: number) {
     if (!current) return { success: false, error: 'not_found' };
 
     if (current.lockedByShipmentId) {
-      return { success: false, error: 'Mashina yukka biriktirilgan, oldin yukdan o\'chiring.' };
+      // Check if the referenced shipment actually still exists
+      const shipment = await prisma.shipment.findUnique({
+        where: { id: current.lockedByShipmentId },
+        select: { id: true }
+      });
+      if (shipment) {
+        return { success: false, error: 'Mashina yukka biriktirilgan, oldin yukdan o\'chiring.' };
+      }
+      // Shipment doesn't exist anymore — clear the stale lock before deleting
+      await prisma.truck.update({
+        where: { id },
+        data: { lockedByShipmentId: null, lockedAt: null, lockedByUserId: null, status: 'available' }
+      });
     }
 
     await prisma.truck.delete({ where: { id } });
