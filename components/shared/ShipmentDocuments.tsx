@@ -63,6 +63,7 @@ export function ShipmentDocuments({
   const [uploading, setUploading] = useState(false);
   const [kind, setKind] = useState<string>(defaultKind);
   const inputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const load = async () => {
     setLoading(true);
@@ -105,6 +106,7 @@ export function ShipmentDocuments({
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = '';
+      if (cameraInputRef.current) cameraInputRef.current.value = '';
     }
   };
 
@@ -149,28 +151,66 @@ export function ShipmentDocuments({
         type="file"
         accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"
         multiple
-        capture={cameraCapture ? 'environment' : undefined}
         className="hidden"
         onChange={(e) => handleFiles(e.target.files)}
       />
 
-      <button
-        type="button"
-        disabled={uploading}
-        onClick={() => inputRef.current?.click()}
-        className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm font-medium text-slate-600 transition-colors hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 disabled:opacity-50"
-      >
-        {uploading ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin" /> Yuklanmoqda…
-          </>
-        ) : (
-          <>
-            {cameraCapture ? <Camera className="h-4 w-4" /> : <Upload className="h-4 w-4" />}
-            Fayl yoki rasm yuklash ({KIND_LABEL[kind]})
-          </>
-        )}
-      </button>
+      {cameraCapture && (
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          capture="environment"
+          className="hidden"
+          onChange={(e) => handleFiles(e.target.files)}
+        />
+      )}
+
+      {cameraCapture ? (
+        <div className="flex gap-2">
+          <button
+            type="button"
+            disabled={uploading}
+            onClick={() => cameraInputRef.current?.click()}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl border-2 border-dashed border-blue-300 bg-blue-50 px-4 py-5 text-sm font-semibold text-blue-700 transition-all hover:border-blue-500 hover:bg-blue-100 disabled:opacity-50 active:scale-[0.98]"
+          >
+            {uploading ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin" /> Yuklanmoqda…
+              </>
+            ) : (
+              <>
+                <Camera className="h-5 w-5" /> Rasmga olish
+              </>
+            )}
+          </button>
+          <button
+            type="button"
+            disabled={uploading}
+            onClick={() => inputRef.current?.click()}
+            className="flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-sm font-medium text-slate-600 transition-all hover:border-slate-400 hover:bg-slate-100 disabled:opacity-50 active:scale-[0.98]"
+          >
+            <Upload className="h-4 w-4" /> Fayl
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          disabled={uploading}
+          onClick={() => inputRef.current?.click()}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm font-medium text-slate-600 transition-colors hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 disabled:opacity-50"
+        >
+          {uploading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" /> Yuklanmoqda…
+            </>
+          ) : (
+            <>
+              <Upload className="h-4 w-4" /> Fayl yoki rasm yuklash ({KIND_LABEL[kind]})
+            </>
+          )}
+        </button>
+      )}
 
       <div className="mt-4 space-y-2">
         {loading && <div className="text-center text-xs text-slate-400">Yuklanmoqda…</div>}

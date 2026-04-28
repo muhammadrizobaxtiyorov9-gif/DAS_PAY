@@ -12,12 +12,24 @@ async function ensureCanWrite(shipmentId: number) {
   if (!session) return { error: 'unauthenticated' as const };
 
   if (session.role === 'DRIVER') {
-    const truck = await prisma.truck.findFirst({
+    // Check via lockedByShipmentId first
+    const lockedTruck = await prisma.truck.findFirst({
       where: { driverId: session.userId, lockedByShipmentId: shipmentId },
       select: { id: true },
     });
-    if (!truck) return { error: 'forbidden' as const };
-    return { session, source: 'driver' as const };
+    if (lockedTruck) return { session, source: 'driver' as const };
+
+    // Fallback: check if the driver's truck is associated with this shipment via relation
+    const relatedTruck = await prisma.truck.findFirst({
+      where: {
+        driverId: session.userId,
+        shipments: { some: { id: shipmentId } },
+      },
+      select: { id: true },
+    });
+    if (relatedTruck) return { session, source: 'driver' as const };
+
+    return { error: 'forbidden' as const };
   }
 
   return { session, source: 'admin' as const };
