@@ -2,7 +2,7 @@
 
 import { useState, useEffect, lazy, Suspense, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, MapPin, Train, Truck, Route } from 'lucide-react';
+import { Loader2, MapPin, Train, Truck, Route, FileText, Package, ChevronDown, Check } from 'lucide-react';
 import { createShipment, updateShipment, searchClientByPhone } from '@/app/actions/admin';
 import { SHIPMENT_STATUSES, ShipmentStatusKey } from '@/lib/shipment-status';
 import { StationAutocomplete } from '@/components/forms/StationAutocomplete';
@@ -11,6 +11,7 @@ import { CARGO_TYPES, isWagonCompatible } from '@/lib/cargo-wagon-compatibility'
 import { OcrScanButton } from '@/components/shared/OcrScanButton';
 import type { CmrFields } from '@/lib/ocr';
 import dynamic from 'next/dynamic';
+import { FormSection } from '@/components/forms/FormSection';
 
 const LazyLocationPicker = lazy(() => import('./LocationPickerMap'));
 const TruckRoutePicker = dynamic(() => import('./TruckRoutePickerMap'), {
@@ -304,10 +305,14 @@ export function ShipmentForm({ initialData, allWagons = [], allTrucks = [] }: { 
     }
   };
 
-  return (
-    <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
-      {error && <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm">{error}</div>}
+  const hasBasicInfo = !!(trackingCode && clientPhone);
+  const hasRoute = transportMode === 'train' ? !!(fromStation && toStation) : !!(truckOrigin && truckDest);
 
+  return (
+    <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
+      {error && <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm font-medium">{error}</div>}
+
+      {/* OCR Banner */}
       <div className="rounded-xl border border-blue-100 bg-blue-50/40 p-3 flex items-center justify-between gap-3">
         <div className="text-sm text-slate-600">
           <span className="font-semibold text-slate-800">Hujjatdan avto-to&apos;ldirish.</span>{' '}
@@ -315,6 +320,9 @@ export function ShipmentForm({ initialData, allWagons = [], allTrucks = [] }: { 
         </div>
         <OcrScanButton<CmrFields> kind="cmr" onExtracted={applyCmrFields} />
       </div>
+
+      {/* ═══ SECTION 1: Asosiy ma'lumotlar ═══ */}
+      <FormSection title="Asosiy ma'lumotlar" icon={<FileText className="h-4 w-4" />} defaultOpen={true} completed={hasBasicInfo}>
 
       <div className="grid md:grid-cols-2 gap-5">
         <div>
@@ -347,7 +355,7 @@ export function ShipmentForm({ initialData, allWagons = [], allTrucks = [] }: { 
         </div>
       </div>
 
-      {/* Transport mode selector & Client Mapping */}
+      {/* Transport mode & Client Mapping */}
       <div className="grid md:grid-cols-2 gap-5 items-start">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Transport turi</label>
@@ -443,8 +451,12 @@ export function ShipmentForm({ initialData, allWagons = [], allTrucks = [] }: { 
           />
         </div>
       </div>
+      </FormSection>
 
-      {/* Origin / Destination — Station autocomplete for rail, text for road */}
+      {/* ═══ SECTION 2: Marshrut & Transport ═══ */}
+      <FormSection title={transportMode === 'train' ? 'Marshrut va Vagonlar' : 'Marshrut va Avtomobillar'} icon={<Route className="h-4 w-4" />} defaultOpen={!hasBasicInfo || !hasRoute} completed={hasRoute} badge={transportMode === 'train' ? 'Temir yo\'l' : 'Avtomobil'}>
+
+      {/* Origin / Destination */}
       {transportMode === 'train' ? (
         <div className="space-y-4">
           <div className="grid md:grid-cols-2 gap-5 p-4 bg-purple-50/50 border border-purple-100 rounded-xl">
@@ -577,6 +589,18 @@ export function ShipmentForm({ initialData, allWagons = [], allTrucks = [] }: { 
               <p className="mt-2 text-sm text-red-600 font-medium">{weightError}</p>
             )}
           </div>
+
+          {/* Rail Map */}
+          {segments.length >= 2 && (
+            <div className="mt-4">
+              <h4 className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-purple-600" /> Marshrut xaritasi
+              </h4>
+              <div className="relative" style={{ zIndex: 0, isolation: 'isolate' }}>
+                <DynamicLocationPicker segments={segments} setSegments={setSegments} />
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="space-y-5">
@@ -674,7 +698,7 @@ export function ShipmentForm({ initialData, allWagons = [], allTrucks = [] }: { 
           </div>
 
           {/* Truck Route Picker Map */}
-          <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm space-y-3">
+          <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm space-y-3" style={{ zIndex: 0, isolation: 'isolate' }}>
             <h4 className="font-bold text-sm text-[#042C53] flex items-center gap-2">
               <Route className="h-4 w-4 text-[#185FA5]" />
               Xaritadan manzil tanlash (A → B)
@@ -688,33 +712,7 @@ export function ShipmentForm({ initialData, allWagons = [], allTrucks = [] }: { 
             />
           </div>
 
-          {/* Yandex Maps Route Preview — uses coordinates if available, else text */}
-          {((truckCoords.originLat && truckCoords.destLat) || (truckOrigin.length > 2 && truckDest.length > 2)) && transportMode === 'truck' && (
-            <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm space-y-3">
-              <h4 className="font-bold text-sm text-[#042C53] flex items-center gap-2">
-                <Route className="h-4 w-4 text-[#185FA5]" />
-                Avtomobil marshruti (Yandex Maps)
-              </h4>
-              <div className="h-[350px] w-full rounded-xl overflow-hidden border border-gray-200">
-                <iframe
-                  key={truckCoords.originLat && truckCoords.destLat 
-                    ? `${truckCoords.originLat},${truckCoords.originLng}__${truckCoords.destLat},${truckCoords.destLng}` 
-                    : `${truckOrigin}__${truckDest}`}
-                  src={truckCoords.originLat && truckCoords.originLng && truckCoords.destLat && truckCoords.destLng
-                    ? `https://yandex.com/map-widget/v1/?rtext=${truckCoords.originLat},${truckCoords.originLng}~${truckCoords.destLat},${truckCoords.destLng}&rtt=auto&z=6`
-                    : `https://yandex.com/map-widget/v1/?rtext=${encodeURIComponent(truckOrigin)}~${encodeURIComponent(truckDest)}&rtt=auto&z=6`}
-                  width="100%"
-                  height="100%"
-                  frameBorder="0"
-                  allowFullScreen
-                  style={{ border: 0 }}
-                />
-              </div>
-              <p className="text-[11px] text-gray-500">
-                ☝️ Marshrut Yandex Maps tomonidan haqiqiy yo&apos;llar va chegara postlari hisobga olingan holda chizilgan.
-              </p>
-            </div>
-          )}
+
         </div>
       )}
 
@@ -753,28 +751,10 @@ export function ShipmentForm({ initialData, allWagons = [], allTrucks = [] }: { 
           />
         </div>
       </div>
+      </FormSection>
 
-      <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm space-y-4">
-        <h4 className="font-bold text-lg text-[#042C53] flex items-center gap-2">
-          <Route className="h-5 w-5 text-[#185FA5]" />
-          Xarita bo&apos;ylab marshrut (Vizual)
-        </h4>
-        <p className="text-xs text-gray-500">
-          {transportMode === 'train' 
-            ? "Stansiyalar tanlanganda marshrut avtomatik chiziladi. Qo'shimcha nuqtalar qo'shish uchun xaritadan bosing."
-            : "Xaritadan nuqtalar tanlang yoki qidiruv orqali manzilni toping."
-          }
-        </p>
-        
-        {/* Hidden inputs to pass state to FormData */}
-        <input type="hidden" name="routeSegments" value={JSON.stringify(segments)} />
-
-        <DynamicLocationPicker 
-           segments={segments} 
-           setSegments={setSegments}
-        />
-      </div>
-
+      {/* ═══ SECTION 3: Qo'shimcha ═══ */}
+      <FormSection title="Qo'shimcha izoh" icon={<Package className="h-4 w-4" />} defaultOpen={false}>
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Qo&apos;shimcha izoh yoki tovar haqida</label>
         <textarea 
@@ -784,19 +764,24 @@ export function ShipmentForm({ initialData, allWagons = [], allTrucks = [] }: { 
           className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20 resize-none"
         ></textarea>
       </div>
+      </FormSection>
 
-      <div className="pt-4 flex justify-end gap-3">
+      {/* Hidden fields */}
+      <input type="hidden" name="routeSegments" value={JSON.stringify(segments)} />
+
+      {/* FOOTER */}
+      <div className="sticky bottom-0 z-[999] -mx-6 md:-mx-8 mt-6 border-t border-slate-200 bg-white px-6 md:px-8 py-4 flex items-center justify-end gap-3 shadow-[0_-2px_10px_rgba(0,0,0,0.06)]">
         <button
           type="button"
           onClick={() => router.back()}
-          className="px-6 py-2.5 rounded-lg border text-gray-700 hover:bg-gray-50 transition"
+          className="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-medium hover:bg-slate-50 transition-all"
         >
           Bekor qilish
         </button>
         <button
           type="submit"
           disabled={isSubmitting}
-          className="px-6 py-2.5 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition flex items-center gap-2"
+          className="px-6 py-2.5 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-all shadow-sm flex items-center gap-2 disabled:opacity-60"
         >
           {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
           {initialData ? 'Saqlash' : 'Kiritish'}
