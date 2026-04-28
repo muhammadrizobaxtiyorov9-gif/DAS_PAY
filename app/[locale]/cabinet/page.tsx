@@ -17,11 +17,34 @@ export default async function CabinetPage({ params, searchParams }: CabinetPageP
     where: { phone: client.phone, status: { not: 'completed' } }
   });
 
-  const activeShipments = client.shipments.filter(s => s.status !== 'delivered');
-  const deliveredShipmentsCount = client.shipments.length - activeShipments.length;
+   const activeShipments = client.shipments.filter(s => s.status !== 'delivered');
+   const deliveredShipmentsCount = client.shipments.length - activeShipments.length;
 
-  return (
-     <div className="space-y-6">
+   const needsPassword = !(client as any).password;
+   const needsCompany = !(client as any).companyName || !(client as any).companyInn;
+
+   return (
+      <div className="space-y-6">
+        {(needsPassword || needsCompany) && (
+           <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4 shadow-sm relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-2 opacity-[0.05]">
+                 <Package className="w-32 h-32" />
+              </div>
+              <div className="flex-1 relative z-10">
+                 <h3 className="text-orange-800 font-bold text-sm">Eslatma! Profilingiz to'liq emas.</h3>
+                 <p className="text-orange-700 text-xs mt-1">
+                    {needsPassword && needsCompany 
+                       ? "Xavfsizlik parolini o'rnatmagansiz va korxona ma'lumotlarini kiritmagansiz. Yuk qabul qilish va xavfsizlik uchun ularni to'ldirish zarur."
+                       : needsPassword 
+                          ? "Keyingi safar tizimga oson va xavfsiz kirish uchun shaxsiy parol o'rnating."
+                          : "Yuk kiritish uchun korxona ma'lumotlari (Nomi va INN) to'liq emas."}
+                 </p>
+              </div>
+              <Link href={`/${locale}/cabinet/settings`} className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition-colors whitespace-nowrap relative z-10 shadow-sm">
+                 Sozlamalarga o'tish
+              </Link>
+           </div>
+        )}
        
         {/* Welcome Section */}
         <div className="bg-white rounded-3xl p-6 md:p-10 border border-gray-100 shadow-sm relative overflow-hidden">

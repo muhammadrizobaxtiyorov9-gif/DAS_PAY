@@ -76,6 +76,9 @@ export async function DELETE(
     // Delete related addresses
     await prisma.clientAddress.deleteMany({ where: { clientId } });
 
+    // Delete related support messages (ClientMessage)
+    await prisma.clientMessage.deleteMany({ where: { clientId } });
+
     // Unlink shipments & invoices (don't delete them)
     await prisma.shipment.updateMany({
       where: { clientPhone: client.phone },

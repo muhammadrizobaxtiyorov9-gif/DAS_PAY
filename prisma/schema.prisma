@@ -141,6 +141,7 @@ model Shipment {
   invoices        Invoice[]
   feedback        Feedback?
   wagons          Wagon[]
+  wagonMovements  WagonMovement[]
   trucks          Truck[]
   documents       ShipmentDocument[]
 
@@ -356,6 +357,9 @@ model Client {
   phone      String     @unique
   telegramId String?    @unique
   name       String?
+  companyName String?
+  companyInn  String?
+  language   String     @default("uz")
   otpCode    String?
   otpExpiry  DateTime?
   password   String?
@@ -489,6 +493,11 @@ model Station {
   wagonsAtStation Wagon[] @relation("WagonAtStation")
   trucksAtStation Truck[] @relation("TruckAtStation")
 
+  distancesFrom StationDistance[] @relation("DistanceFrom")
+  distancesTo   StationDistance[] @relation("DistanceTo")
+  movementsFrom WagonMovement[]   @relation("MovementFrom")
+  movementsTo   WagonMovement[]   @relation("MovementTo")
+
   @@index([code])
   @@index([country])
   @@index([active])
@@ -548,6 +557,7 @@ model Wagon {
 
   shipments  Shipment[]
   statusLogs WagonStatusLog[]
+  movements  WagonMovement[]
 
   @@index([number])
   @@index([status])
@@ -851,4 +861,54 @@ model PushSubscription {
 
   @@index([userId])
   @@index([clientId])
+}
+
+/// Ikki stansiya orasidagi masofa ma'lumotnomasi
+model StationDistance {
+  id            Int      @id @default(autoincrement())
+  fromStationId Int
+  toStationId   Int
+  distanceKm    Float
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  fromStation   Station  @relation("DistanceFrom", fields: [fromStationId], references: [id], onDelete: Cascade)
+  toStation     Station  @relation("DistanceTo", fields: [toStationId], references: [id], onDelete: Cascade)
+
+  @@unique([fromStationId, toStationId])
+  @@index([fromStationId])
+  @@index([toStationId])
+}
+
+/// Vagonning stansiyalar aro harakati (kunlik tezlik va bo'sh qatnov tahlili uchun)
+model WagonMovement {
+  id            Int      @id @default(autoincrement())
+  wagonId       Int
+  wagon         Wagon    @relation(fields: [wagonId], references: [id], onDelete: Cascade)
+  
+  fromStationId Int?
+  fromStation   Station? @relation("MovementFrom", fields: [fromStationId], references: [id])
+  toStationId   Int
+  toStation     Station  @relation("MovementTo", fields: [toStationId], references: [id])
+  
+  shipmentId    Int?
+  shipment      Shipment? @relation(fields: [shipmentId], references: [id], onDelete: SetNull)
+
+  isLoaded      Boolean  @default(false)
+  distanceKm    Float    @default(0)
+  
+  startDate     DateTime @default(now())
+  endDate       DateTime?
+  
+  // Avtomatik hisoblanadigan kunlik tezlik (km/day)
+  averageDailyKm Float?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([wagonId])
+  @@index([shipmentId])
+  @@index([fromStationId])
+  @@index([toStationId])
+  @@index([isLoaded])
 }

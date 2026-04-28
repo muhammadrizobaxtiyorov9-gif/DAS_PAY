@@ -6,6 +6,7 @@ import { branchWhere } from '@/lib/branch';
 import { logAudit } from '@/lib/audit';
 import { revalidatePath } from 'next/cache';
 import { canTransitionWagon } from '@/lib/wagon-status';
+import { processWagonMovement } from '@/lib/wagon-movement';
 
 // ─── Create Wagon ───
 export async function createWagon(data: {
@@ -81,6 +82,10 @@ export async function updateWagon(
 
     const current = await prisma.wagon.findUnique({ where: { id } });
     if (!current) return { success: false, error: 'Vagon topilmadi' };
+
+    if (data.currentStationId && current.currentStationId && current.currentStationId !== data.currentStationId) {
+      await processWagonMovement(id, current.currentStationId, data.currentStationId, current.lastLocationUpdate || current.updatedAt, current.lockedByShipmentId);
+    }
 
     await prisma.wagon.update({
       where: { id },
@@ -215,6 +220,10 @@ export async function updateWagonLocation(wagonId: number, lat: number, lng: num
 
     const wagon = await prisma.wagon.findUnique({ where: { id: wagonId } });
     if (!wagon) return { success: false, error: 'Vagon topilmadi' };
+
+    if (stationId && wagon.currentStationId && wagon.currentStationId !== stationId) {
+      await processWagonMovement(wagonId, wagon.currentStationId, stationId, wagon.lastLocationUpdate || wagon.updatedAt, wagon.lockedByShipmentId);
+    }
 
     await prisma.wagon.update({
       where: { id: wagonId },
@@ -360,3 +369,26 @@ export async function getWagons(search?: string) {
     return { success: false, error: error.message, wagons: [] };
   }
 }
+
+// ─── Get Wagon Movements (KPI) ───
+export async function getWagonMovements(wagonId: number) {
+  try {
+    const session = await getAdminSession();
+    if (!session) return { success: false, error: 'Ruxsat yo\'q', movements: [] };
+
+    const movements = await prisma.wagonMovement.findMany({
+      where: { wagonId },
+      include: {
+        fromStation: { select: { nameUz: true, code: true } },
+        toStation: { select: { nameUz: true, code: true } },
+        shipment: { select: { trackingCode: true } }
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return { success: true, movements };
+  } catch (error: any) {
+    return { success: false, error: error.message, movements: [] };
+  }
+}
+

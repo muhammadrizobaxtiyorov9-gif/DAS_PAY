@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import { Plus, Search, Edit2, Trash2, Train, MapPin, User, Package } from 'lucide-react';
 import { WagonFormModal } from './WagonFormModal';
+import { WagonKpiModal } from './WagonKpiModal';
 import { deleteWagon } from '@/app/actions/wagons';
+import { BarChart3 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { wagonStatusMeta } from '@/lib/wagon-status';
 
@@ -30,6 +32,9 @@ export function WagonsClient({ initialWagons, stations }: Props) {
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedWagon, setSelectedWagon] = useState<Wagon | null>(null);
+
+  const [isKpiModalOpen, setIsKpiModalOpen] = useState(false);
+  const [kpiWagon, setKpiWagon] = useState<Wagon | null>(null);
 
   const filteredWagons = wagons.filter(w => 
     w.number.toLowerCase().includes(search.toLowerCase())
@@ -147,6 +152,13 @@ export function WagonsClient({ initialWagons, stations }: Props) {
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <button
+                            onClick={() => { setKpiWagon(wagon); setIsKpiModalOpen(true); }}
+                            className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-green-600 transition-colors"
+                            title="KPI va Unumdorlik"
+                          >
+                            <BarChart3 className="h-4 w-4" />
+                          </button>
+                          <button
                             onClick={() => handleEdit(wagon)}
                             className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-blue-600 transition-colors"
                             title="Tahrirlash"
@@ -176,6 +188,12 @@ export function WagonsClient({ initialWagons, stations }: Props) {
         onClose={() => setIsModalOpen(false)} 
         wagon={selectedWagon}
         stations={stations}
+      />
+      
+      <WagonKpiModal
+        isOpen={isKpiModalOpen}
+        onClose={() => setIsKpiModalOpen(false)}
+        wagon={kpiWagon}
       />
     </div>
   );

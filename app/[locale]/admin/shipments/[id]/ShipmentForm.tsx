@@ -3,7 +3,7 @@
 import { useState, useEffect, lazy, Suspense, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, MapPin, Train, Truck, Route } from 'lucide-react';
-import { createShipment, updateShipment } from '@/app/actions/admin';
+import { createShipment, updateShipment, searchClientByPhone } from '@/app/actions/admin';
 import { SHIPMENT_STATUSES, ShipmentStatusKey } from '@/lib/shipment-status';
 import { StationAutocomplete } from '@/components/forms/StationAutocomplete';
 import { resolveRouteGeometry } from '@/lib/map-utils';
@@ -104,6 +104,42 @@ export function ShipmentForm({ initialData, allWagons = [], allTrucks = [] }: { 
       : (Array.isArray(initialData?.routeSegments) ? initialData.routeSegments : []);
 
   const [segments, setSegments] = useState<any[]>(initialSegments);
+
+  // Fetch client details to auto-fill company name
+  const [clientPhone, setClientPhone] = useState(initialData?.clientPhone || '');
+  const [isSearchingClient, setIsSearchingClient] = useState(false);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleClientPhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const phone = e.target.value;
+    setClientPhone(phone);
+    
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    
+    if (phone.length >= 7) {
+      setIsSearchingClient(true);
+      searchTimeoutRef.current = setTimeout(async () => {
+        const res = await searchClientByPhone(phone);
+        if (res.success && res.client?.companyName) {
+           const senderEl = formRef.current?.querySelector<HTMLInputElement>('[name="senderName"]');
+           const receiverEl = formRef.current?.querySelector<HTMLInputElement>('[name="receiverName"]');
+           
+           // Faqat bo'sh bo'lsa to'ldiramiz, shunda qo'lda yozilgan narsa o'chib ketmaydi
+           if (senderEl && !senderEl.value) {
+             const setter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(senderEl), 'value')?.set;
+             setter?.call(senderEl, res.client.companyName);
+             senderEl.dispatchEvent(new Event('input', { bubbles: true }));
+           }
+           if (receiverEl && !receiverEl.value) {
+             const setter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(receiverEl), 'value')?.set;
+             setter?.call(receiverEl, res.client.companyName);
+             receiverEl.dispatchEvent(new Event('input', { bubbles: true }));
+           }
+        }
+        setIsSearchingClient(false);
+      }, 800);
+    }
+  };
 
   // Auto-build railway route when both stations are selected
   const buildRailRoute = useCallback(async (from: StationData, to: StationData) => {
@@ -699,15 +735,19 @@ export function ShipmentForm({ initialData, allWagons = [], allTrucks = [] }: { 
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">Mijoz telefon raqami (Mapping)</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+            Mijoz telefon raqami (Mapping)
+            {isSearchingClient && <Loader2 className="w-3 h-3 animate-spin text-blue-500" />}
+          </label>
           <input 
             type="text"
             name="clientPhone"
-            defaultValue={initialData?.clientPhone || ''}
+            value={clientPhone}
+            onChange={handleClientPhoneChange}
             placeholder="998901234567"
             className="w-full px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20"
           />
-          <p className="text-xs text-gray-500 mt-2">Mijoz kabinetiga avtomatik ulanadi</p>
+          <p className="text-xs text-gray-500 mt-2">Kiritganda korxona nomi avtomatik yuklanadi va kabinetga ulanadi</p>
         </div>
       </div>
 

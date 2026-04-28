@@ -1,6 +1,7 @@
 import { getAuthenticatedClient } from '../lib/clientAuth';
 import { PasswordForm } from './PasswordForm';
 import { NotificationPrefs } from './NotificationPrefs';
+import { ClientProfileForm } from './ClientProfileForm';
 import { Settings, ShieldCheck, KeyRound, Bell } from 'lucide-react';
 
 interface CabinetSettingsPageProps {
@@ -77,32 +78,15 @@ export default async function CabinetSettingsPage({ params, searchParams }: Cabi
             </div>
          </div>
 
-         {/* Profile Details (Read Only) */}
-         <div className="bg-white rounded-3xl border border-gray-100 p-8 shadow-sm">
-            <h3 className="font-bold text-xl text-[#042C53] mb-6 border-b pb-4">Shaxsiy Profil</h3>
-            
-            <div className="space-y-6">
-               <div>
-                  <p className="text-xs uppercase font-bold text-gray-400 tracking-wider mb-1">To'liq ism</p>
-                  <p className="text-lg font-semibold text-gray-800">{client.name || "Kiritilmagan"}</p>
-               </div>
-               <div>
-                  <p className="text-xs uppercase font-bold text-gray-400 tracking-wider mb-1">Telefon raqam (Login)</p>
-                  <p className="text-lg font-mono font-bold text-[#185FA5] bg-blue-50 inline-block px-3 py-1 rounded-lg border border-blue-100">{client.phone}</p>
-               </div>
-               <div>
-                  <p className="text-xs uppercase font-bold text-gray-400 tracking-wider mb-1">Telegram akkaunt ID</p>
-                  <p className="text-sm font-mono text-gray-500">{client.telegramId || "Ulanmagan"}</p>
-               </div>
-               
-               <div className="mt-8 bg-orange-50 p-4 rounded-xl border border-orange-100 flex items-start gap-3">
-                  <span className="text-lg">ℹ️</span>
-                  <p className="text-sm text-orange-800 font-medium pb-1">
-                     Profil ma'lumotlarini (ism yoki raqam) o'zgartirish uchun iltimos Telegram boti orqali qayta ro'yxatdan o'ting yoki menejerimizga murojaat qiling.
-                  </p>
-               </div>
-            </div>
-         </div>
+         {/* Profile Details (Editable) */}
+         <ClientProfileForm initialData={{
+            name: client.name,
+            companyName: (client as any).companyName || '',
+            companyInn: (client as any).companyInn || '',
+            language: (client as any).language || 'uz',
+            phone: client.phone,
+            telegramId: client.telegramId,
+         }} />
       </div>
     </div>
   );

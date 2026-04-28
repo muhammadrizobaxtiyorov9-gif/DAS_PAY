@@ -1388,3 +1388,31 @@ export async function togglePartnerActive(id: number, active: boolean) {
     return { success: false, error: err.message };
   }
 }
+
+// ─── Search Client By Phone ───
+export async function searchClientByPhone(phone: string) {
+  try {
+    const session = await getAdminSession();
+    if (!session) return { success: false, error: 'Unauthorized' };
+
+    const client = await prisma.client.findFirst({
+      where: {
+        phone: { contains: phone }
+      },
+      select: {
+        id: true,
+        phone: true,
+        name: true,
+        companyName: true,
+        companyInn: true,
+      }
+    });
+
+    if (client) {
+      return { success: true, client };
+    }
+    return { success: false, error: 'Not found' };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}

@@ -66,6 +66,7 @@ export default async function ClientsAdminPage({
             <thead className="border-b bg-slate-50 text-slate-600">
               <tr>
                 <th className="px-6 py-3 font-semibold">Mijoz</th>
+                <th className="px-6 py-3 font-semibold">Korxona nomi</th>
                 <th className="px-6 py-3 font-semibold">Telefon</th>
                 <th className="px-6 py-3 font-semibold text-center">Yuklar</th>
                 <th className="px-6 py-3 font-semibold text-center">Invoyslar</th>
@@ -76,7 +77,7 @@ export default async function ClientsAdminPage({
             <tbody className="divide-y divide-slate-100">
               {clients.length === 0 ? (
                 <tr>
-                  <td colSpan={isSuperAdmin ? 6 : 5} className="px-6 py-16 text-center text-slate-500">
+                  <td colSpan={isSuperAdmin ? 7 : 6} className="px-6 py-16 text-center text-slate-500">
                     {q ? 'Hech narsa topilmadi.' : "Mijozlar hali qo'shilmagan."}
                   </td>
                 </tr>
@@ -93,6 +94,9 @@ export default async function ClientsAdminPage({
                         </div>
                         <span>{c.name || '—'}</span>
                       </Link>
+                    </td>
+                    <td className="px-6 py-3 text-slate-700">
+                      {(c as any).companyName || '—'}
                     </td>
                     <td className="px-6 py-3 font-mono text-slate-600">
                       <span className="inline-flex items-center gap-1">
