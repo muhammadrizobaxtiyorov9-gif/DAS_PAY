@@ -182,9 +182,12 @@ export default function YandexRoutePicker(props: Props) {
           });
           setSuggestions(items);
           setShowSuggestions(true);
+          setSearching(false);
         })
-        .catch(() => setSuggestions([]))
-        .finally(() => setSearching(false));
+        .catch(() => {
+          setSuggestions([]);
+          setSearching(false);
+        });
     }, 350);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -304,8 +307,8 @@ export default function YandexRoutePicker(props: Props) {
         )}
         <YMaps query={{
           lang: 'ru_RU',
-          load: 'package.full,multiRouter.MultiRoute,geocode,suggest',
-          ...(YANDEX_API_KEY ? { apikey: YANDEX_API_KEY, suggest_apikey: YANDEX_API_KEY } : {}),
+          load: 'package.full,multiRouter.MultiRoute,geocode',
+          ...(YANDEX_API_KEY ? { apikey: YANDEX_API_KEY } : {}),
         }}>
           <Map
             defaultState={{ 
