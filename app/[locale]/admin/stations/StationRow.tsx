@@ -4,6 +4,8 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { MapPin, Check, X, Pencil, Trash2 } from 'lucide-react';
 import { toggleStationActive, deleteStation } from '@/app/actions/admin';
+import { useConfirm } from '@/components/providers/ConfirmProvider';
+import { toast } from 'sonner';
 
 interface StationData {
   id: number;
@@ -21,6 +23,7 @@ export function StationRow({ station, locale }: { station: StationData; locale: 
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [deleting, setDeleting] = useState(false);
+  const { confirm } = useConfirm();
 
   const handleToggle = () => {
     startTransition(async () => {
@@ -30,9 +33,15 @@ export function StationRow({ station, locale }: { station: StationData; locale: 
   };
 
   const handleDelete = async () => {
-    if (!confirm(`"${station.nameUz}" stansiyasini o'chirmoqchimisiz?`)) return;
+    const ok = await confirm({
+      title: 'Stansiyani o\'chirish',
+      message: `"${station.nameUz}" stansiyasini o'chirmoqchimisiz?`,
+      variant: 'danger'
+    });
+    if (!ok) return;
     setDeleting(true);
     await deleteStation(station.id);
+    toast.success('Stansiya o\'chirildi');
     router.refresh();
   };
 

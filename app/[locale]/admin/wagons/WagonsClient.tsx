@@ -8,6 +8,8 @@ import { deleteWagon } from '@/app/actions/wagons';
 import { BarChart3 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { wagonStatusMeta } from '@/lib/wagon-status';
+import { useConfirm } from '@/components/providers/ConfirmProvider';
+import { toast } from 'sonner';
 
 interface Wagon {
   id: number;
@@ -27,6 +29,7 @@ interface Props {
 
 export function WagonsClient({ initialWagons, stations }: Props) {
   const router = useRouter();
+  const { confirm } = useConfirm();
   const [wagons, setWagons] = useState(initialWagons);
   const [search, setSearch] = useState('');
   
@@ -51,13 +54,20 @@ export function WagonsClient({ initialWagons, stations }: Props) {
   }
 
   async function handleDelete(id: number) {
-    if (!confirm('Ushbu vagonni o\'chirishni tasdiqlaysizmi?')) return;
+    const ok = await confirm({
+      title: 'Vagonni o\'chirish',
+      message: 'Ushbu vagonni o\'chirishni tasdiqlaysizmi?',
+      variant: 'danger',
+    });
+    if (!ok) return;
+
     const res = await deleteWagon(id);
     if (res.success) {
       router.refresh();
       setWagons(wagons.filter(w => w.id !== id));
+      toast.success('Vagon o\'chirildi');
     } else {
-      alert(res.error || 'Xatolik yuz berdi');
+      toast.error(res.error || 'Xatolik yuz berdi');
     }
   }
 

@@ -16,6 +16,14 @@ import {
 } from 'lucide-react';
 import { bulkShipmentAction, deleteShipment } from '@/app/actions/admin';
 import { SHIPMENT_STATUSES, shipmentStatusMeta, ShipmentStatusKey } from '@/lib/shipment-status';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 
 const STATUS_OPTIONS = Object.entries(SHIPMENT_STATUSES).map(([key, meta]) => ({
   value: key,
@@ -39,6 +47,7 @@ export function ShipmentsTable({ shipments }: { shipments: Shipment[] }) {
   const [pending, startTransition] = useTransition();
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [deleteModal, setDeleteModal] = useState<{ type: 'single' | 'bulk'; id?: number } | null>(null);
 
   const allChecked = shipments.length > 0 && selected.size === shipments.length;
 
@@ -76,22 +85,32 @@ export function ShipmentsTable({ shipments }: { shipments: Shipment[] }) {
 
   async function bulkDelete() {
     if (selected.size === 0) return;
-    if (!confirm(`${selected.size} ta yukni o'chirishni tasdiqlaysizmi?`)) return;
-    startTransition(async () => {
-      const res = await bulkShipmentAction({
-        ids: Array.from(selected),
-        action: 'delete',
-      });
-      setNotice(res.success ? `${res.count} ta yuk o'chirildi` : `Xato: ${res.error}`);
-      if (res.success) clearSelection();
-    });
+    setDeleteModal({ type: 'bulk' });
   }
 
   async function handleSingleDelete(id: number) {
-    if (!confirm("Haqiqatan ham ushbu yukni bazadan o'chirmokchimisiz?")) return;
-    setDeletingId(id);
-    await deleteShipment(id);
-    setDeletingId(null);
+    setDeleteModal({ type: 'single', id });
+  }
+
+  async function confirmDelete() {
+    if (!deleteModal) return;
+    const { type, id } = deleteModal;
+    setDeleteModal(null);
+    
+    if (type === 'single' && id) {
+      setDeletingId(id);
+      await deleteShipment(id);
+      setDeletingId(null);
+    } else if (type === 'bulk') {
+      startTransition(async () => {
+        const res = await bulkShipmentAction({
+          ids: Array.from(selected),
+          action: 'delete',
+        });
+        setNotice(res.success ? `${res.count} ta yuk o'chirildi` : `Xato: ${res.error}`);
+        if (res.success) clearSelection();
+      });
+    }
   }
 
   return (
@@ -253,6 +272,36 @@ export function ShipmentsTable({ shipments }: { shipments: Shipment[] }) {
           </table>
         </div>
       </div>
+
+      <Dialog open={!!deleteModal} onOpenChange={(open) => !open && setDeleteModal(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-red-600 flex items-center gap-2">
+              <AlertCircle className="w-5 h-5" />
+              Tasdiqlash
+            </DialogTitle>
+            <DialogDescription className="pt-2 text-base">
+              {deleteModal?.type === 'bulk' 
+                ? `${selected.size} ta yukni bazadan butunlay o'chirib tashlamoqchimisiz? Bu amalni orqaga qaytarib bo'lmaydi.`
+                : "Haqiqatan ham ushbu yukni bazadan o'chirmoqchimisiz? Bu amalni orqaga qaytarib bo'lmaydi."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4 flex gap-3 sm:justify-end">
+            <button
+              onClick={() => setDeleteModal(null)}
+              className="px-4 py-2 rounded-xl border text-gray-700 hover:bg-gray-50 transition-colors font-medium"
+            >
+              Bekor qilish
+            </button>
+            <button
+              onClick={confirmDelete}
+              className="px-4 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700 transition-colors font-bold shadow-sm"
+            >
+              O'chirish
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

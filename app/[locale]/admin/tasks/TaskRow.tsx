@@ -3,10 +3,13 @@
 import { useState } from 'react';
 import { Trash2, Loader2, Calendar } from 'lucide-react';
 import { updateTaskStatus, deleteTask } from '@/app/actions/admin';
+import { useConfirm } from '@/components/providers/ConfirmProvider';
+import { toast } from 'sonner';
 
 export function TaskRow({ task }: { task: any }) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const { confirm } = useConfirm();
 
   const statusColors: any = {
     pending: 'border-yellow-200 text-yellow-700 bg-yellow-50',
@@ -35,9 +38,20 @@ export function TaskRow({ task }: { task: any }) {
   }
 
   async function handleDelete() {
-    if (!confirm('Ushbu topshiriqni o`chirmokchimisiz?')) return;
+    const ok = await confirm({
+      title: 'Topshiriqni o\'chirish',
+      message: 'Ushbu topshiriqni o\'chirmoqchimisiz?',
+      variant: 'danger'
+    });
+    if (!ok) return;
     setIsDeleting(true);
-    await deleteTask(task.id);
+    const res = await deleteTask(task.id);
+    if (res?.error) {
+      toast.error(res.error);
+      setIsDeleting(false);
+    } else {
+      toast.success('Topshiriq o\'chirildi');
+    }
   }
 
   return (

@@ -347,32 +347,50 @@ export function ShipmentForm({ initialData, allWagons = [], allTrucks = [] }: { 
         </div>
       </div>
 
-      {/* Transport mode selector */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Transport turi</label>
-        <div className="inline-flex rounded-xl border border-slate-200 p-1 bg-slate-50">
-          <button
-            type="button"
-            onClick={() => setTransportMode('train')}
-            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all ${
-              transportMode === 'train'
-                ? 'bg-[#042C53] text-white shadow-lg'
-                : 'text-slate-500 hover:text-slate-700 hover:bg-white'
-            }`}
-          >
-            <Train className="h-4 w-4" /> Temir yo&apos;l
-          </button>
-          <button
-            type="button"
-            onClick={() => setTransportMode('truck')}
-            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all ${
-              transportMode === 'truck'
-                ? 'bg-[#185FA5] text-white shadow-lg'
-                : 'text-slate-500 hover:text-slate-700 hover:bg-white'
-            }`}
-          >
-            <Truck className="h-4 w-4" /> Avtomobil
-          </button>
+      {/* Transport mode selector & Client Mapping */}
+      <div className="grid md:grid-cols-2 gap-5 items-start">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Transport turi</label>
+          <div className="inline-flex rounded-xl border border-slate-200 p-1 bg-slate-50">
+            <button
+              type="button"
+              onClick={() => setTransportMode('train')}
+              className={`inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all ${
+                transportMode === 'train'
+                  ? 'bg-[#042C53] text-white shadow-lg'
+                  : 'text-slate-500 hover:text-slate-700 hover:bg-white'
+              }`}
+            >
+              <Train className="h-4 w-4" /> Temir yo&apos;l
+            </button>
+            <button
+              type="button"
+              onClick={() => setTransportMode('truck')}
+              className={`inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all ${
+                transportMode === 'truck'
+                  ? 'bg-[#185FA5] text-white shadow-lg'
+                  : 'text-slate-500 hover:text-slate-700 hover:bg-white'
+              }`}
+            >
+              <Truck className="h-4 w-4" /> Avtomobil
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+            Mijoz telefon raqami (Mapping)
+            {isSearchingClient && <Loader2 className="w-3 h-3 animate-spin text-blue-500" />}
+          </label>
+          <input 
+            type="text"
+            name="clientPhone"
+            value={clientPhone}
+            onChange={handleClientPhoneChange}
+            placeholder="998901234567"
+            className="w-full px-4 py-2.5 bg-blue-50/50 border border-blue-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors"
+          />
+          <p className="text-xs text-gray-500 mt-1.5">Kiritganda korxona nomi avtomatik yuklanadi</p>
         </div>
       </div>
 
@@ -700,7 +718,7 @@ export function ShipmentForm({ initialData, allWagons = [], allTrucks = [] }: { 
         </div>
       )}
 
-      <div className="grid md:grid-cols-2 gap-5">
+      <div className="max-w-md">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Og&apos;irligi (tonna)</label>
           <input 
@@ -733,21 +751,6 @@ export function ShipmentForm({ initialData, allWagons = [], allTrucks = [] }: { 
             }}
             className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20"
           />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
-            Mijoz telefon raqami (Mapping)
-            {isSearchingClient && <Loader2 className="w-3 h-3 animate-spin text-blue-500" />}
-          </label>
-          <input 
-            type="text"
-            name="clientPhone"
-            value={clientPhone}
-            onChange={handleClientPhoneChange}
-            placeholder="998901234567"
-            className="w-full px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20"
-          />
-          <p className="text-xs text-gray-500 mt-2">Kiritganda korxona nomi avtomatik yuklanadi va kabinetga ulanadi</p>
         </div>
       </div>
 

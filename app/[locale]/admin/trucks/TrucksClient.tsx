@@ -5,7 +5,9 @@ import { Plus, Search, Edit2, Trash2, Truck as TruckIcon, MapPin, User, Package 
 import { TruckFormModal } from './TruckFormModal';
 import { deleteTruck } from '@/app/actions/trucks';
 import { useRouter } from 'next/navigation';
-import { wagonStatusMeta } from '@/lib/wagon-status'; // We can reuse wagon statuses for now since they share available, assigned, in_transit etc.
+import { wagonStatusMeta } from '@/lib/wagon-status';
+import { useConfirm } from '@/components/providers/ConfirmProvider';
+import { toast } from 'sonner';
 
 interface Truck {
   id: number;
@@ -27,6 +29,7 @@ interface Props {
 
 export function TrucksClient({ initialTrucks, drivers, stations }: Props) {
   const router = useRouter();
+  const { confirm } = useConfirm();
   const [trucks, setTrucks] = useState(initialTrucks);
   const [search, setSearch] = useState('');
   
@@ -49,13 +52,20 @@ export function TrucksClient({ initialTrucks, drivers, stations }: Props) {
   }
 
   async function handleDelete(id: number) {
-    if (!confirm('Ushbu mashinani o\'chirishni tasdiqlaysizmi?')) return;
+    const ok = await confirm({
+      title: 'Mashinani o\'chirish',
+      message: 'Ushbu mashinani o\'chirishni tasdiqlaysizmi? Bu amalni qaytarib bo\'lmaydi.',
+      variant: 'danger',
+    });
+    if (!ok) return;
+
     const res = await deleteTruck(id);
     if (res.success) {
       router.refresh();
       setTrucks(trucks.filter(t => t.id !== id));
+      toast.success('Mashina o\'chirildi');
     } else {
-      alert(res.error || 'Xatolik yuz berdi');
+      toast.error(res.error || 'Xatolik yuz berdi');
     }
   }
 

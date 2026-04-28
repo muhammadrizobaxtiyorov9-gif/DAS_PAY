@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import { NotificationBell } from '@/components/shared/NotificationBell';
 import { LiveActivityFeed } from '@/components/shared/LiveActivityFeed';
+import { ConfirmProvider } from '@/components/providers/ConfirmProvider';
 
 interface NavItem {
   name: string;
@@ -158,6 +159,7 @@ export default function AdminLayoutClient({
   if (!mounted) return null;
 
   return (
+    <ConfirmProvider>
     <div className="flex h-screen overflow-hidden bg-[#f8f9fc]">
       {/* Mobile overlay */}
       <AnimatePresence>
@@ -345,5 +347,6 @@ export default function AdminLayoutClient({
         </main>
       </div>
     </div>
+    </ConfirmProvider>
   );
 }

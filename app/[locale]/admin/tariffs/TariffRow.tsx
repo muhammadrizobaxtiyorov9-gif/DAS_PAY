@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { Edit2, Loader2, Trash2, Truck, Train, Plane, Ship, Boxes, Power } from 'lucide-react';
 import { deleteTariff, toggleTariffActive } from '@/app/actions/admin';
 import { useRouter } from 'next/navigation';
+import { useConfirm } from '@/components/providers/ConfirmProvider';
+import { toast } from 'sonner';
 
 interface TariffRowProps {
   tariff: {
@@ -51,6 +53,7 @@ export function TariffRow({
 }: TariffRowProps) {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
+  const { confirm } = useConfirm();
   const [deleting, setDeleting] = useState(false);
 
   const Icon = MODE_ICON[modeIconName] || Truck;
@@ -65,10 +68,21 @@ export function TariffRow({
   }
 
   async function handleDelete() {
-    if (!confirm(`"${tariff.name}" tarifini o'chirishni tasdiqlaysizmi?`)) return;
+    const ok = await confirm({
+      title: 'Tarifni o\'chirish',
+      message: `"${tariff.name}" tarifini o'chirishni tasdiqlaysizmi?`,
+      variant: 'danger'
+    });
+    if (!ok) return;
     setDeleting(true);
-    await deleteTariff(tariff.id);
-    router.refresh();
+    const res = await deleteTariff(tariff.id);
+    if (res?.error) {
+      toast.error(res.error);
+      setDeleting(false);
+    } else {
+      toast.success('Tarif o\'chirildi');
+      router.refresh();
+    }
   }
 
   return (

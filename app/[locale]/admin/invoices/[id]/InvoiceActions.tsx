@@ -16,6 +16,8 @@ import {
   deleteInvoice,
   sendInvoiceReminder,
 } from '@/app/actions/admin';
+import { useConfirm } from '@/components/providers/ConfirmProvider';
+import { toast } from 'sonner';
 
 interface InvoiceActionsProps {
   invoiceId: number;
@@ -33,13 +35,13 @@ export function InvoiceActions({
   hasTelegram,
 }: InvoiceActionsProps) {
   const router = useRouter();
+  const { confirm } = useConfirm();
   const [isPending, startTransition] = useTransition();
   const [busy, setBusy] = useState<string | null>(null);
-  const [msg, setMsg] = useState<string | null>(null);
 
   function notify(text: string, ok = true) {
-    setMsg(text);
-    setTimeout(() => setMsg(null), ok ? 2500 : 4000);
+    if (ok) toast.success(text);
+    else toast.error(text);
   }
 
   function handleSend() {
@@ -69,8 +71,13 @@ export function InvoiceActions({
     });
   }
 
-  function handleCancel() {
-    if (!confirm('Invoysni bekor qilishni tasdiqlaysizmi?')) return;
+  async function handleCancel() {
+    const ok = await confirm({
+      title: 'Invoysni bekor qilish',
+      message: 'Invoysni bekor qilishni tasdiqlaysizmi?',
+      variant: 'warning'
+    });
+    if (!ok) return;
     setBusy('cancel');
     startTransition(async () => {
       const r = await updateInvoiceStatus(invoiceId, 'cancelled');
@@ -92,8 +99,13 @@ export function InvoiceActions({
     });
   }
 
-  function handleDelete() {
-    if (!confirm("Invoysni o'chirishni tasdiqlaysizmi? Bu amalni qaytarib bo'lmaydi.")) return;
+  async function handleDelete() {
+    const ok = await confirm({
+      title: 'Invoysni o\'chirish',
+      message: 'Invoysni o\'chirishni tasdiqlaysizmi? Bu amalni qaytarib bo\'lmaydi.',
+      variant: 'danger'
+    });
+    if (!ok) return;
     setBusy('delete');
     startTransition(async () => {
       const r = await deleteInvoice(invoiceId);
@@ -112,11 +124,6 @@ export function InvoiceActions({
 
   return (
     <div className="flex flex-wrap items-center justify-end gap-2">
-      {msg && (
-        <span className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white shadow">
-          {msg}
-        </span>
-      )}
 
       <button
         onClick={() => window.print()}
