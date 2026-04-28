@@ -4,8 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import * as jose from 'jose';
 import { revalidatePath } from 'next/cache';
-
-const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'daspay_super_secret_jwt_key_2024');
+import { clientJwtSecret } from '@/lib/secrets';
 
 async function getClientFromToken() {
   const cookieStore = await cookies();
@@ -13,10 +12,19 @@ async function getClientFromToken() {
   if (!token) return null;
 
   try {
-    const { payload } = await jose.jwtVerify(token.value, secret);
-    return await prisma.client.findUnique({
-      where: { id: payload.clientId as number }
-    });
+    const { payload } = await jose.jwtVerify(token.value, clientJwtSecret());
+    
+    // We try to find by phone (if available) or telegramId
+    if (payload.phone) {
+      return await prisma.client.findUnique({
+        where: { phone: payload.phone as string }
+      });
+    } else if (payload.sub) {
+      return await prisma.client.findUnique({
+        where: { telegramId: payload.sub as string }
+      });
+    }
+    return null;
   } catch {
     return null;
   }
