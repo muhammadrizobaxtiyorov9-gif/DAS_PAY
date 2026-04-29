@@ -62,6 +62,7 @@ interface Props {
   currentStatus: string;
   events: TimelineEvent[];
   hasClientTelegram: boolean;
+  transportMode: string;
 }
 
 const STATUS_PRESETS = Object.entries(SHIPMENT_STATUSES).map(([key, meta]) => ({
@@ -85,6 +86,7 @@ export function ShipmentTimelineEditor({
   currentStatus,
   events,
   hasClientTelegram,
+  transportMode,
 }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -280,21 +282,25 @@ export function ShipmentTimelineEditor({
               value={location}
               onSelect={handleStationSelect}
             />
-            <div className="mt-2 text-xs text-slate-500">
-              Yoki xaritadan nuqtani qo'lda tanlang:
-            </div>
+            {transportMode !== 'train' && (
+              <div className="mt-2 text-xs text-slate-500">
+                Yoki xaritadan nuqtani qo'lda tanlang:
+              </div>
+            )}
           </div>
 
-          <div className="mt-[-10px]">
-            <EventMapPicker
-              lat={lat}
-              lng={lng}
-              location={location}
-              onLatChange={setLat}
-              onLngChange={setLng}
-              onLocationChange={setLocation}
-            />
-          </div>
+          {transportMode !== 'train' && (
+            <div className="mt-[-10px]">
+              <EventMapPicker
+                lat={lat}
+                lng={lng}
+                location={location}
+                onLatChange={setLat}
+                onLngChange={setLng}
+                onLocationChange={setLocation}
+              />
+            </div>
+          )}
 
           <div>
             <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-600">

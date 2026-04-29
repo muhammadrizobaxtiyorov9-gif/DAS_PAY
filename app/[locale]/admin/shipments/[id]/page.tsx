@@ -165,8 +165,23 @@ export default async function ShipmentEditPage({
 
       {/* TAB: Edit */}
       {tab === 'edit' && (
-        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm md:p-8">
-          <ShipmentForm initialData={shipment} allWagons={allWagons} allTrucks={allTrucks} />
+        <div className="space-y-6">
+          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm md:p-8">
+            <ShipmentForm initialData={shipment} allWagons={allWagons} allTrucks={allTrucks} />
+          </div>
+          {!isNew && shipment && (
+            <FinancialsCard
+              shipmentId={shipment.id}
+              initial={{
+                revenue: (shipment as any).revenue ?? 0,
+                cost: (shipment as any).cost ?? 0,
+                currency: (shipment as any).currency ?? 'USD',
+                transportMode: (shipment as any).transportMode ?? null,
+                distanceKm: (shipment as any).distanceKm ?? null,
+                etaAt: (shipment as any).etaAt?.toISOString() ?? null,
+              }}
+            />
+          )}
         </div>
       )}
 
@@ -178,6 +193,7 @@ export default async function ShipmentEditPage({
           currentStatus={shipment.status}
           events={events}
           hasClientTelegram={hasClientTelegram}
+          transportMode={(shipment as any).transportMode || 'train'}
         />
       )}
 
@@ -192,27 +208,6 @@ export default async function ShipmentEditPage({
               destination={shipment.destination}
             />
           )}
-
-          <FinancialsCard
-            shipmentId={shipment.id}
-            initial={{
-              revenue: (shipment as unknown as { revenue?: number }).revenue ?? 0,
-              cost: (shipment as unknown as { cost?: number }).cost ?? 0,
-              currency: (shipment as unknown as { currency?: string }).currency ?? 'USD',
-              transportMode: (shipment as unknown as { transportMode?: string | null }).transportMode ?? null,
-              distanceKm: (shipment as unknown as { distanceKm?: number | null }).distanceKm ?? null,
-              etaAt: (shipment as unknown as { etaAt?: Date | null }).etaAt?.toISOString() ?? null,
-            }}
-          />
-
-          {/* Read-only timeline */}
-          <ShipmentTimelineEditor
-            shipmentId={shipment.id}
-            trackingCode={shipment.trackingCode}
-            currentStatus={shipment.status}
-            events={events}
-            hasClientTelegram={hasClientTelegram}
-          />
 
           <ShipmentDocuments shipmentId={shipment.id} defaultKind="cmr" />
         </>
