@@ -42,6 +42,10 @@ const originPinIcon = L.divIcon({ html: originPinHtml, className: 'custom-div-ic
 const destPinHtml = `<div style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#ef4444;color:white;font-weight:bold;font-size:14px;border:3px solid white;box-shadow:0 3px 8px rgba(0,0,0,0.3);">B</div>`;
 const destPinIcon = L.divIcon({ html: destPinHtml, className: 'custom-div-icon', iconSize: [32, 32], iconAnchor: [16, 16] });
 
+// Wagon/train position marker (animated pulse)
+const wagonIconHtml = `<div style="display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;background:#f59e0b;color:white;font-size:18px;border:3px solid white;box-shadow:0 0 0 4px rgba(245,158,11,0.3), 0 3px 8px rgba(0,0,0,0.3);animation:pulse 2s infinite">🚂</div><style>@keyframes pulse{0%,100%{box-shadow:0 0 0 4px rgba(245,158,11,0.3)}50%{box-shadow:0 0 0 8px rgba(245,158,11,0.1)}}</style>`;
+const wagonIcon = L.divIcon({ html: wagonIconHtml, className: 'custom-div-icon', iconSize: [40, 40], iconAnchor: [20, 20] });
+
 interface Props {
   points?: [number, number][];
   stopPoints?: [number, number][];
@@ -52,6 +56,9 @@ interface Props {
   destLng?: number;
   originLabel?: string;
   destLabel?: string;
+  lastEventLat?: number;
+  lastEventLng?: number;
+  lastEventLocation?: string;
 }
 
 export default function AdminMapClient({ 
@@ -64,6 +71,9 @@ export default function AdminMapClient({
   destLng,
   originLabel,
   destLabel,
+  lastEventLat,
+  lastEventLng,
+  lastEventLocation,
 }: Props) {
   const [bounds, setBounds] = useState<L.LatLngBoundsExpression | undefined>();
 
@@ -71,9 +81,10 @@ export default function AdminMapClient({
   const hasDestination = destLat != null && destLng != null;
   const hasSegments = routeSegments && routeSegments.length > 0;
   const hasPoints = points && points.length > 0;
+  const hasLastEvent = lastEventLat != null && lastEventLng != null;
 
   // Nothing to show at all
-  if (!hasPoints && !hasSegments && !hasOrigin && !hasDestination) {
+  if (!hasPoints && !hasSegments && !hasOrigin && !hasDestination && !hasLastEvent) {
     return (
       <div className="h-full w-full bg-slate-50 flex flex-col items-center justify-center gap-2 text-slate-400 rounded-lg">
         <div className="text-lg">🗺️</div>
@@ -92,11 +103,12 @@ export default function AdminMapClient({
     }
     if (hasOrigin) allPoints.push([originLat!, originLng!]);
     if (hasDestination) allPoints.push([destLat!, destLng!]);
+    if (hasLastEvent) allPoints.push([lastEventLat!, lastEventLng!]);
 
     if (allPoints.length > 0) {
       setBounds(L.latLngBounds(allPoints));
     }
-  }, [points, routeSegments, originLat, originLng, destLat, destLng, hasSegments, hasOrigin, hasDestination]);
+  }, [points, routeSegments, originLat, originLng, destLat, destLng, lastEventLat, lastEventLng, hasSegments, hasOrigin, hasDestination, hasLastEvent]);
 
   const center: [number, number] = hasPoints 
     ? points[points.length - 1] 
@@ -207,11 +219,24 @@ export default function AdminMapClient({
         </Marker>
       ))}
       
-      {/* Current/Last known position */}
+      {/* Current/Last known position from GPS */}
       {hasPoints && (
         <Marker position={points[points.length - 1]} icon={truckIcon}>
           <Popup>
-            <div className="text-xs font-semibold">🚂 So&apos;nggi joylashuv</div>
+            <div className="text-xs font-semibold">🚂 So&apos;nggi GPS joylashuv</div>
+          </Popup>
+        </Marker>
+      )}
+
+      {/* Wagon position from last event (for trains without GPS) */}
+      {hasLastEvent && !hasPoints && (
+        <Marker position={[lastEventLat!, lastEventLng!]} icon={wagonIcon}>
+          <Popup>
+            <div className="text-xs">
+              <div className="font-bold text-amber-700">🚂 Vagon hozirgi joylashuvi</div>
+              {lastEventLocation && <div className="text-slate-600 mt-0.5">{lastEventLocation}</div>}
+              <div className="text-slate-400 mt-0.5">{lastEventLat!.toFixed(4)}, {lastEventLng!.toFixed(4)}</div>
+            </div>
           </Popup>
         </Marker>
       )}

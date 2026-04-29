@@ -53,9 +53,9 @@ export default async function ShipmentEditPage({
   const session = await getAdminSession();
   const branchScope = session ? branchWhere(session) : {};
 
-  // Only fetch wagons/trucks for edit tab, logs for track tab
+  // Fetch logs for track tab AND events tab (we need latest driver position for events too)
   const needsVehicles = isNew || tab === 'edit';
-  const needsLogs = !isNew && tab === 'track';
+  const needsLogs = !isNew && (tab === 'track' || (tab === 'events' && (shipment as any)?.transportMode === 'truck'));
 
   const [logs, allWagons, allTrucks] = await Promise.all([
     needsLogs
@@ -111,6 +111,12 @@ export default async function ShipmentEditPage({
             },
         )
       : [];
+
+  // Find the last event that has lat/lng (wagon/truck current position from events)
+  const lastEventWithCoords = [...events].reverse().find(e => e.lat && e.lng);
+
+  // Driver's last known GPS position (from truck location logs)
+  const lastLog = serializedLogs.length > 0 ? serializedLogs[serializedLogs.length - 1] : null;
 
   const pageTitle = isNew ? 'Yangi Yuk Kiritish' : `${shipment?.trackingCode} — ${tab === 'edit' ? 'Tahrirlash' : tab === 'events' ? 'Voqealar' : 'Kuzatish'}`;
 
@@ -194,6 +200,10 @@ export default async function ShipmentEditPage({
           events={events}
           hasClientTelegram={hasClientTelegram}
           transportMode={(shipment as any).transportMode || 'train'}
+          origin={shipment.origin}
+          destination={shipment.destination}
+          driverLat={lastLog?.lat}
+          driverLng={lastLog?.lng}
         />
       )}
 
@@ -210,6 +220,9 @@ export default async function ShipmentEditPage({
             originLng={(shipment as any).originLng ?? undefined}
             destLat={(shipment as any).destinationLat ?? undefined}
             destLng={(shipment as any).destinationLng ?? undefined}
+            lastEventLat={lastEventWithCoords?.lat}
+            lastEventLng={lastEventWithCoords?.lng}
+            lastEventLocation={lastEventWithCoords?.location}
             routeSegments={
               typeof (shipment as any).routeSegments === 'string'
                 ? (() => { try { return JSON.parse((shipment as any).routeSegments); } catch { return []; } })()

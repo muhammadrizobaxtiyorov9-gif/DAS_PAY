@@ -32,6 +32,9 @@ export default function AdminShipmentMap({
   originLng,
   destLat,
   destLng,
+  lastEventLat,
+  lastEventLng,
+  lastEventLocation,
   routeSegments = []
 }: { 
   shipmentId: number;
@@ -43,6 +46,9 @@ export default function AdminShipmentMap({
   originLng?: number;
   destLat?: number;
   destLng?: number;
+  lastEventLat?: number;
+  lastEventLng?: number;
+  lastEventLocation?: string;
   routeSegments?: any[];
 }) {
   const hasLogs = logs && logs.length > 0;
@@ -122,6 +128,9 @@ export default function AdminShipmentMap({
             destLng={destLng}
             originLabel={origin}
             destLabel={destination}
+            lastEventLat={lastEventLat}
+            lastEventLng={lastEventLng}
+            lastEventLocation={lastEventLocation}
           />
         )}
       </div>

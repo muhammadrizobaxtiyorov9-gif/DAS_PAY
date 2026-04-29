@@ -34,6 +34,10 @@ function EventMapPicker(props: {
   onLatChange: (v: string) => void;
   onLngChange: (v: string) => void;
   onLocationChange: (v: string) => void;
+  routeOrigin?: string;
+  routeDestination?: string;
+  driverLat?: number;
+  driverLng?: number;
 }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
@@ -63,6 +67,10 @@ interface Props {
   events: TimelineEvent[];
   hasClientTelegram: boolean;
   transportMode: string;
+  origin?: string;
+  destination?: string;
+  driverLat?: number;
+  driverLng?: number;
 }
 
 const STATUS_PRESETS = Object.entries(SHIPMENT_STATUSES).map(([key, meta]) => ({
@@ -87,6 +95,10 @@ export function ShipmentTimelineEditor({
   events,
   hasClientTelegram,
   transportMode,
+  origin,
+  destination,
+  driverLat,
+  driverLng,
 }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -303,6 +315,10 @@ export function ShipmentTimelineEditor({
                 onLatChange={setLat}
                 onLngChange={setLng}
                 onLocationChange={setLocation}
+                routeOrigin={origin}
+                routeDestination={destination}
+                driverLat={driverLat}
+                driverLng={driverLng}
               />
             </div>
           )}

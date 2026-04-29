@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { YMaps, Map, Placemark } from '@pbe/react-yandex-maps';
+import { YMaps, Map, Placemark, Polyline } from '@pbe/react-yandex-maps';
 import { Search, Loader2, X, MapPin } from 'lucide-react';
 
 const YANDEX_API_KEY = process.env.NEXT_PUBLIC_YANDEX_MAPS_API_KEY || '';
@@ -13,6 +13,14 @@ interface Props {
   onLatChange: (v: string) => void;
   onLngChange: (v: string) => void;
   onLocationChange: (v: string) => void;
+  /** Origin city/address for drawing the planned route */
+  routeOrigin?: string;
+  /** Destination city/address for drawing the planned route */
+  routeDestination?: string;
+  /** Driver's last known GPS latitude */
+  driverLat?: number;
+  /** Driver's last known GPS longitude */
+  driverLng?: number;
 }
 
 export default function EventLocationPicker({
@@ -22,6 +30,10 @@ export default function EventLocationPicker({
   onLatChange,
   onLngChange,
   onLocationChange,
+  routeOrigin,
+  routeDestination,
+  driverLat,
+  driverLng,
 }: Props) {
   const [mapReady, setMapReady] = useState(false);
   const [search, setSearch] = useState('');
@@ -30,12 +42,54 @@ export default function EventLocationPicker({
 
   const ymapsRef = useRef<any>(null);
   const mapInstanceRef = useRef<any>(null);
+  const routeRef = useRef<any>(null);
 
   const latNum = lat ? parseFloat(lat) : null;
   const lngNum = lng ? parseFloat(lng) : null;
   const hasMarker = latNum != null && !isNaN(latNum) && lngNum != null && !isNaN(lngNum);
+  const hasDriver = driverLat != null && driverLng != null;
 
-  const center: [number, number] = hasMarker ? [latNum, lngNum] : [41.2995, 69.2401];
+  const center: [number, number] = hasMarker
+    ? [latNum, lngNum]
+    : hasDriver
+      ? [driverLat!, driverLng!]
+      : [41.2995, 69.2401];
+
+  // Draw the planned route between origin and destination
+  const drawRoute = useCallback(() => {
+    const ym = ymapsRef.current;
+    const map = mapInstanceRef.current;
+    if (!ym || !map || !routeOrigin || !routeDestination) return;
+
+    if (routeRef.current) {
+      try { map.geoObjects.remove(routeRef.current); } catch { /* noop */ }
+      routeRef.current = null;
+    }
+
+    try {
+      const mr = new ym.multiRouter.MultiRoute(
+        { referencePoints: [routeOrigin, routeDestination], params: { routingMode: 'auto' } },
+        {
+          boundsAutoApply: !hasMarker && !hasDriver,
+          wayPointVisible: true,
+          routeActiveStrokeColor: '#185FA5',
+          routeActiveStrokeWidth: 4,
+          routeActiveStrokeStyle: 'solid',
+          routeActiveStrokeOpacity: 0.6,
+        }
+      );
+      routeRef.current = mr;
+      map.geoObjects.add(mr);
+    } catch (e) {
+      console.error('Failed to draw route on event picker', e);
+    }
+  }, [routeOrigin, routeDestination, hasMarker, hasDriver]);
+
+  useEffect(() => {
+    if (mapReady) {
+      drawRoute();
+    }
+  }, [mapReady, drawRoute]);
 
   const doReverseGeocode = useCallback((latitude: number, longitude: number) => {
     const ym = ymapsRef.current;
@@ -122,10 +176,10 @@ export default function EventLocationPicker({
       </div>
 
       {/* Map */}
-      <div className="relative h-[220px] w-full overflow-hidden rounded-lg border border-slate-200 shadow-inner">
-        <YMaps query={{ apikey: YANDEX_API_KEY, lang: 'ru_RU', load: 'package.full' }}>
+      <div className="relative h-[280px] w-full overflow-hidden rounded-lg border border-slate-200 shadow-inner">
+        <YMaps query={{ apikey: YANDEX_API_KEY, lang: 'ru_RU', load: 'package.full,multiRouter.MultiRoute' }}>
           <Map
-            state={{ center, zoom: hasMarker ? 14 : 5 }}
+            state={{ center, zoom: hasMarker ? 14 : hasDriver ? 12 : 5 }}
             width="100%"
             height="100%"
             onClick={handleMapClick}
@@ -136,10 +190,21 @@ export default function EventLocationPicker({
             }}
             options={{ suppressMapOpenBlock: true }}
           >
+            {/* Selected event location marker (blue) */}
             {hasMarker && (
               <Placemark
-                geometry={center}
-                options={{ preset: 'islands#blueDotIcon' }}
+                geometry={[latNum!, lngNum!]}
+                options={{ preset: 'islands#blueCircleDotIcon' }}
+                properties={{ balloonContent: '📍 Voqea joylashuvi' }}
+              />
+            )}
+
+            {/* Driver's current GPS position (green truck icon) */}
+            {hasDriver && (
+              <Placemark
+                geometry={[driverLat!, driverLng!]}
+                options={{ preset: 'islands#greenAutoIcon' }}
+                properties={{ balloonContent: '🚛 Haydovchi joylashuvi (GPS)' }}
               />
             )}
           </Map>
@@ -154,11 +219,27 @@ export default function EventLocationPicker({
           </div>
         )}
 
-        {/* Hint */}
-        <div className="pointer-events-none absolute left-2 top-2 z-[400] rounded-lg bg-white/95 px-2 py-1 shadow ring-1 ring-black/5 backdrop-blur-sm">
-          <span className="text-[10px] font-semibold text-slate-600">
-            {hasMarker ? `📍 ${latNum!.toFixed(4)}, ${lngNum!.toFixed(4)}` : '🖱️ Xaritadan bosing'}
-          </span>
+        {/* Info badges */}
+        <div className="pointer-events-none absolute left-2 top-2 z-[400] flex flex-col gap-1">
+          <div className="rounded-lg bg-white/95 px-2 py-1 shadow ring-1 ring-black/5 backdrop-blur-sm">
+            <span className="text-[10px] font-semibold text-slate-600">
+              {hasMarker ? `📍 ${latNum!.toFixed(4)}, ${lngNum!.toFixed(4)}` : '🖱️ Xaritadan bosing'}
+            </span>
+          </div>
+          {hasDriver && (
+            <div className="rounded-lg bg-green-50/95 px-2 py-1 shadow ring-1 ring-green-200/50 backdrop-blur-sm">
+              <span className="text-[10px] font-semibold text-green-700">
+                🚛 Haydovchi: {driverLat!.toFixed(4)}, {driverLng!.toFixed(4)}
+              </span>
+            </div>
+          )}
+          {routeOrigin && routeDestination && (
+            <div className="rounded-lg bg-blue-50/95 px-2 py-1 shadow ring-1 ring-blue-200/50 backdrop-blur-sm">
+              <span className="text-[10px] font-semibold text-blue-700">
+                🛣️ Marshrut ko'rsatilmoqda
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Clear button */}
