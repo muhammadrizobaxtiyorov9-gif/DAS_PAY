@@ -142,6 +142,13 @@ export default function YandexRoutePicker(props: Props) {
     }
   }, [doReverseGeocode, drawRoute]);
 
+  // Draw initial route if points already exist from props
+  useEffect(() => {
+    if (mapReady && a && b && !routeRef.current) {
+      drawRoute(a, b);
+    }
+  }, [mapReady, a, b, drawRoute]);
+
   // Store map instance
   const handleMapInstance = useCallback((ref: any) => {
     if (!ref || mapInstanceRef.current === ref) return;
@@ -207,8 +214,7 @@ export default function YandexRoutePicker(props: Props) {
   };
 
   // Pressing Enter without picking from suggestions → just geocode the text
-  const handleSearchSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleSearchSubmit = async () => {
     if (!searchText.trim()) return;
     setShowSuggestions(false);
     setSearching(true);
@@ -246,13 +252,19 @@ export default function YandexRoutePicker(props: Props) {
       </div>
 
       {/* Built-in search bar with autocomplete */}
-      <form onSubmit={handleSearchSubmit} className="relative">
+      <div className="relative">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
           <input
             type="text"
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleSearchSubmit();
+              }
+            }}
             onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
             onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
             placeholder={picking === 'A' ? "Jo'nash manzilini qidiring (masalan: Toshkent, Abdurauf Fitrat 33)" : 'Yetkazib berish manzilini qidiring'}
@@ -291,7 +303,7 @@ export default function YandexRoutePicker(props: Props) {
             ))}
           </div>
         )}
-      </form>
+      </div>
 
       <p className="text-[11px] text-slate-400">
         ⭐ {picking === 'A' ? "Jo'nash nuqtasini (A)" : "Manzil nuqtasini (B)"} tanlang — qidirish orqali yoki xaritadan bosib
