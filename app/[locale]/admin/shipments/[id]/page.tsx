@@ -200,16 +200,22 @@ export default async function ShipmentEditPage({
       {/* TAB: Track */}
       {tab === 'track' && !isNew && shipment && (
         <>
-          {serializedLogs.length > 0 && (
-            <AdminShipmentMap 
-              shipmentId={shipment.id} 
-              logs={serializedLogs}
-              origin={shipment.origin}
-              destination={shipment.destination}
-              transportMode={(shipment as any).transportMode || 'train'}
-              routeSegments={(shipment as any).routeSegments || []}
-            />
-          )}
+          <AdminShipmentMap 
+            shipmentId={shipment.id} 
+            logs={serializedLogs}
+            origin={shipment.origin}
+            destination={shipment.destination}
+            transportMode={(shipment as any).transportMode || 'train'}
+            originLat={(shipment as any).originLat ?? undefined}
+            originLng={(shipment as any).originLng ?? undefined}
+            destLat={(shipment as any).destinationLat ?? undefined}
+            destLng={(shipment as any).destinationLng ?? undefined}
+            routeSegments={
+              typeof (shipment as any).routeSegments === 'string'
+                ? (() => { try { return JSON.parse((shipment as any).routeSegments); } catch { return []; } })()
+                : Array.isArray((shipment as any).routeSegments) ? (shipment as any).routeSegments : []
+            }
+          />
 
           <ShipmentDocuments shipmentId={shipment.id} defaultKind="cmr" />
         </>

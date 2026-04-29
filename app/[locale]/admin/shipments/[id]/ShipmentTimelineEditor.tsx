@@ -275,22 +275,27 @@ export function ShipmentTimelineEditor({
             </div>
           )}
 
-          <div>
-            <StationAutocomplete
-              label="Joylashuv (Stansiya yoki shahar)"
-              placeholder="Xaritadan tanlang yoki qidirib toping..."
-              value={location}
-              onSelect={handleStationSelect}
-            />
-            {transportMode !== 'train' && (
-              <div className="mt-2 text-xs text-slate-500">
-                Yoki xaritadan nuqtani qo'lda tanlang:
-              </div>
-            )}
-          </div>
-
-          {transportMode !== 'train' && (
-            <div className="mt-[-10px]">
+          {transportMode === 'train' ? (
+            <div>
+              <StationAutocomplete
+                label="Joylashuv (Stansiya yoki shahar)"
+                placeholder="Xaritadan tanlang yoki qidirib toping..."
+                value={location}
+                onSelect={handleStationSelect}
+              />
+            </div>
+          ) : (
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-600">
+                Joylashuv
+              </label>
+              <input
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="Manzilni yozing yoki xaritadan tanlang..."
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 mb-2"
+              />
+              <div className="text-xs text-slate-500 mb-1">Yoki xaritadan nuqtani qo'lda tanlang:</div>
               <EventMapPicker
                 lat={lat}
                 lng={lng}
