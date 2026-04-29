@@ -4,8 +4,8 @@ export const CONTACTS = {
     tel: '+998955580007'
   },
   email: {
-    display: 'info@das-pay.uz',
-    mailto: 'info@das-pay.uz',
+    display: 'info@das-pay.com',
+    mailto: 'info@das-pay.com',
   },
   address: {
     uz: "Toshkent sh., Yashnabod tumani, Sodiq Azimov ko'chasi, 68-uy",

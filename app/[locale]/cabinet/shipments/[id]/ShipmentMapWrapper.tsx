@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect } from 'react';
 import { MapPin } from 'lucide-react';
-
-const LazyMap = lazy(() => import('./ShipmentMap'));
+import dynamic from 'next/dynamic';
 
 function MapLoader() {
   return (
@@ -13,13 +12,14 @@ function MapLoader() {
   );
 }
 
+const DynamicMap = dynamic(() => import('./ShipmentMap'), {
+  ssr: false,
+  loading: () => <MapLoader />
+});
+
 export default function ShipmentMapWrapper({ shipment }: { shipment: any }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
   if (!mounted) return <MapLoader />;
-  return (
-    <Suspense fallback={<MapLoader />}>
-      <LazyMap shipment={shipment} />
-    </Suspense>
-  );
+  return <DynamicMap shipment={shipment} />;
 }
