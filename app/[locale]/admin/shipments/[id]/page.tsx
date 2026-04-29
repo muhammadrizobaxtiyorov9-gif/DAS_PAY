@@ -206,6 +206,8 @@ export default async function ShipmentEditPage({
               logs={serializedLogs}
               origin={shipment.origin}
               destination={shipment.destination}
+              transportMode={(shipment as any).transportMode || 'train'}
+              routeSegments={(shipment as any).routeSegments || []}
             />
           )}
 

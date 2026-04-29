@@ -9,6 +9,11 @@ const AdminMapClient = dynamic(() => import('./AdminMapClient'), {
   loading: () => <div className="h-96 w-full bg-slate-100 animate-pulse flex items-center justify-center rounded-2xl border border-gray-200">Xarita yuklanmoqda...</div>
 });
 
+const YandexTrackingMap = dynamic(() => import('./YandexTrackingMap'), {
+  ssr: false,
+  loading: () => <div className="h-96 w-full bg-slate-100 animate-pulse flex items-center justify-center rounded-2xl border border-gray-200">Yandex Maps yuklanmoqda...</div>
+});
+
 interface LogEntry {
   lat: number;
   lng: number;
@@ -21,12 +26,16 @@ export default function AdminShipmentMap({
   shipmentId,
   logs,
   origin,
-  destination
+  destination,
+  transportMode = 'train',
+  routeSegments = []
 }: { 
   shipmentId: number;
   logs: LogEntry[];
   origin?: string;
   destination?: string;
+  transportMode?: string;
+  routeSegments?: any[];
 }) {
   if (!logs || logs.length === 0) return null;
 
@@ -82,7 +91,20 @@ export default function AdminShipmentMap({
 
       {/* GPS Trail Map */}
       <div className="h-96 w-full relative">
-        <AdminMapClient points={points} stopPoints={stopPoints} />
+        {transportMode === 'truck' ? (
+          <YandexTrackingMap 
+            points={points} 
+            stopPoints={stopPoints} 
+            origin={origin} 
+            destination={destination} 
+          />
+        ) : (
+          <AdminMapClient 
+            points={points} 
+            stopPoints={stopPoints} 
+            routeSegments={routeSegments} 
+          />
+        )}
       </div>
 
       {/* Detailed Stats Grid */}

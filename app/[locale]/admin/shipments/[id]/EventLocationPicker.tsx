@@ -1,22 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { MapContainer, TileLayer, Marker, useMapEvents, ZoomControl, useMap } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import { Search, Loader2, MapPin, X } from 'lucide-react';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { YMaps, Map, Placemark } from '@pbe/react-yandex-maps';
+import { Search, Loader2, X, MapPin } from 'lucide-react';
 
-const pinIcon = L.divIcon({
-  className: 'daspay-event-pin',
-  html: `
-    <div style="position:relative;width:36px;height:36px;display:flex;align-items:center;justify-content:center;">
-      <span style="position:absolute;width:100%;height:100%;border-radius:9999px;background:rgba(24,95,165,0.2);"></span>
-      <span style="position:relative;z-index:10;width:22px;height:22px;border-radius:9999px;background:#185FA5;border:3px solid white;box-shadow:0 4px 12px rgba(24,95,165,0.5);"></span>
-    </div>
-  `,
-  iconSize: [36, 36],
-  iconAnchor: [18, 18],
-});
+const YANDEX_API_KEY = process.env.NEXT_PUBLIC_YANDEX_MAPS_API_KEY || '';
 
 interface Props {
   lat: string;
@@ -27,25 +15,6 @@ interface Props {
   onLocationChange: (v: string) => void;
 }
 
-function FlyToPoint({ lat, lng }: { lat: number; lng: number }) {
-  const map = useMap();
-  useEffect(() => {
-    if (lat && lng) {
-      map.flyTo([lat, lng], Math.max(map.getZoom(), 12), { animate: true, duration: 0.8 });
-    }
-  }, [lat, lng, map]);
-  return null;
-}
-
-function MapClickHandler({ onClick }: { onClick: (lat: number, lng: number) => void }) {
-  useMapEvents({
-    click(e) {
-      onClick(e.latlng.lat, e.latlng.lng);
-    },
-  });
-  return null;
-}
-
 export default function EventLocationPicker({
   lat,
   lng,
@@ -54,79 +23,69 @@ export default function EventLocationPicker({
   onLngChange,
   onLocationChange,
 }: Props) {
+  const [mapReady, setMapReady] = useState(false);
   const [search, setSearch] = useState('');
   const [isSearching, setIsSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<Array<{ display_name: string; lat: number; lon: number }>>([]);
   const [isReversing, setIsReversing] = useState(false);
-  const mapRef = useRef<L.Map | null>(null);
+
+  const ymapsRef = useRef<any>(null);
+  const mapInstanceRef = useRef<any>(null);
 
   const latNum = lat ? parseFloat(lat) : null;
   const lngNum = lng ? parseFloat(lng) : null;
   const hasMarker = latNum != null && !isNaN(latNum) && lngNum != null && !isNaN(lngNum);
 
-  const center: [number, number] = useMemo(() => {
-    if (hasMarker) return [latNum!, lngNum!];
-    return [41.2995, 69.2401]; // Tashkent default
-  }, [hasMarker, latNum, lngNum]);
+  const center: [number, number] = hasMarker ? [latNum, lngNum] : [41.2995, 69.2401];
 
-  const reverseGeocode = useCallback(async (latitude: number, longitude: number) => {
+  const doReverseGeocode = useCallback((latitude: number, longitude: number) => {
+    const ym = ymapsRef.current;
+    if (!ym) return;
     setIsReversing(true);
-    try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=14&addressdetails=1`,
-        { headers: { 'Accept-Language': 'uz,ru,en' } },
-      );
-      const data = await res.json();
-      if (data?.display_name) {
-        // Extract a shorter location name
-        const parts = data.display_name.split(',').map((s: string) => s.trim());
-        const short = parts.slice(0, 3).join(', ');
-        onLocationChange(short);
-      }
-    } catch {
-      // silently fail — user can type manually
-    } finally {
-      setIsReversing(false);
-    }
+    ym.geocode([latitude, longitude], { results: 1 })
+      .then((res: any) => {
+        const obj = res.geoObjects.get(0);
+        if (obj) {
+          const address = obj.getAddressLine();
+          onLocationChange(address);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setIsReversing(false));
   }, [onLocationChange]);
 
-  const handleMapClick = useCallback(async (clickLat: number, clickLng: number) => {
-    onLatChange(clickLat.toFixed(6));
-    onLngChange(clickLng.toFixed(6));
-    await reverseGeocode(clickLat, clickLng);
-  }, [onLatChange, onLngChange, reverseGeocode]);
+  const handleMapClick = useCallback((e: any) => {
+    const coords = e.get('coords');
+    if (!coords) return;
+    const [cLat, cLng] = coords;
+    onLatChange(cLat.toFixed(6));
+    onLngChange(cLng.toFixed(6));
+    doReverseGeocode(cLat, cLng);
+  }, [onLatChange, onLngChange, doReverseGeocode]);
 
-  async function runSearch(query: string) {
-    if (!query.trim()) return;
+  const runSearch = useCallback(async () => {
+    const query = search.trim();
+    const ym = ymapsRef.current;
+    if (!query || !ym || !mapInstanceRef.current) return;
+
     setIsSearching(true);
     try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(query)}`,
-        { headers: { 'Accept-Language': 'uz,ru,en' } },
-      );
-      const data = await res.json();
-      setSearchResults(
-        (Array.isArray(data) ? data : []).map((d: { display_name: string; lat: string; lon: string }) => ({
-          display_name: d.display_name,
-          lat: parseFloat(d.lat),
-          lon: parseFloat(d.lon),
-        })),
-      );
-    } catch {
-      setSearchResults([]);
+      const res = await ym.geocode(query, { results: 1 });
+      const obj = res.geoObjects.get(0);
+      if (obj) {
+        const coords = obj.geometry.getCoordinates();
+        const address = obj.getAddressLine();
+        onLatChange(coords[0].toFixed(6));
+        onLngChange(coords[1].toFixed(6));
+        onLocationChange(address);
+        
+        mapInstanceRef.current.setCenter(coords, 14, { checkZoomRange: true, duration: 500 });
+      }
+    } catch (err) {
+      console.error('Yandex Geocode search error:', err);
     } finally {
       setIsSearching(false);
     }
-  }
-
-  function selectResult(r: { display_name: string; lat: number; lon: number }) {
-    setSearchResults([]);
-    setSearch('');
-    onLatChange(r.lat.toFixed(6));
-    onLngChange(r.lon.toFixed(6));
-    const parts = r.display_name.split(',').map((s: string) => s.trim());
-    onLocationChange(parts.slice(0, 3).join(', '));
-  }
+  }, [search, onLatChange, onLngChange, onLocationChange]);
 
   function clearPin() {
     onLatChange('');
@@ -145,7 +104,7 @@ export default function EventLocationPicker({
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
-                runSearch(search);
+                runSearch();
               }
             }}
             placeholder="Manzilni qidirish..."
@@ -154,54 +113,37 @@ export default function EventLocationPicker({
           {isSearching && <Loader2 className="h-3.5 w-3.5 animate-spin text-[#185FA5]" />}
           <button
             type="button"
-            onClick={() => runSearch(search)}
+            onClick={runSearch}
             className="rounded-md bg-[#185FA5] px-2 py-0.5 text-[10px] font-semibold text-white hover:bg-[#042C53]"
           >
             Qidirish
           </button>
         </div>
-        {searchResults.length > 0 && (
-          <div className="absolute z-[600] mt-1 w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl">
-            {searchResults.map((r, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => selectResult(r)}
-                className="flex w-full items-start gap-2 border-b border-slate-100 px-3 py-1.5 text-left text-[11px] text-slate-700 last:border-0 hover:bg-slate-50"
-              >
-                <MapPin className="mt-0.5 h-3 w-3 shrink-0 text-[#185FA5]" />
-                <span className="line-clamp-2">{r.display_name}</span>
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Map */}
       <div className="relative h-[220px] w-full overflow-hidden rounded-lg border border-slate-200 shadow-inner">
-        <MapContainer
-          center={center}
-          zoom={hasMarker ? 12 : 5}
-          zoomControl={false}
-          className="h-full w-full"
-          ref={(m) => {
-            if (m) mapRef.current = m;
-          }}
-        >
-          <TileLayer
-            url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-            attribution="&copy; OpenStreetMap &copy; CARTO"
-            subdomains={['a', 'b', 'c', 'd']}
-          />
-          <ZoomControl position="bottomright" />
-          <MapClickHandler onClick={handleMapClick} />
-          {hasMarker && (
-            <>
-              <FlyToPoint lat={latNum!} lng={lngNum!} />
-              <Marker position={[latNum!, lngNum!]} icon={pinIcon} />
-            </>
-          )}
-        </MapContainer>
+        <YMaps query={{ apikey: YANDEX_API_KEY, lang: 'ru_RU', load: 'package.full' }}>
+          <Map
+            state={{ center, zoom: hasMarker ? 14 : 5 }}
+            width="100%"
+            height="100%"
+            onClick={handleMapClick}
+            instanceRef={mapInstanceRef}
+            onLoad={(ymaps: any) => {
+              ymapsRef.current = ymaps;
+              setMapReady(true);
+            }}
+            options={{ suppressMapOpenBlock: true }}
+          >
+            {hasMarker && (
+              <Placemark
+                geometry={center}
+                options={{ preset: 'islands#blueDotIcon' }}
+              />
+            )}
+          </Map>
+        </YMaps>
 
         {/* Reverse geocoding indicator */}
         {isReversing && (
