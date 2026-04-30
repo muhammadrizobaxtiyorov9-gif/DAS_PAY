@@ -864,6 +864,8 @@ export interface TariffInput {
   originCity?: string | null;
   destCountry: string;
   destCity?: string | null;
+  originStationId?: number | null;
+  destStationId?: number | null;
   mode: string;
   pricePerKg: number;
   baseFee: number;
@@ -881,6 +883,8 @@ function normalizeTariffData(input: TariffInput) {
     originCity: input.originCity?.trim() || null,
     destCountry: input.destCountry.trim(),
     destCity: input.destCity?.trim() || null,
+    originStationId: input.originStationId ? Number(input.originStationId) : null,
+    destStationId: input.destStationId ? Number(input.destStationId) : null,
     mode: input.mode || 'train',
     pricePerKg: Number(input.pricePerKg) || 0,
     baseFee: Number(input.baseFee) || 0,
