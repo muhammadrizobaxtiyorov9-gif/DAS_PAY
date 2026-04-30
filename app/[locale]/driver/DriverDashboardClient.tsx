@@ -13,8 +13,8 @@ import { PushButton } from '@/components/shared/PushButton';
 const DRIVER_STATUS_FLOW = [
   { status: 'pending', actionLabel: 'Tasdiqlash', nextStatus: 'confirmed', icon: CheckCircle2, color: 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/30' },
   { status: 'confirmed', actionLabel: 'Yuklash manziliga yetdim', nextStatus: 'arrived_at_loading', icon: MapPin, color: 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/30' },
-  { status: 'arrived_at_loading', actionLabel: 'Hujjatlar rasmiylashtirildi', nextStatus: 'documents_ready', icon: Package, color: 'bg-sky-600 hover:bg-sky-700 shadow-sky-600/30' },
-  { status: 'documents_ready', actionLabel: 'Yuk yuklandi', nextStatus: 'loaded', icon: Truck, color: 'bg-teal-600 hover:bg-teal-700 shadow-teal-600/30' },
+  { status: 'arrived_at_loading', actionLabel: 'Hujjatlar rasmiylashtirildi', nextStatus: 'docs_ready', icon: Package, color: 'bg-sky-600 hover:bg-sky-700 shadow-sky-600/30' },
+  { status: 'docs_ready', actionLabel: 'Yuk yuklandi', nextStatus: 'loaded', icon: Truck, color: 'bg-teal-600 hover:bg-teal-700 shadow-teal-600/30' },
   { status: 'loaded', actionLabel: "Yo'lga chiqdim", nextStatus: 'in_transit', icon: Route, color: 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/30' },
   { status: 'in_transit', actionLabel: 'Manzilga yetdim', nextStatus: 'delivered', icon: CheckCircle2, color: 'bg-green-600 hover:bg-green-700 shadow-green-600/30' }
 ];
@@ -23,7 +23,7 @@ const STATUS_LABELS: Record<string, string> = {
   pending: "KUTILMOQDA",
   confirmed: "TASDIQLANDI",
   arrived_at_loading: "YUKLASH MANZILIDA",
-  documents_ready: "HUJJATLAR TAYYOR",
+  docs_ready: "HUJJATLAR TAYYOR",
   loaded: "YUKLANGAN",
   in_transit: "YO'LDA",
   delivered: "YETKAZILDI"

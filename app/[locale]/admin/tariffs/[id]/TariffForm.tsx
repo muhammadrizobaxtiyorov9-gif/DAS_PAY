@@ -20,10 +20,20 @@ interface TariffModel {
   transitDays: number | null;
   notes: string | null;
   active: boolean;
+  originStationId?: number | null;
+  destStationId?: number | null;
 }
 
-export function TariffForm({ initialData }: { initialData: TariffModel | null }) {
+interface StationOption {
+  id: number;
+  code: string;
+  nameUz: string;
+  country: string;
+}
+
+export function TariffForm({ initialData, stations = [] }: { initialData: TariffModel | null, stations?: StationOption[] }) {
   const router = useRouter();
+  const [mode, setMode] = useState(initialData?.mode || 'train');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -47,6 +57,8 @@ export function TariffForm({ initialData }: { initialData: TariffModel | null })
       transitDays: fd.get('transitDays') ? parseInt(String(fd.get('transitDays'))) : null,
       notes: String(fd.get('notes') || '').trim() || null,
       active: fd.get('active') === 'on',
+      originStationId: fd.get('originStationId') ? parseInt(String(fd.get('originStationId'))) : null,
+      destStationId: fd.get('destStationId') ? parseInt(String(fd.get('destStationId'))) : null,
     };
 
     const result = initialData
@@ -99,6 +111,41 @@ export function TariffForm({ initialData }: { initialData: TariffModel | null })
         </div>
       </div>
 
+      {mode === 'train' && (
+        <div className="grid gap-5 md:grid-cols-2">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">Jo'natish stansiyasi (Temir yo'l)</label>
+            <select
+              name="originStationId"
+              defaultValue={initialData?.originStationId || ''}
+              className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+            >
+              <option value="">Stansiya tanlanmagan</option>
+              {stations.map(st => (
+                <option key={st.id} value={st.id}>
+                  {st.code} - {st.nameUz} ({st.country})
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">Yetkazish stansiyasi (Temir yo'l)</label>
+            <select
+              name="destStationId"
+              defaultValue={initialData?.destStationId || ''}
+              className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+            >
+              <option value="">Stansiya tanlanmagan</option>
+              {stations.map(st => (
+                <option key={st.id} value={st.id}>
+                  {st.code} - {st.nameUz} ({st.country})
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
+
       <div className="grid gap-5 md:grid-cols-2">
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">Yetkazish davlati</label>
@@ -126,7 +173,8 @@ export function TariffForm({ initialData }: { initialData: TariffModel | null })
           <label className="mb-1 block text-sm font-medium text-gray-700">Transport turi</label>
           <select
             name="mode"
-            defaultValue={initialData?.mode || 'train'}
+            value={mode}
+            onChange={(e) => setMode(e.target.value)}
             className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
           >
             <option value="train">Temir yo'l</option>

@@ -239,6 +239,11 @@ model Tariff {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
+  originStationId Int?
+  originStation   Station? @relation("TariffOriginStation", fields: [originStationId], references: [id])
+  destStationId   Int?
+  destStation     Station? @relation("TariffDestStation", fields: [destStationId], references: [id])
+
   @@index([originCountry, destCountry])
   @@index([mode])
   @@index([active])
@@ -497,6 +502,8 @@ model Station {
   distancesTo   StationDistance[] @relation("DistanceTo")
   movementsFrom WagonMovement[]   @relation("MovementFrom")
   movementsTo   WagonMovement[]   @relation("MovementTo")
+  tariffsOrigin Tariff[]          @relation("TariffOriginStation")
+  tariffsDest   Tariff[]          @relation("TariffDestStation")
 
   @@index([code])
   @@index([country])

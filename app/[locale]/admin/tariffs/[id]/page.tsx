@@ -20,6 +20,12 @@ export default async function TariffEditPage({
     if (!tariff) notFound();
   }
 
+  const stations = await prisma.station.findMany({
+    where: { active: true },
+    select: { id: true, code: true, nameUz: true, country: true },
+    orderBy: { nameUz: 'asc' }
+  });
+
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <div className="flex items-center gap-3 border-b pb-4">
@@ -45,7 +51,7 @@ export default async function TariffEditPage({
       </div>
 
       <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm md:p-8">
-        <TariffForm initialData={tariff} />
+        <TariffForm initialData={tariff} stations={stations} />
       </div>
     </div>
   );

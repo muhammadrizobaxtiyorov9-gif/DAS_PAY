@@ -61,6 +61,8 @@ export default function CalculatorPage() {
       const result = await getQuote({
         originCountry: origin,
         destCountry: destination,
+        originStationId: method === 'rail' && fromStationId ? fromStationId : undefined,
+        destStationId: method === 'rail' && toStationId ? toStationId : undefined,
         mode: METHOD_TO_MODE[method] || 'train',
         weightTon: w,
       });
@@ -85,7 +87,10 @@ export default function CalculatorPage() {
     setComparing(true);
     try {
       const [rail, auto] = await Promise.all([
-        getQuote({ originCountry: origin, destCountry: destination, mode: 'train', weightTon: w }),
+        getQuote({ 
+          originCountry: origin, destCountry: destination, mode: 'train', weightTon: w,
+          originStationId: fromStationId || undefined, destStationId: toStationId || undefined 
+        }),
         getQuote({ originCountry: origin, destCountry: destination, mode: 'truck', weightTon: w }),
       ]);
       setComparison({ rail, auto });

@@ -25,7 +25,9 @@ export type ShipmentStatusKey =
   | 'delivered'
   | 'unloaded'
   | 'cancelled'
-  | 'delayed';
+  | 'delayed'
+  | 'confirmed'
+  | 'arrived_at_loading';
 
 export const SHIPMENT_STATUSES: Record<ShipmentStatusKey, {
   label: { uz: string; ru: string; en: string };
@@ -42,6 +44,22 @@ export const SHIPMENT_STATUSES: Record<ShipmentStatusKey, {
     pill: 'bg-amber-100 text-amber-700',
     dot: 'bg-amber-500',
     icon: FileText,
+  },
+  confirmed: {
+    label: { uz: 'Tasdiqlandi', ru: 'Подтверждено', en: 'Confirmed' },
+    color: 'text-indigo-600',
+    bgColor: 'bg-indigo-600/10',
+    pill: 'bg-indigo-100 text-indigo-700',
+    dot: 'bg-indigo-500',
+    icon: CheckCircle2,
+  },
+  arrived_at_loading: {
+    label: { uz: 'Yuklash manziliga yetib keldi', ru: 'Прибыл на место погрузки', en: 'Arrived at loading location' },
+    color: 'text-blue-600',
+    bgColor: 'bg-blue-600/10',
+    pill: 'bg-blue-100 text-blue-700',
+    dot: 'bg-blue-500',
+    icon: MapPin,
   },
   wagons_arrived: {
     label: { uz: 'Vagonlar stansiyaga yetib keldi', ru: 'Вагоны прибыли на станцию', en: 'Wagons arrived at station' },

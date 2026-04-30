@@ -5,6 +5,8 @@ export interface QuoteInput {
   originCity?: string;
   destCountry: string;
   destCity?: string;
+  originStationId?: number;
+  destStationId?: number;
   mode?: string;
   /** Weight in tonnes */
   weightTon: number;
@@ -36,6 +38,8 @@ function scoreTariff(
     originCity: string | null;
     destCountry: string;
     destCity: string | null;
+    originStationId: number | null;
+    destStationId: number | null;
     mode: string;
   },
   input: QuoteInput,
@@ -46,6 +50,12 @@ function scoreTariff(
   if (t.originCity && normalize(t.originCity) === normalize(input.originCity)) score += 2;
   if (t.destCity && normalize(t.destCity) === normalize(input.destCity)) score += 2;
   if (input.mode && normalize(t.mode) === normalize(input.mode)) score += 1;
+  
+  // High weight for exact station matches if provided
+  if (t.mode === 'train') {
+    if (t.originStationId && input.originStationId && t.originStationId === input.originStationId) score += 10;
+    if (t.destStationId && input.destStationId && t.destStationId === input.destStationId) score += 10;
+  }
   return score;
 }
 
